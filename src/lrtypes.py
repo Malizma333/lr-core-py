@@ -1,32 +1,69 @@
-from typing import TypedDict
+# Types for linting
+
+from typing import TypedDict, Union
+from enum import Enum
 
 
-class Rider(TypedDict):
-    position_x: float
-    position_y: float
-    velocity_x: float
-    velocity_y: float
-    angle: float
-    remount: bool
+class GridVersion(Enum):
+    V6_0 = 0
+    V6_1 = 1
+    V6_2 = 2
+
+
+class RiderStartState(TypedDict):
+    X: float
+    Y: float
+    DX: float
+    DY: float
+    ANGLE: float
+    REMOUNT: bool
 
 
 class PhysicsLine(TypedDict):
-    x1: float
-    y1: float
-    x2: float
-    y2: float
-    flipped: bool
-    left_extension: bool
-    right_extension: bool
-    multiplier: float
+    X1: float
+    Y1: float
+    X2: float
+    Y2: float
+    FLIPPED: bool
+    LEFT_EXTENSION: bool
+    RIGHT_EXTENSION: bool
+    MULTIPLIER: float  # zero for blue lines, otherwise red line
 
 
 class ContactPoint(TypedDict):
-    position_x: float
-    position_y: float
-    velocity_x: float
-    velocity_y: float
+    x: float
+    y: float
+    dx: float
+    dy: float
+    FRICTION: float
+
+
+class NormalBone(TypedDict):
+    POINT1: int
+    POINT2: int
+    RESTING_LENGTH: float
+
+
+class MountBone(TypedDict):
+    POINT1: int
+    POINT2: int
+    RESTING_LENGTH: float
+    ENDURANCE: float
+
+
+class RepelBone(TypedDict):
+    POINT1: int
+    POINT2: int
+    RESTING_LENGTH: float
+    LENGTH_FACTOR: float
+
+
+class Joint(TypedDict):
+    POINT_PAIR1: tuple[int, int]
+    POINT_PAIR2: tuple[int, int]
 
 
 class Entity(TypedDict):
-    points: list[ContactPoint]
+    points: dict[int, ContactPoint]
+    bones: list[Union[NormalBone, MountBone, RepelBone]]
+    joints: list[Joint]

@@ -1,19 +1,18 @@
 [
-  [2, 0, 0, 0, [], "", [], "expected track start with nothing to return nothing"],
-  [3, -1, 0, 0, [], "", null, "expected getting invalid grid version to error"],
-  [-1, -1, 0, 0, [], "", null, "expected getting negative grid version to error"],
-  [2, -1, 0, 0, [], "", null, "expected getting negative frame to error"],
-  [2, 0, 7, 0, [], "", null, "expected getting invalid iteration to error"],
-  [2, 0, -1, 0, [], "", null, "expected getting negative iteration to error"],
-  [2, 0, 0, 4, [], "", null, "expected getting invalid sub iteration on iteration 0 to error"],
-  [2, 0, 1, 23, [], "", null, "expected getting invalid sub iteration on iteration 1+ to error"],
-  [2, 0, 0, -1, [], "", null, "expected getting negative sub iteration to error"],
+  [2, 0, 0, 0, "", [], "expected track start with nothing to return nothing"],
+  [3, -1, 0, 0, "", null, "expected getting invalid grid version to error"],
+  [-1, -1, 0, 0, "", null, "expected getting negative grid version to error"],
+  [2, -1, 0, 0, "", null, "expected getting negative frame to error"],
+  [2, 0, 7, 0, "", null, "expected getting invalid iteration to error"],
+  [2, 0, -1, 0, "", null, "expected getting negative iteration to error"],
+  [2, 0, 0, 4, "", null, "expected getting invalid sub iteration on iteration 0 to error"],
+  [2, 0, 1, 23, "", null, "expected getting invalid sub iteration on iteration 1+ to error"],
+  [2, 0, 0, -1, "", null, "expected getting negative sub iteration to error"],
   [
     2,
     1,
-    0,
-    0,
-    [{ "position_x": 0, "position_y": 0, "velocity_x": 0.4, "velocity_y": 0, "angle": 0, "remount": true }],
+    6,
+    22,
     "",
     [
       {
@@ -88,9 +87,8 @@
   [
     2,
     10,
-    0,
-    0,
-    [{ "position_x": 0, "position_y": 0, "velocity_x": 0.4, "velocity_y": 0, "angle": 0, "remount": true }],
+    6,
+    22,
     "line_flags",
     [
       {
@@ -205,9 +203,8 @@
   [
     2,
     47,
-    0,
-    0,
-    [{ "position_x": 0, "position_y": 0, "velocity_x": 0.4, "velocity_y": 0, "angle": 0, "remount": true }],
+    6,
+    22,
     "line_flags",
     [
       {
@@ -322,9 +319,8 @@
   [
     2,
     58,
-    0,
-    0,
-    [{ "position_x": 0, "position_y": 0, "velocity_x": 0.4, "velocity_y": 0, "angle": 0, "remount": true }],
+    6,
+    22,
     "line_flags",
     [
       {
@@ -439,9 +435,8 @@
   [
     2,
     115,
-    0,
-    0,
-    [{ "position_x": 0, "position_y": 0, "velocity_x": 0.4, "velocity_y": 0, "angle": 0, "remount": true }],
+    6,
+    22,
     "line_flags",
     [
       {
@@ -556,9 +551,8 @@
   [
     2,
     139,
-    0,
-    0,
-    [{ "position_x": 0, "position_y": 0, "velocity_x": 0.4, "velocity_y": 0, "angle": 0, "remount": true }],
+    6,
+    22,
     "line_flags",
     [
       {
@@ -673,9 +667,8 @@
   [
     2,
     152,
-    0,
-    0,
-    [{ "position_x": 0, "position_y": 0, "velocity_x": 0.4, "velocity_y": 0, "angle": 0, "remount": true }],
+    6,
+    22,
     "line_flags",
     [
       {

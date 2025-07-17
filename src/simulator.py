@@ -1,13 +1,16 @@
-from main import get_moment
+# Opens a track file in a read-only simulator
+
+TARGET_TRACK = "fixtures/line_flags.track.json"
+
+from engine import get_moment
 import tkinter as tk
 import json
 from convert import convert_lines, convert_riders
 
-target_track = "line_flags"
-
-track = json.load(open(f"fixtures/{target_track}.track.json", "r"))
+track = json.load(open(TARGET_TRACK, "r"))
 riders = convert_riders(track["riders"])
 lines = convert_lines(track["lines"])
+grid = {"6.2": 2, "6.1": 1, "6.0": 0}[track["version"]]
 
 focused_rider = 0
 frame = 0
