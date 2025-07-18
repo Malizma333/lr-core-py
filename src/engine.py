@@ -167,7 +167,6 @@ def get_moment(
                     if is_momentum_tick:
                         if subiteration == 0:
                             # momentum
-                            print("apply momentum")
                             for index in entity["points"].keys():
                                 dx = entities[entity_index]["points"][index]["dx"]
                                 dy = entities[entity_index]["points"][index]["dy"]
@@ -181,7 +180,6 @@ def get_moment(
                             pass
                         else:
                             # gravity
-                            print("apply gravity")
                             for index in entity["points"].keys():
                                 entities[entity_index]["points"][index]["dx"] += (
                                     GRAVITY_X

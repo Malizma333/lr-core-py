@@ -22,13 +22,17 @@ subiteration = 0
 root = tk.Tk()
 root.title("Line Rider Python Engine")
 canvas = tk.Canvas(root, width=1280, height=720, bg="white")
-canvas.pack()
+canvas.pack(fill=tk.BOTH, expand=True)
 canvas_cache = {}
 canvas_center = (int(canvas["width"]) / 2, int(canvas["height"]) / 2)
+origin = (0, 0)
 
 
 def physics_to_canvas(x: float, y: float) -> tuple[float, float]:
-    return (x * ZOOM + canvas_center[0], y * ZOOM + canvas_center[1])
+    return (
+        (x - origin[0]) * ZOOM + canvas_center[0],
+        (y - origin[1]) * ZOOM + canvas_center[1],
+    )
 
 
 def prev_subiteration(event):
@@ -130,6 +134,7 @@ def next_rider(event):
 
 
 def update():
+    global origin
     entities = get_moment(version, frame, iteration, subiteration, riders, lines)
 
     if entities == None:
@@ -137,11 +142,19 @@ def update():
         root.quit()
         return
 
-    for i, entity in enumerate(entities):
-        draw_entity(i, entity)
+    new_origin = [0.0, 0.0]
+    for _, point in entities[focused_rider]["points"].items():
+        new_origin[0] += point["x"]
+        new_origin[1] += point["y"]
+    new_origin[0] /= len(entities[focused_rider]["points"])
+    new_origin[1] /= len(entities[focused_rider]["points"])
+    origin = (new_origin[0], new_origin[1])
 
     for i, line in enumerate(lines):
         draw_line(i, line)
+
+    for i, entity in enumerate(entities):
+        draw_entity(i, entity)
 
 
 def draw_entity(i: int, entity: Entity):
@@ -153,7 +166,7 @@ def draw_entity(i: int, entity: Entity):
         p2 = entity["points"][bone["POINT2"]]
         (x1, y1) = physics_to_canvas(p1["x"], p1["y"])
         (x2, y2) = physics_to_canvas(p2["x"], p2["y"])
-        bone_object = canvas_cache.get(
+        bone_object = canvas_cache.setdefault(
             f"entities_{i}_bones_{index}",
             canvas.create_line(0, 0, 0, 0, width=0.25 * ZOOM, fill="pink"),
         )
@@ -163,7 +176,7 @@ def draw_entity(i: int, entity: Entity):
         (x, y) = physics_to_canvas(point["x"], point["y"])
         magnitude = (point["dx"] ** 2 + point["dy"] ** 2) ** 0.5
         unit = (point["dx"] / magnitude, point["dy"] / magnitude)
-        mv_object = canvas_cache.get(
+        mv_object = canvas_cache.setdefault(
             f"entities_{i}_vectors_{index}",
             canvas.create_line(0, 0, 0, 0, width=0.25 * ZOOM, fill="red"),
         )
@@ -174,7 +187,7 @@ def draw_entity(i: int, entity: Entity):
             x + 10 * unit[0] + offset,
             y + 10 * unit[1] + offset,
         )
-        cp_object = canvas_cache.get(
+        cp_object = canvas_cache.setdefault(
             f"entities_{i}_points_{index}", canvas.create_oval(0, 0, 0, 0, fill="cyan")
         )
         canvas.coords(cp_object, x, y, x + cp_radius, y + cp_radius)
@@ -192,7 +205,7 @@ def draw_line(i: int, line: PhysicsLine):
     ext_amount = min(40, magnitude) * LINE_EXTENSION_RATIO
 
     if line["LEFT_EXTENSION"]:
-        line_left_ext_object = canvas_cache.get(
+        line_left_ext_object = canvas_cache.setdefault(
             f"lines_{i}_left_ext",
             canvas.create_line(0, 0, 0, 0, width=1 * ZOOM, fill="red"),
         )
@@ -203,7 +216,7 @@ def draw_line(i: int, line: PhysicsLine):
         canvas.coords(line_left_ext_object, lx1, ly1, lx2, ly2)
 
     if line["RIGHT_EXTENSION"]:
-        line_right_ext_object = canvas_cache.get(
+        line_right_ext_object = canvas_cache.setdefault(
             f"lines_{i}_left_ext",
             canvas.create_line(0, 0, 0, 0, width=1 * ZOOM, fill="red"),
         )
@@ -213,14 +226,14 @@ def draw_line(i: int, line: PhysicsLine):
         lx2, ly2 = physics_to_canvas(x1, y1)
         canvas.coords(line_right_ext_object, lx1, ly1, lx2, ly2)
 
-    line_gwell_object = canvas_cache.get(
+    line_gwell_object = canvas_cache.setdefault(
         f"lines_{i}_gwell", canvas.create_line(0, 0, 0, 0, width=10 * ZOOM, fill="gray")
     )
     lx1, ly1 = physics_to_canvas(x1 - 5 * unit[1], y1 + 5 * unit[0])
     lx2, ly2 = physics_to_canvas(x2 - 5 * unit[1], y2 + 5 * unit[0])
     canvas.coords(line_gwell_object, lx1, ly1, lx2, ly2)
 
-    line_object = canvas_cache.get(
+    line_object = canvas_cache.setdefault(
         f"lines_{i}", canvas.create_line(0, 0, 0, 0, width=2 * ZOOM, capstyle="round")
     )
     lx1, ly1 = physics_to_canvas(x1, y1)
@@ -236,6 +249,15 @@ canvas.bind("<Alt-Left>", prev_iteration)
 canvas.bind("<Alt-Right>", next_iteration)
 canvas.bind("<Shift-Left>", prev_subiteration)
 canvas.bind("<Shift-Right>", next_subiteration)
+
+
+def on_resize(event: tk.Event) -> None:
+    global canvas_center
+    canvas_center = (event.width / 2, event.height / 2)
+    update()
+
+
+root.bind("<Configure>", on_resize)
 
 update()
 
