@@ -147,14 +147,14 @@ def get_moment(
 
     max_frame = target_frame
     for frame in range(max_frame + 1):
-        for entity in entities:
+        for entity_index, entity in enumerate(entities):
             if frame == target_frame:
                 max_iteration = target_iteration
             else:
                 max_iteration = NUM_ITERATIONS
 
             for iteration in range(max_iteration + 1):
-                if iteration == target_iteration:
+                if frame == target_frame and iteration == target_iteration:
                     max_subiteration = target_sub_iteration
                 elif iteration == 0:
                     max_subiteration = NUM_MOMENTUM_TICKS
@@ -167,7 +167,12 @@ def get_moment(
                     if is_momentum_tick:
                         if subiteration == 0:
                             # momentum
-                            pass
+                            print("apply momentum")
+                            for index in entity["points"].keys():
+                                dx = entities[entity_index]["points"][index]["dx"]
+                                dy = entities[entity_index]["points"][index]["dy"]
+                                entities[entity_index]["points"][index]["x"] += dx
+                                entities[entity_index]["points"][index]["y"] += dy
                         elif subiteration == 1:
                             # friction
                             pass
@@ -176,6 +181,14 @@ def get_moment(
                             pass
                         else:
                             # gravity
+                            print("apply gravity")
+                            for index in entity["points"].keys():
+                                entities[entity_index]["points"][index]["dx"] += (
+                                    GRAVITY_X
+                                )
+                                entities[entity_index]["points"][index]["dy"] += (
+                                    GRAVITY_Y
+                                )
                             pass
                     else:
                         # bones

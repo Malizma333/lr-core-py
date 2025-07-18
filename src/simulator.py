@@ -24,11 +24,11 @@ root.title("Line Rider Python Engine")
 canvas = tk.Canvas(root, width=1280, height=720, bg="white")
 canvas.pack()
 canvas_cache = {}
-CANVAS_CENTER = (int(canvas["width"]) / 2, int(canvas["height"]) / 2)
+canvas_center = (int(canvas["width"]) / 2, int(canvas["height"]) / 2)
 
 
 def physics_to_canvas(x: float, y: float) -> tuple[float, float]:
-    return (x * ZOOM + CANVAS_CENTER[0], y * ZOOM + CANVAS_CENTER[1])
+    return (x * ZOOM + canvas_center[0], y * ZOOM + canvas_center[1])
 
 
 def prev_subiteration(event):
