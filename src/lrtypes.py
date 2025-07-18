@@ -1,6 +1,7 @@
 # Types for linting
 
 from typing import TypedDict, Union
+from math_utils import Vector
 from enum import Enum
 
 
@@ -10,20 +11,15 @@ class GridVersion(Enum):
     V6_2 = 2
 
 
-class RiderStartState(TypedDict):
-    X: float
-    Y: float
-    DX: float
-    DY: float
+class EntityStartState(TypedDict):
+    POSITION: Vector
+    VELOCITY: Vector
     ANGLE: float
     REMOUNT: bool
 
 
 class PhysicsLine(TypedDict):
-    X1: float
-    Y1: float
-    X2: float
-    Y2: float
+    ENDPOINTS: tuple[Vector, Vector]
     FLIPPED: bool
     LEFT_EXTENSION: bool
     RIGHT_EXTENSION: bool
@@ -31,10 +27,8 @@ class PhysicsLine(TypedDict):
 
 
 class ContactPoint(TypedDict):
-    x: float
-    y: float
-    dx: float
-    dy: float
+    position: Vector
+    velocity: Vector
     FRICTION: float
 
 

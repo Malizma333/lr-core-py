@@ -1,5 +1,6 @@
 # Converts .track.json file portions for usage in test cases
-from lrtypes import PhysicsLine, RiderStartState, GridVersion
+from lrtypes import PhysicsLine, EntityStartState, GridVersion
+from math_utils import Vector
 
 
 def convert_lines(lines: list) -> list[PhysicsLine]:
@@ -8,10 +9,10 @@ def convert_lines(lines: list) -> list[PhysicsLine]:
         if line["type"] != 2:
             converted_lines.append(
                 {
-                    "X1": line["x1"],
-                    "Y1": line["y1"],
-                    "X2": line["x2"],
-                    "Y2": line["y2"],
+                    "ENDPOINTS": (
+                        Vector(line["x1"], line["y1"]),
+                        Vector(line["x2"], line["y2"]),
+                    ),
                     "FLIPPED": line["flipped"],
                     "LEFT_EXTENSION": line["leftExtended"],
                     "RIGHT_EXTENSION": line["rightExtended"],
@@ -21,15 +22,18 @@ def convert_lines(lines: list) -> list[PhysicsLine]:
     return converted_lines
 
 
-def convert_riders(riders: list) -> list[RiderStartState]:
-    converted_riders: list[RiderStartState] = []
+def convert_riders(riders: list) -> list[EntityStartState]:
+    converted_riders: list[EntityStartState] = []
     for rider in riders:
         converted_riders.append(
             {
-                "X": rider["startPosition"]["x"],
-                "Y": rider["startPosition"]["y"],
-                "DX": rider["startVelocity"]["x"],
-                "DY": rider["startVelocity"]["y"],
+                "POSITION": Vector(
+                    rider["startPosition"]["x"], rider["startPosition"]["y"]
+                ),
+                "VELOCITY": Vector(
+                    rider["startVelocity"]["x"],
+                    rider["startVelocity"]["y"],
+                ),
                 "ANGLE": rider.get("startAngle", 0),
                 "REMOUNT": bool(rider.get("remountable", False)),
             }
