@@ -166,12 +166,14 @@ def get_moment(
                 for subiteration in range(max_subiteration + 1):
                     if is_momentum_tick:
                         if subiteration == 0:
-                            # momentum
+                            # gravity
                             for index in entity["points"].keys():
-                                dx = entities[entity_index]["points"][index]["dx"]
-                                dy = entities[entity_index]["points"][index]["dy"]
-                                entities[entity_index]["points"][index]["x"] += dx
-                                entities[entity_index]["points"][index]["y"] += dy
+                                entities[entity_index]["points"][index]["dx"] += (
+                                    GRAVITY_X
+                                )
+                                entities[entity_index]["points"][index]["dy"] += (
+                                    GRAVITY_Y
+                                )
                         elif subiteration == 1:
                             # friction
                             pass
@@ -179,18 +181,12 @@ def get_moment(
                             # acceleration
                             pass
                         else:
-                            # gravity
+                            # momentum
                             for index in entity["points"].keys():
                                 dx = entities[entity_index]["points"][index]["dx"]
                                 dy = entities[entity_index]["points"][index]["dy"]
-                                entities[entity_index]["points"][index]["x"] -= dx
-                                entities[entity_index]["points"][index]["y"] -= dy
-                                dx += GRAVITY_X
-                                dy += GRAVITY_Y
                                 entities[entity_index]["points"][index]["x"] += dx
                                 entities[entity_index]["points"][index]["y"] += dy
-                                entities[entity_index]["points"][index]["dx"] = dx
-                                entities[entity_index]["points"][index]["dy"] = dy
                             pass
                     else:
                         pass
