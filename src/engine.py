@@ -164,6 +164,21 @@ def get_moment(
                 is_momentum_tick = iteration == 0
 
                 for subiteration in range(max_subiteration + 1):
-                    pass
+                    if is_momentum_tick:
+                        if subiteration == 0:
+                            # momentum
+                            pass
+                        elif subiteration == 1:
+                            # friction
+                            pass
+                        elif subiteration == 2:
+                            # acceleration
+                            pass
+                        else:
+                            # gravity
+                            pass
+                    else:
+                        # bones
+                        pass
 
     return entities
