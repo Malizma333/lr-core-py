@@ -1,5 +1,5 @@
 # Converts .track.json file portions for usage in test cases
-from lrtypes import PhysicsLine, RiderStartState
+from lrtypes import PhysicsLine, RiderStartState, GridVersion
 
 
 def convert_lines(lines: list) -> list[PhysicsLine]:
@@ -36,3 +36,14 @@ def convert_riders(riders: list) -> list[RiderStartState]:
         )
 
     return converted_riders
+
+
+def convert_version(grid_version: str) -> GridVersion:
+    if grid_version == "6.2":
+        return GridVersion.V6_2
+    elif grid_version == "6.1":
+        return GridVersion.V6_1
+    elif grid_version == "6.0":
+        return GridVersion.V6_0
+    else:
+        return GridVersion.V6_2

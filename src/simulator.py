@@ -1,16 +1,18 @@
 # Opens a track file in a read-only simulator
 
 TARGET_TRACK = "fixtures/line_flags.track.json"
+ZOOM = 4
 
-from engine import get_moment
+from engine import get_moment, LINE_EXTENSION_RATIO
+from convert import convert_lines, convert_riders, convert_version
+from lrtypes import Entity, PhysicsLine
 import tkinter as tk
 import json
-from convert import convert_lines, convert_riders
 
 track = json.load(open(TARGET_TRACK, "r"))
 riders = convert_riders(track["riders"])
 lines = convert_lines(track["lines"])
-grid = {"6.2": 2, "6.1": 1, "6.0": 0}[track["version"]]
+version = convert_version(track["version"])
 
 focused_rider = 0
 frame = 0
@@ -21,8 +23,12 @@ root = tk.Tk()
 root.title("Line Rider Python Engine")
 canvas = tk.Canvas(root, width=1280, height=720, bg="white")
 canvas.pack()
+canvas_cache = {}
+CANVAS_CENTER = (int(canvas["width"]) / 2, int(canvas["height"]) / 2)
 
-# ball = canvas.create_oval(180, 180, 220, 220, fill="red")
+
+def physics_to_canvas(x: float, y: float) -> tuple[float, float]:
+    return (x * ZOOM + CANVAS_CENTER[0], y * ZOOM + CANVAS_CENTER[1])
 
 
 def prev_subiteration(event):
@@ -124,10 +130,73 @@ def next_rider(event):
 
 
 def update():
-    print(focused_rider, frame, iteration, subiteration)
-    # entities = get_moment(2, frame, iteration, subiteration, riders, lines)
-    # print(entities)
-    # canvas.move(ball, x_change, y_change)
+    entities = get_moment(version, frame, iteration, subiteration, riders, lines)
+
+    if entities == None:
+        print("Moment returned none")
+        root.quit()
+        return
+
+    for i, entity in enumerate(entities):
+        draw_entity(i, entity)
+
+    for i, line in enumerate(lines):
+        draw_line(i, line)
+
+
+def draw_entity(i: int, entity: Entity):
+    for index, point in entity["points"].items():
+        hash = f"entities_{i}_points_{index}"
+        cp_object = canvas_cache.get(hash, canvas.create_oval(0, 0, 0, 0, fill="red"))
+        (x, y) = physics_to_canvas(point["x"], point["y"])
+        canvas.coords(cp_object, x, y, x + 3, y + 3)
+
+
+def draw_line(i: int, line: PhysicsLine):
+    (x1, y1) = physics_to_canvas(line["X1"], line["Y1"])
+    (x2, y2) = physics_to_canvas(line["X2"], line["Y2"])
+    if line["FLIPPED"]:
+        (x1, y1, x2, y2) = (x2, y2, x1, y1)
+
+    delta = (x2 - x1, y2 - y1)
+    magnitude = (delta[0] ** 2 + delta[1] ** 2) ** 0.5
+    unit = (delta[0] / magnitude, delta[1] / magnitude)
+    if line["LEFT_EXTENSION"]:
+        line_left_ext_object = canvas_cache.get(
+            f"lines_{i}_left_ext", canvas.create_line(0, 0, 0, 0, width=2, fill="blue")
+        )
+        canvas.coords(
+            line_left_ext_object,
+            x1 - magnitude * LINE_EXTENSION_RATIO * unit[0],
+            y1 - magnitude * LINE_EXTENSION_RATIO * unit[1],
+            x1,
+            y1,
+        )
+    if line["RIGHT_EXTENSION"]:
+        line_right_ext_object = canvas_cache.get(
+            f"lines_{i}_left_ext", canvas.create_line(0, 0, 0, 0, width=2, fill="blue")
+        )
+        canvas.coords(
+            line_right_ext_object,
+            x1,
+            y1,
+            x1 + magnitude * LINE_EXTENSION_RATIO * unit[0],
+            y1 + magnitude * LINE_EXTENSION_RATIO * unit[1],
+        )
+    line_gwell_object = canvas_cache.get(
+        f"lines_{i}_gwell", canvas.create_line(0, 0, 0, 0, width=20, fill="gray")
+    )
+    canvas.coords(
+        line_gwell_object,
+        x1 - 10 * unit[1],
+        y1 + 10 * unit[0],
+        x2 - 10 * unit[1],
+        y2 + 10 * unit[0],
+    )
+    line_object = canvas_cache.get(
+        f"lines_{i}", canvas.create_line(0, 0, 0, 0, width=4, capstyle="round")
+    )
+    canvas.coords(line_object, x1, y1, x2, y2)
 
 
 canvas.bind("<Left>", prev_frame)
@@ -138,6 +207,8 @@ canvas.bind("<Alt-Left>", prev_iteration)
 canvas.bind("<Alt-Right>", next_iteration)
 canvas.bind("<Shift-Left>", prev_subiteration)
 canvas.bind("<Shift-Right>", next_subiteration)
+
+update()
 
 canvas.focus_set()
 root.mainloop()
