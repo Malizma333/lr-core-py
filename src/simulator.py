@@ -1,9 +1,15 @@
 # Opens a track file in a read-only simulator
 
 TARGET_TRACK = "fixtures/line_flags.track.json"
-ZOOM = 4
+ZOOM = 6
 
-from engine import get_moment, LINE_EXTENSION_RATIO
+from engine import (
+    get_moment,
+    LINE_EXTENSION_RATIO,
+    MAX_SUBIT_MOMENTUM,
+    NUM_ITERATIONS,
+    MAX_SUBIT,
+)
 from convert import convert_lines, convert_riders, convert_version
 from lrtypes import Entity, PhysicsLine
 import tkinter as tk
@@ -15,7 +21,7 @@ lines = convert_lines(track["lines"])
 version = convert_version(track["version"])
 
 focused_rider = 0
-frame = 0
+frame = -1
 iteration = 0
 subiteration = 0
 
@@ -28,29 +34,30 @@ canvas_center = (int(canvas["width"]) / 2, int(canvas["height"]) / 2)
 origin = (0, 0)
 
 
-def physics_to_canvas(x: float, y: float) -> tuple[float, float]:
-    return (
-        (x - origin[0]) * ZOOM + canvas_center[0],
-        (y - origin[1]) * ZOOM + canvas_center[1],
-    )
+def on_resize(event: tk.Event) -> None:
+    global canvas_center
+    canvas_center = (event.width / 2, event.height / 2)
+    update()
+
+
+root.bind("<Configure>", on_resize)
 
 
 def prev_subiteration(event):
     global frame, iteration, subiteration
-    if subiteration == 0:
+    if frame == -1:
+        pass
+    elif subiteration == 0:
         if iteration == 0:
-            if frame == 0:
-                pass
-            else:
-                frame -= 1
-                iteration = 6
-                subiteration = 22
+            frame -= 1
+            iteration = NUM_ITERATIONS
+            subiteration = MAX_SUBIT
         elif iteration == 1:
             iteration -= 1
-            subiteration = 3
+            subiteration = MAX_SUBIT_MOMENTUM
         else:
             iteration -= 1
-            subiteration = 22
+            subiteration = MAX_SUBIT
     else:
         subiteration -= 1
 
@@ -60,14 +67,14 @@ def prev_subiteration(event):
 def next_subiteration(event):
     global frame, iteration, subiteration
     if iteration == 0:
-        if subiteration == 3:
+        if subiteration == MAX_SUBIT_MOMENTUM:
             subiteration = 0
             iteration += 1
         else:
             subiteration += 1
     else:
-        if subiteration == 22:
-            if iteration == 6:
+        if subiteration == MAX_SUBIT:
+            if iteration == NUM_ITERATIONS:
                 subiteration = 0
                 iteration = 0
                 frame += 1
@@ -82,12 +89,11 @@ def next_subiteration(event):
 def prev_iteration(event):
     global frame, iteration, subiteration
     subiteration = 0
-    if iteration == 0:
-        if frame == 0:
-            pass
-        else:
-            frame -= 1
-            iteration = 6
+    if frame == -1:
+        pass
+    elif iteration == 0:
+        frame -= 1
+        iteration = NUM_ITERATIONS
     else:
         iteration -= 1
 
@@ -107,16 +113,16 @@ def next_iteration(event):
 
 def prev_frame(event):
     global frame, iteration, subiteration
-    iteration = 0
-    subiteration = 0
-    frame = max(0, frame - 1)
+    iteration = NUM_ITERATIONS
+    subiteration = MAX_SUBIT
+    frame = max(-1, frame - 1)
     update()
 
 
 def next_frame(event):
     global frame, iteration, subiteration
-    iteration = 0
-    subiteration = 0
+    iteration = NUM_ITERATIONS
+    subiteration = MAX_SUBIT
     frame += 1
     update()
 
@@ -133,8 +139,17 @@ def next_rider(event):
     update()
 
 
+canvas.bind("<Left>", prev_frame)
+canvas.bind("<Right>", next_frame)
+canvas.bind("<Down>", prev_rider)
+canvas.bind("<Up>", next_rider)
+canvas.bind("<Alt-Left>", prev_iteration)
+canvas.bind("<Alt-Right>", next_iteration)
+canvas.bind("<Control-Left>", prev_subiteration)
+canvas.bind("<Control-Right>", next_subiteration)
+
+
 def update():
-    global origin
     entities = get_moment(version, frame, iteration, subiteration, riders, lines)
 
     if entities == None:
@@ -142,6 +157,19 @@ def update():
         root.quit()
         return
 
+    adjust_camera(entities)
+
+    for i, line in enumerate(lines):
+        draw_line(i, line)
+
+    for i, entity in enumerate(entities):
+        draw_entity(i, entity)
+
+    draw_text()
+
+
+def adjust_camera(entities: list[Entity]):
+    global origin
     new_origin = [0.0, 0.0]
     for _, point in entities[focused_rider]["points"].items():
         new_origin[0] += point["x"]
@@ -150,11 +178,12 @@ def update():
     new_origin[1] /= len(entities[focused_rider]["points"])
     origin = (new_origin[0], new_origin[1])
 
-    for i, line in enumerate(lines):
-        draw_line(i, line)
 
-    for i, entity in enumerate(entities):
-        draw_entity(i, entity)
+def physics_to_canvas(x: float, y: float) -> tuple[float, float]:
+    return (
+        (x - origin[0]) * ZOOM + canvas_center[0],
+        (y - origin[1]) * ZOOM + canvas_center[1],
+    )
 
 
 def draw_entity(i: int, entity: Entity):
@@ -196,6 +225,7 @@ def draw_entity(i: int, entity: Entity):
 def draw_line(i: int, line: PhysicsLine):
     (x1, y1) = (line["X1"], line["Y1"])
     (x2, y2) = (line["X2"], line["Y2"])
+
     if line["FLIPPED"]:
         (x1, y1, x2, y2) = (x2, y2, x1, y1)
 
@@ -217,13 +247,13 @@ def draw_line(i: int, line: PhysicsLine):
 
     if line["RIGHT_EXTENSION"]:
         line_right_ext_object = canvas_cache.setdefault(
-            f"lines_{i}_left_ext",
+            f"lines_{i}_right_ext",
             canvas.create_line(0, 0, 0, 0, width=1 * ZOOM, fill="red"),
         )
-        lx1, ly1 = physics_to_canvas(
-            x1 + ext_amount * unit[0], y1 + ext_amount * unit[1]
+        lx1, ly1 = physics_to_canvas(x2, y2)
+        lx2, ly2 = physics_to_canvas(
+            x2 + ext_amount * unit[0], y2 + ext_amount * unit[1]
         )
-        lx2, ly2 = physics_to_canvas(x1, y1)
         canvas.coords(line_right_ext_object, lx1, ly1, lx2, ly2)
 
     line_gwell_object = canvas_cache.setdefault(
@@ -241,25 +271,40 @@ def draw_line(i: int, line: PhysicsLine):
     canvas.coords(line_object, lx1, ly1, lx2, ly2)
 
 
-canvas.bind("<Left>", prev_frame)
-canvas.bind("<Right>", next_frame)
-canvas.bind("<Down>", prev_rider)
-canvas.bind("<Up>", next_rider)
-canvas.bind("<Alt-Left>", prev_iteration)
-canvas.bind("<Alt-Right>", next_iteration)
-canvas.bind("<Shift-Left>", prev_subiteration)
-canvas.bind("<Shift-Right>", next_subiteration)
+def draw_text():
+    if frame == -1:
+        timestamp = "0:00:00"
+    else:
+        minutes = int(frame / 2400)
+        seconds = str(100 + int((frame / 40) % 60))[1:]
+        frames = str(100 + (frame + 1) % 40)[1:]
+        timestamp = f"{minutes}:{seconds}:{frames}"
 
+        if not (iteration == 6 and subiteration == 22):
+            timestamp += f"_I{iteration}"
+        if not (
+            iteration == 0
+            and subiteration == 3
+            or iteration != 0
+            and subiteration == 22
+        ):
+            timestamp += f"_S{subiteration}"
 
-def on_resize(event: tk.Event) -> None:
-    global canvas_center
-    canvas_center = (event.width / 2, event.height / 2)
-    update()
+    text_object = canvas_cache.setdefault(
+        "current_moment_text",
+        canvas.create_text(0, 0, font=("Helvetica", 12), fill="black"),
+    )
+    canvas.itemconfig(text_object, text=timestamp)
+    canvas.coords(text_object, canvas_center[0], canvas_center[1] * 2 - 50)
 
+    text_object = canvas_cache.setdefault(
+        "current_rider_text",
+        canvas.create_text(0, 0, font=("Helvetica", 12), fill="black"),
+    )
+    canvas.itemconfig(text_object, text=f"Rider {focused_rider}")
+    canvas.coords(text_object, canvas_center[0], canvas_center[1] * 2 - 25)
 
-root.bind("<Configure>", on_resize)
 
 update()
-
 canvas.focus_set()
 root.mainloop()

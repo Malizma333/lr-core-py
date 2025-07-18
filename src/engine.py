@@ -13,8 +13,8 @@ from lrtypes import (
 
 
 NUM_ITERATIONS = 6
-NUM_SUBITERATIONS = 22
-NUM_MOMENTUM_TICKS = 3
+MAX_SUBIT = 22
+MAX_SUBIT_MOMENTUM = 3
 
 LINE_HITBOX_HEIGHT = 10
 LINE_SPACE_GRID_CELL_SIZE = 14
@@ -125,7 +125,7 @@ def get_moment(
     riders: list[RiderStartState],
     lines: list[PhysicsLine],
 ) -> Union[list[Entity], None]:
-    if target_frame < 0:
+    if target_frame < -1:
         return None
 
     if target_iteration < 0 or target_iteration > NUM_ITERATIONS:
@@ -134,10 +134,10 @@ def get_moment(
     if target_sub_iteration < 0:
         return None
 
-    if target_iteration == 0 and target_sub_iteration > NUM_MOMENTUM_TICKS:
+    if target_iteration == 0 and target_sub_iteration > MAX_SUBIT_MOMENTUM:
         return None
 
-    if target_iteration >= 1 and target_sub_iteration > NUM_SUBITERATIONS:
+    if target_iteration >= 1 and target_sub_iteration > MAX_SUBIT:
         return None
 
     entities: list[Entity] = []
@@ -157,9 +157,9 @@ def get_moment(
                 if frame == target_frame and iteration == target_iteration:
                     max_subiteration = target_sub_iteration
                 elif iteration == 0:
-                    max_subiteration = NUM_MOMENTUM_TICKS
+                    max_subiteration = MAX_SUBIT_MOMENTUM
                 else:
-                    max_subiteration = NUM_SUBITERATIONS
+                    max_subiteration = MAX_SUBIT
 
                 is_momentum_tick = iteration == 0
 
@@ -181,15 +181,18 @@ def get_moment(
                         else:
                             # gravity
                             for index in entity["points"].keys():
-                                entities[entity_index]["points"][index]["dx"] += (
-                                    GRAVITY_X
-                                )
-                                entities[entity_index]["points"][index]["dy"] += (
-                                    GRAVITY_Y
-                                )
+                                dx = entities[entity_index]["points"][index]["dx"]
+                                dy = entities[entity_index]["points"][index]["dy"]
+                                entities[entity_index]["points"][index]["x"] -= dx
+                                entities[entity_index]["points"][index]["y"] -= dy
+                                dx += GRAVITY_X
+                                dy += GRAVITY_Y
+                                entities[entity_index]["points"][index]["x"] += dx
+                                entities[entity_index]["points"][index]["y"] += dy
+                                entities[entity_index]["points"][index]["dx"] = dx
+                                entities[entity_index]["points"][index]["dy"] = dy
                             pass
                     else:
-                        # bones
                         pass
 
     return entities
