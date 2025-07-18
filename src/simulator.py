@@ -9,6 +9,7 @@ from engine import (
     MAX_SUBIT_MOMENTUM,
     NUM_ITERATIONS,
     MAX_SUBIT,
+    LINE_HITBOX_HEIGHT,
 )
 from convert import convert_lines, convert_riders, convert_version
 from lrtypes import Entity, PhysicsLine
@@ -171,7 +172,7 @@ def update():
 def adjust_camera(entities: list[Entity]):
     global origin
     new_origin = [0.0, 0.0]
-    for _, point in entities[focused_rider]["points"].items():
+    for point in entities[focused_rider]["points"]:
         new_origin[0] += point["x"]
         new_origin[1] += point["y"]
     new_origin[0] /= len(entities[focused_rider]["points"])
@@ -201,7 +202,7 @@ def draw_entity(i: int, entity: Entity):
         )
         canvas.coords(bone_object, x1 + offset, y1 + offset, x2 + offset, y2 + offset)
 
-    for index, point in entity["points"].items():
+    for index, point in enumerate(entity["points"]):
         (x, y) = physics_to_canvas(point["x"], point["y"])
         magnitude = (point["dx"] ** 2 + point["dy"] ** 2) ** 0.5
         unit = (point["dx"] / magnitude, point["dy"] / magnitude)
@@ -257,7 +258,8 @@ def draw_line(i: int, line: PhysicsLine):
         canvas.coords(line_right_ext_object, lx1, ly1, lx2, ly2)
 
     line_gwell_object = canvas_cache.setdefault(
-        f"lines_{i}_gwell", canvas.create_line(0, 0, 0, 0, width=10 * ZOOM, fill="gray")
+        f"lines_{i}_gwell",
+        canvas.create_line(0, 0, 0, 0, width=LINE_HITBOX_HEIGHT * ZOOM, fill="gray"),
     )
     lx1, ly1 = physics_to_canvas(x1 - 5 * unit[1], y1 + 5 * unit[0])
     lx2, ly2 = physics_to_canvas(x2 - 5 * unit[1], y2 + 5 * unit[0])

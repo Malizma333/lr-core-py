@@ -64,6 +64,6 @@ class Joint(TypedDict):
 
 
 class Entity(TypedDict):
-    points: dict[int, ContactPoint]
+    points: list[ContactPoint]
     bones: list[Union[NormalBone, MountBone, RepelBone]]
     joints: list[Joint]

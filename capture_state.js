@@ -11,6 +11,7 @@ function captureState() {
   state.push(
     store.getState().simulator.engine.getFrame(index).snapshot.entities[0].entities.map(entity => ({
       points: entity.points.map(point => ({
+        name: point.name,
         position_x: point.pos.x,
         position_y: point.pos.y,
         velocity_x: point.vel.x,

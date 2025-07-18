@@ -15,7 +15,21 @@ def check_equal(state1: Union[list[Entity], None], state2: Union[list[Entity], N
     if state1 == None and state2 == None:
         return True
 
-    return False
+    if not (state1 != None and state2 != None):
+        return False
+
+    if len(state1) != len(state2):
+        return False
+
+    for i in range(len(state1)):
+        for index in state1[i]["points"]:
+            pass
+            # if state1[i]["points"][index]["x"] != state2[i]["points"][index]["x"]:
+            #     return False
+            # if state1[i]["points"][index]["y"] != state2[i]["points"][index]["y"]:
+            #     return False
+
+    return True
 
 
 for [

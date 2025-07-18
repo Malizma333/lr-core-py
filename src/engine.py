@@ -25,63 +25,53 @@ GRAVITY_Y = 0.175
 
 
 def make_rider(startState: RiderStartState):
-    # Could be array, but want indices to serve as pointers
-    entity: Entity = {"bones": [], "points": {}, "joints": []}
-
-    LEFT_FOOT_DATA = (0, 10.0, 5.0, 0.0)
-    RIGHT_FOOT_DATA = (1, 10.0, 5.0, 0.0)
-    LEFT_HAND_DATA = (2, 11.5, -5.0, 0.1)
-    RIGHT_HAND_DATA = (3, 11.5, -5.0, 0.1)
-    SHOULDER_DATA = (4, 5.0, -5.5, 0.8)
-    BUTT_DATA = (5, 5.0, 0.0, 0.8)
-    PEG_DATA = (6, 0.0, 0.0, 0.8)
-    NOSE_DATA = (7, 15.0, 5.0, 0.0)
-    TAIL_DATA = (8, 0.0, 5.0, 0.0)
-    STRING_DATA = (9, 17.5, 0.0, 0.0)
+    entity: Entity = {"bones": [], "points": [], "joints": []}
 
     POINT_DATA = [
-        LEFT_FOOT_DATA,
-        RIGHT_FOOT_DATA,
-        LEFT_HAND_DATA,
-        RIGHT_HAND_DATA,
-        SHOULDER_DATA,
-        BUTT_DATA,
-        PEG_DATA,
-        NOSE_DATA,
-        TAIL_DATA,
-        STRING_DATA,
+        (10.0, 5.0, 0.0),  # left foot
+        (10.0, 5.0, 0.0),  # right foot
+        (11.5, -5.0, 0.1),  # left hand
+        (11.5, -5.0, 0.1),  # right hand
+        (5.0, -5.5, 0.8),  # shoulder
+        (5.0, 0.0, 0.8),  # butt
+        (0.0, 0.0, 0.8),  # peg
+        (15.0, 5.0, 0.0),  # nose
+        (0.0, 5.0, 0.0),  # tail
+        (17.5, 0.0, 0.0),  # string
     ]
-
-    for index, x, y, friction in POINT_DATA:
-        entity["points"][index] = {
-            "x": x + startState["X"],
-            "y": y + startState["Y"],
-            "FRICTION": friction,
-            "dx": 0.0 + startState["DX"],
-            "dy": 0.0 + startState["DY"],
-        }
 
     BONE_DATA = [
-        ("NORMAL", PEG_DATA[0], TAIL_DATA[0]),
-        ("NORMAL", TAIL_DATA[0], NOSE_DATA[0]),
-        ("NORMAL", NOSE_DATA[0], STRING_DATA[0]),
-        ("NORMAL", STRING_DATA[0], PEG_DATA[0]),
-        ("MOUNT", PEG_DATA[0], BUTT_DATA[0], 0.057),
-        ("MOUNT", TAIL_DATA[0], BUTT_DATA[0], 0.057),
-        ("MOUNT", NOSE_DATA[0], BUTT_DATA[0], 0.057),
-        ("NORMAL", SHOULDER_DATA[0], BUTT_DATA[0]),
-        ("NORMAL", SHOULDER_DATA[0], LEFT_HAND_DATA[0]),
-        ("NORMAL", SHOULDER_DATA[0], RIGHT_HAND_DATA[0]),
-        ("NORMAL", BUTT_DATA[0], LEFT_FOOT_DATA[0]),
-        ("NORMAL", BUTT_DATA[0], RIGHT_FOOT_DATA[0]),
-        ("MOUNT", SHOULDER_DATA[0], PEG_DATA[0], 0.057),
-        ("MOUNT", STRING_DATA[0], LEFT_HAND_DATA[0], 0.057),
-        ("MOUNT", STRING_DATA[0], RIGHT_HAND_DATA[0], 0.057),
-        ("MOUNT", LEFT_FOOT_DATA[0], NOSE_DATA[0], 0.057),
-        ("MOUNT", RIGHT_FOOT_DATA[0], NOSE_DATA[0], 0.057),
-        ("REPEL", SHOULDER_DATA[0], LEFT_FOOT_DATA[0], 0.5),
-        ("REPEL", SHOULDER_DATA[0], RIGHT_FOOT_DATA[0], 0.5),
+        ("NORMAL", 6, 8),  # peg-tail
+        ("NORMAL", 8, 7),  # tail-nose
+        ("NORMAL", 7, 9),  # nose-string
+        ("NORMAL", 9, 6),  # string-peg
+        ("MOUNT", 6, 5, 0.057),  # peg-butt
+        ("MOUNT", 8, 5, 0.057),  # tail-butt
+        ("MOUNT", 7, 5, 0.057),  # nose-butt
+        ("NORMAL", 4, 5),  # shoulder-butt
+        ("NORMAL", 4, 2),  # shoulder-lefthand
+        ("NORMAL", 4, 3),  # shoulder-righthand
+        ("NORMAL", 5, 0),  # butt-leftfoot
+        ("NORMAL", 5, 1),  # butt-rightfoot
+        ("MOUNT", 4, 6, 0.057),  # shoulder-peg
+        ("MOUNT", 9, 2, 0.057),  # string-lefthand
+        ("MOUNT", 9, 3, 0.057),  # string-righthand
+        ("MOUNT", 0, 7, 0.057),  # leftfoot-nose
+        ("MOUNT", 1, 7, 0.057),  # rightfoot-nose
+        ("REPEL", 4, 0, 0.5),  # shoulder-leftfoot
+        ("REPEL", 4, 1, 0.5),  # shoulder-rightfoot
     ]
+
+    for x, y, friction in POINT_DATA:
+        entity["points"].append(
+            {
+                "x": x + startState["X"],
+                "y": y + startState["Y"],
+                "FRICTION": friction,
+                "dx": 0.0 + startState["DX"],
+                "dy": 0.0 + startState["DY"],
+            }
+        )
 
     for bone_tuple in BONE_DATA:
         bone_type = bone_tuple[0]
@@ -167,7 +157,7 @@ def get_moment(
                     if is_momentum_tick:
                         if subiteration == 0:
                             # gravity
-                            for index in entity["points"].keys():
+                            for index in range(len(entity["points"])):
                                 entities[entity_index]["points"][index]["dx"] += (
                                     GRAVITY_X
                                 )
@@ -182,7 +172,7 @@ def get_moment(
                             pass
                         else:
                             # momentum
-                            for index in entity["points"].keys():
+                            for index in range(len(entity["points"])):
                                 dx = entities[entity_index]["points"][index]["dx"]
                                 dy = entities[entity_index]["points"][index]["dy"]
                                 entities[entity_index]["points"][index]["x"] += dx
