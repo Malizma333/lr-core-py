@@ -1,16 +1,11 @@
 [
-  [0, 0, 0, "", [], "expected track start with nothing to return nothing"],
-  [-1, 0, 0, "", null, "expected getting negative frame to error"],
-  [0, 7, 0, "", null, "expected getting invalid iteration to error"],
-  [0, -1, 0, "", null, "expected getting negative iteration to error"],
-  [0, 0, 4, "", null, "expected getting invalid sub iteration on iteration 0 to error"],
-  [0, 1, 23, "", null, "expected getting invalid sub iteration on iteration 1+ to error"],
-  [0, 0, -1, "", null, "expected getting negative sub iteration to error"],
-  [1, 6, 22, "", [], "expected single rider track with default initial state to return points"],
-  [10, 6, 22, "line_flags", [], "expected collision with blue line"],
-  [47, 6, 22, "line_flags", [], "expected shoulder friction on blue line"],
-  [58, 6, 22, "line_flags", [], "expected line left extension to work"],
-  [115, 6, 22, "line_flags", [], "expected line right extension to work"],
-  [139, 6, 22, "line_flags", [], "expected to pass through flipped line"],
-  [152, 6, 22, "line_flags", [], "expected to collide with flipped line"]
+  [0, "", [], "expected track start with nothing to return nothing"],
+  [-1, "", null, "expected getting negative frame to error"],
+  [1, "", [], "expected single rider track with default initial state to return points"],
+  [10, "line_flags", [], "expected collision with blue line"],
+  [47, "line_flags", [], "expected shoulder friction on blue line"],
+  [58, "line_flags", [], "expected line left extension to work"],
+  [115, "line_flags", [], "expected line right extension to work"],
+  [139, "line_flags", [], "expected to pass through flipped line"],
+  [152, "line_flags", [], "expected to collide with flipped line"]
 ]

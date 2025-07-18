@@ -2,8 +2,9 @@
 
 from typing import Union
 from lrtypes import (
-    EntityStartState,
+    InitialEntityParams,
     PhysicsLine,
+    EntityState,
     Entity,
     GridVersion,
     NormalBone,
@@ -12,22 +13,22 @@ from lrtypes import (
 )
 from math_utils import Vector
 
+FRAMES_PER_SECOND = 40
 
 NUM_ITERATIONS = 6
-MAX_SUBIT = 22
-MAX_SUBIT_MOMENTUM = 3
 
 LINE_HITBOX_HEIGHT = 10
-LINE_SPACE_GRID_CELL_SIZE = 14
-LINE_EXTENSION_RATIO = 0.25
-MAX_EXTENSION_SIZE = 10
+GRID_CELL_SIZE = 14
+MAX_LINE_EXTENSION_RATIO = 0.25
 
 GRAVITY = Vector(0, 1)
 GRAVITY_SCALE = 0.175
 
+BONE_ENDURANCE = 0.0285
 
-def make_rider(startState: EntityStartState):
-    entity: Entity = {"bones": [], "points": [], "joints": []}
+
+def make_rider(startState: InitialEntityParams):
+    entity: Entity = {"bones": [], "points": [], "state": EntityState.MOUNTED}
 
     POINT_DATA = [
         (Vector(10.0, 5.0), 0.0),  # left foot
@@ -125,24 +126,10 @@ def make_rider(startState: EntityStartState):
 def get_moment(
     grid_version: GridVersion,
     target_frame: int,
-    target_iteration: int,
-    target_sub_iteration: int,
-    riders: list[EntityStartState],
+    riders: list[InitialEntityParams],
     lines: list[PhysicsLine],
 ) -> Union[list[Entity], None]:
-    if target_frame < -1:
-        return None
-
-    if target_iteration < 0 or target_iteration > NUM_ITERATIONS:
-        return None
-
-    if target_sub_iteration < 0:
-        return None
-
-    if target_iteration == 0 and target_sub_iteration > MAX_SUBIT_MOMENTUM:
-        return None
-
-    if target_iteration >= 1 and target_sub_iteration > MAX_SUBIT:
+    if target_frame < 0:
         return None
 
     entities: list[Entity] = []
@@ -150,52 +137,83 @@ def get_moment(
     for initial_rider_state in riders:
         entities.append(make_rider(initial_rider_state))
 
-    max_frame = target_frame
-    for frame in range(max_frame + 1):
+    for frame in range(target_frame):
         for entity_index, entity in enumerate(entities):
-            # Max iteration clamp
-            if frame == target_frame:
-                max_iteration = target_iteration
-            else:
-                max_iteration = NUM_ITERATIONS
+            # gravity
+            for point_index in range(len(entity["points"])):
+                entities[entity_index]["points"][point_index]["velocity"] += (
+                    GRAVITY * GRAVITY_SCALE
+                )
 
-            for iteration in range(max_iteration + 1):
-                # Max subiteration clamp
-                if frame == target_frame and iteration == target_iteration:
-                    max_subiteration = target_sub_iteration
-                elif iteration == 0:
-                    max_subiteration = MAX_SUBIT_MOMENTUM
-                else:
-                    max_subiteration = MAX_SUBIT
+            # momentum
+            for point_index, point in enumerate(entity["points"]):
+                entities[entity_index]["points"][point_index]["position"] += point[
+                    "velocity"
+                ]
 
-                for subiteration in range(max_subiteration + 1):
-                    if iteration == 0:
-                        if subiteration == 0:
-                            # gravity
-                            for point_index in range(len(entity["points"])):
-                                entities[entity_index]["points"][point_index][
-                                    "velocity"
-                                ] += GRAVITY * GRAVITY_SCALE
-                        elif subiteration == 1:
-                            # friction
-                            pass
-                        elif subiteration == 2:
-                            # acceleration
-                            pass
+            # bones
+            for _ in range(NUM_ITERATIONS):
+                for bone in entity["bones"]:
+                    joint1 = bone["POINT1"]
+                    joint2 = bone["POINT2"]
+                    position1 = entity["points"][joint1]["position"]
+                    position2 = entity["points"][joint2]["position"]
+                    delta = position1 - position2
+                    magnitude = delta.magnitude()
+                    rest_length = bone["RESTING_LENGTH"]
+
+                    if type(bone) == RepelBone:
+                        rest_length *= bone["LENGTH_FACTOR"]
+
+                    if type(bone) != RepelBone or magnitude < rest_length:
+                        if magnitude * 0.5 != 0:
+                            scalar = (magnitude - rest_length) / magnitude * 0.5
                         else:
-                            # momentum
-                            for point_index, point in enumerate(entity["points"]):
-                                entities[entity_index]["points"][point_index][
-                                    "position"
-                                ] += point["velocity"]
-                            pass
-                    else:
-                        for bone_index, bone in enumerate(entity["bones"]):
-                            joint1 = bone["POINT1"]
-                            joint2 = bone["POINT2"]
-                            position1 = entity["points"][joint1]["position"]
-                            position2 = entity["points"][joint2]["position"]
-                            delta = position1 - position2
-                            magnitude = delta.magnitude()
+                            scalar = 0
+
+                        if type(bone) == MountBone and (
+                            entity["state"] == EntityState.DISMOUNTED
+                            or scalar > rest_length * BONE_ENDURANCE
+                        ):
+                            entities[entity_index]["state"] = EntityState.DISMOUNTED
+                        else:
+                            entities[entity_index]["points"][joint1]["position"] -= (
+                                delta * scalar
+                            )
+                            entities[entity_index]["points"][joint2]["position"] += (
+                                delta * scalar
+                            )
+
+            # lines
+            for point_index, point in enumerate(entity["points"]):
+                position = point["position"]
+                cell_position = Vector(
+                    int(position.x / GRID_CELL_SIZE), int(position.y / GRID_CELL_SIZE)
+                )
+                box_boundary = int(1 + LINE_HITBOX_HEIGHT / GRID_CELL_SIZE)
+    #
+    #                 int newbox = (int)Math.Floor(1 + StandardLine.Zone / 14);
+    #
+    #                 physinfo.left = Math.Min(cellx - newbox, physinfo.left);
+    #                 physinfo.top = Math.Min(celly - newbox, physinfo.top);
+    #                 physinfo.right = Math.Max(cellx + newbox, physinfo.right);
+    #                 physinfo.bottom = Math.Max(celly + newbox, physinfo.bottom);
+    #                 for (int x = 0 - newbox; x <= newbox; x++)
+    #                 {
+    #                     for (int y = 0 - newbox; y <= newbox; y++)
+    #                     {
+    #                         SimulationCell cell = grid.GetCell(cellx + x, celly + y);
+    #                         if (cell == null)
+    #                             continue;
+    #                         foreach (StandardLine line in cell)
+    #                         {
+    #                             if (line.Interact(ref body[i], accelless, frictionless))
+    #                             {
+    #                                 _ = (collisions?.AddLast(line.ID));
+    #                             }
+    #                         }
+    #                     }
+    #                 }
+    #             }
 
     return entities

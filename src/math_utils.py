@@ -40,7 +40,7 @@ class Vector:
     def __repr__(self):
         return f"Vector({self.x}, {self.y})"
 
-    def magnitude(self):
+    def magnitude(self) -> float:
         return (self.x * self.x + self.y * self.y) ** 0.5
 
     def unit(self):

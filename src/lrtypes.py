@@ -11,7 +11,7 @@ class GridVersion(Enum):
     V6_2 = 2
 
 
-class EntityStartState(TypedDict):
+class InitialEntityParams(TypedDict):
     POSITION: Vector
     VELOCITY: Vector
     ANGLE: float
@@ -57,7 +57,12 @@ class Joint(TypedDict):
     POINT_PAIR2: tuple[int, int]
 
 
+class EntityState(Enum):
+    MOUNTED = 0
+    DISMOUNTED = 1
+
+
 class Entity(TypedDict):
     points: list[ContactPoint]
     bones: list[Union[NormalBone, MountBone, RepelBone]]
-    joints: list[Joint]
+    state: EntityState

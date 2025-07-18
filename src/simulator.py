@@ -5,12 +5,9 @@ ZOOM = 8
 
 from engine import (
     get_moment,
-    LINE_EXTENSION_RATIO,
-    MAX_EXTENSION_SIZE,
-    MAX_SUBIT_MOMENTUM,
-    NUM_ITERATIONS,
-    MAX_SUBIT,
+    MAX_LINE_EXTENSION_RATIO,
     LINE_HITBOX_HEIGHT,
+    FRAMES_PER_SECOND,
 )
 from math_utils import Vector
 from convert import convert_lines, convert_riders, convert_version
@@ -24,9 +21,7 @@ lines = convert_lines(track["lines"])
 version = convert_version(track["version"])
 
 focused_rider = 0
-frame = -1
-iteration = 0
-subiteration = 0
+frame = 0
 
 root = tk.Tk()
 root.title("Line Rider Python Engine")
@@ -46,86 +41,14 @@ def on_resize(event: tk.Event) -> None:
 root.bind("<Configure>", on_resize)
 
 
-def prev_subiteration(event):
-    global frame, iteration, subiteration
-    if frame == -1:
-        pass
-    elif subiteration == 0:
-        if iteration == 0:
-            frame -= 1
-            iteration = NUM_ITERATIONS
-            subiteration = MAX_SUBIT
-        elif iteration == 1:
-            iteration -= 1
-            subiteration = MAX_SUBIT_MOMENTUM
-        else:
-            iteration -= 1
-            subiteration = MAX_SUBIT
-    else:
-        subiteration -= 1
-
-    update()
-
-
-def next_subiteration(event):
-    global frame, iteration, subiteration
-    if iteration == 0:
-        if subiteration == MAX_SUBIT_MOMENTUM:
-            subiteration = 0
-            iteration += 1
-        else:
-            subiteration += 1
-    else:
-        if subiteration == MAX_SUBIT:
-            if iteration == NUM_ITERATIONS:
-                subiteration = 0
-                iteration = 0
-                frame += 1
-            else:
-                subiteration = 0
-                iteration += 1
-        else:
-            subiteration += 1
-    update()
-
-
-def prev_iteration(event):
-    global frame, iteration, subiteration
-    subiteration = 0
-    if frame == -1:
-        pass
-    elif iteration == 0:
-        frame -= 1
-        iteration = NUM_ITERATIONS
-    else:
-        iteration -= 1
-
-    update()
-
-
-def next_iteration(event):
-    global frame, iteration, subiteration
-    subiteration = 0
-    if iteration == 6:
-        iteration = 0
-        frame += 1
-    else:
-        iteration += 1
-    update()
-
-
 def prev_frame(event):
-    global frame, iteration, subiteration
-    iteration = NUM_ITERATIONS
-    subiteration = MAX_SUBIT
-    frame = max(-1, frame - 1)
+    global frame
+    frame = max(0, frame - 1)
     update()
 
 
 def next_frame(event):
-    global frame, iteration, subiteration
-    iteration = NUM_ITERATIONS
-    subiteration = MAX_SUBIT
+    global frame
     frame += 1
     update()
 
@@ -147,14 +70,10 @@ canvas.bind("<Left>", prev_frame)
 canvas.bind("<Right>", next_frame)
 canvas.bind("<Down>", prev_rider)
 canvas.bind("<Up>", next_rider)
-canvas.bind("<Alt-Left>", prev_iteration)
-canvas.bind("<Alt-Right>", next_iteration)
-canvas.bind("<Control-Left>", prev_subiteration)
-canvas.bind("<Control-Right>", next_subiteration)
 
 
 def update():
-    entities = get_moment(version, frame, iteration, subiteration, riders, lines)
+    entities = get_moment(version, frame, riders, lines)
 
     if entities == None:
         print("Moment returned none")
@@ -202,7 +121,7 @@ def draw_entity(i: int, entity: Entity):
         bone_object = canvas_cache.setdefault(
             f"entities_{i}_bones_{index}",
             canvas.create_line(
-                0, 0, 0, 0, width=LINE_EXTENSION_RATIO * ZOOM, fill="pink"
+                0, 0, 0, 0, width=MAX_LINE_EXTENSION_RATIO * ZOOM, fill="pink"
             ),
         )
         canvas.coords(
@@ -227,7 +146,7 @@ def draw_entity(i: int, entity: Entity):
         mv_object = canvas_cache.setdefault(
             f"entities_{i}_vectors_{index}",
             canvas.create_line(
-                0, 0, 0, 0, width=LINE_EXTENSION_RATIO * ZOOM, fill="red"
+                0, 0, 0, 0, width=MAX_LINE_EXTENSION_RATIO * ZOOM, fill="red"
             ),
         )
         canvas.coords(
@@ -261,8 +180,11 @@ def draw_line(i: int, line: PhysicsLine):
         point1, point2 = point2, point1
 
     line_vector = point2 - point1
+    magnitude = line_vector.magnitude()
     unit = line_vector.unit()
-    ext_amount = min(MAX_EXTENSION_SIZE, line_vector.magnitude() * LINE_EXTENSION_RATIO)
+    ext_amount = magnitude * min(
+        MAX_LINE_EXTENSION_RATIO, LINE_HITBOX_HEIGHT / magnitude
+    )
     hitbox_vec = unit.rot_cw() * LINE_HITBOX_HEIGHT / 2
 
     canvas_point1 = physics_to_canvas(point1)
@@ -324,23 +246,10 @@ def draw_line(i: int, line: PhysicsLine):
 
 
 def draw_text():
-    if frame == -1:
-        timestamp = "0:00:00"
-    else:
-        minutes = int(frame / 2400)
-        seconds = str(100 + int((frame / 40) % 60))[1:]
-        frames = str(100 + (frame + 1) % 40)[1:]
-        timestamp = f"{minutes}:{seconds}:{frames}"
-
-        if not (iteration == 6 and subiteration == 22):
-            timestamp += f"_I{iteration}"
-        if not (
-            iteration == 0
-            and subiteration == 3
-            or iteration != 0
-            and subiteration == 22
-        ):
-            timestamp += f"_S{subiteration}"
+    minutes = int(frame / 60 * FRAMES_PER_SECOND)
+    seconds = str(100 + int((frame / FRAMES_PER_SECOND) % 60))[1:]
+    frames = str(100 + frame % FRAMES_PER_SECOND)[1:]
+    timestamp = f"{minutes}:{seconds}:{frames}"
 
     text_object = canvas_cache.setdefault(
         "current_moment_text",

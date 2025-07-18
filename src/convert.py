@@ -1,5 +1,5 @@
 # Converts .track.json file portions for usage in test cases
-from lrtypes import PhysicsLine, EntityStartState, GridVersion
+from lrtypes import PhysicsLine, InitialEntityParams, GridVersion
 from math_utils import Vector
 
 
@@ -22,8 +22,8 @@ def convert_lines(lines: list) -> list[PhysicsLine]:
     return converted_lines
 
 
-def convert_riders(riders: list) -> list[EntityStartState]:
-    converted_riders: list[EntityStartState] = []
+def convert_riders(riders: list) -> list[InitialEntityParams]:
+    converted_riders: list[InitialEntityParams] = []
     for rider in riders:
         converted_riders.append(
             {

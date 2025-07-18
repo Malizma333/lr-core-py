@@ -34,8 +34,6 @@ def check_equal(state1: Union[list[Entity], None], state2: Union[list[Entity], N
 
 for [
     frame,
-    iteration,
-    sub_iteration,
     track_file,
     result,
     message,
@@ -51,9 +49,7 @@ for [
         version = convert_version(track_data["version"])
         loaded[track_file] = {"lines": lines, "riders": riders, "version": version}
 
-    if not check_equal(
-        get_moment(version, frame, iteration, sub_iteration, riders, lines), result
-    ):
+    if not check_equal(get_moment(version, frame, riders, lines), result):
         print(message)
         fail_count += 1
 
