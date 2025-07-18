@@ -5,7 +5,7 @@ ZOOM = 4
 
 from engine import get_moment, LINE_EXTENSION_RATIO
 from convert import convert_lines, convert_riders, convert_version
-from lrtypes import Entity, PhysicsLine
+from lrtypes import Entity, PhysicsLine, NormalBone, RepelBone, MountBone
 import tkinter as tk
 import json
 
@@ -145,11 +145,37 @@ def update():
 
 
 def draw_entity(i: int, entity: Entity):
+    for index, bone in enumerate(entity["bones"]):
+        p1 = entity["points"][bone["POINT1"]]
+        p2 = entity["points"][bone["POINT2"]]
+        (x1, y1) = physics_to_canvas(p1["x"], p1["y"])
+        (x2, y2) = physics_to_canvas(p2["x"], p2["y"])
+        bone_object = canvas_cache.get(
+            f"entities_{i}_bones_{index}",
+            canvas.create_line(0, 0, 0, 0, width=2, fill="pink"),
+        )
+        canvas.coords(bone_object, x1, y1, x2, y2)
+
     for index, point in entity["points"].items():
-        hash = f"entities_{i}_points_{index}"
-        cp_object = canvas_cache.get(hash, canvas.create_oval(0, 0, 0, 0, fill="red"))
         (x, y) = physics_to_canvas(point["x"], point["y"])
-        canvas.coords(cp_object, x, y, x + 3, y + 3)
+        cp_radius = 3
+        magnitude = (point["dx"] ** 2 + point["dy"] ** 2) ** 0.5
+        unit = (point["dx"] / magnitude, point["dy"] / magnitude)
+        mv_object = canvas_cache.get(
+            f"entities_{i}_vectors_{index}",
+            canvas.create_line(0, 0, 0, 0, width=2, fill="red"),
+        )
+        canvas.coords(
+            mv_object,
+            x + cp_radius / 2,
+            y + cp_radius / 2,
+            x + 10 * unit[0] + cp_radius / 2,
+            y + 10 * unit[1] + cp_radius / 2,
+        )
+        cp_object = canvas_cache.get(
+            f"entities_{i}_points_{index}", canvas.create_oval(0, 0, 0, 0, fill="cyan")
+        )
+        canvas.coords(cp_object, x, y, x + cp_radius, y + cp_radius)
 
 
 def draw_line(i: int, line: PhysicsLine):
@@ -163,7 +189,7 @@ def draw_line(i: int, line: PhysicsLine):
     unit = (delta[0] / magnitude, delta[1] / magnitude)
     if line["LEFT_EXTENSION"]:
         line_left_ext_object = canvas_cache.get(
-            f"lines_{i}_left_ext", canvas.create_line(0, 0, 0, 0, width=2, fill="blue")
+            f"lines_{i}_left_ext", canvas.create_line(0, 0, 0, 0, width=2, fill="red")
         )
         canvas.coords(
             line_left_ext_object,
@@ -174,7 +200,7 @@ def draw_line(i: int, line: PhysicsLine):
         )
     if line["RIGHT_EXTENSION"]:
         line_right_ext_object = canvas_cache.get(
-            f"lines_{i}_left_ext", canvas.create_line(0, 0, 0, 0, width=2, fill="blue")
+            f"lines_{i}_left_ext", canvas.create_line(0, 0, 0, 0, width=2, fill="red")
         )
         canvas.coords(
             line_right_ext_object,
