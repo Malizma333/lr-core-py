@@ -375,66 +375,88 @@ class Grid:
         return cells
 
 
-def get_frame(
-    grid_version: GridVersion,
-    target_frame: int,
-    riders: list[InitialEntityParams],
-    lines: list[PhysicsLine],
-) -> Union[list[Entity], None]:
-    if target_frame < 0:
-        return None
+# Not specific implementation, just used for caching
+class Engine:
+    def __init__(
+        self,
+        grid_version: GridVersion,
+        riders: list[InitialEntityParams],
+        lines: list[PhysicsLine],
+    ):
+        self.grid = Grid(grid_version, GRID_CELL_SIZE)
+        self.gravity_scale = GRAVITY_SCALE
+        self.state_cache: list[list[Entity]] = [[]]
 
-    gravity_scale = GRAVITY_SCALE
-    if grid_version == GridVersion.V6_7:
-        gravity_scale = GRAVITY_SCALE_V6_7
+        if grid_version == GridVersion.V6_7:
+            self.gravity_scale = GRAVITY_SCALE_V6_7
 
-    entities: list[Entity] = []
-    grid = Grid(grid_version, GRID_CELL_SIZE)
+        for line in lines:
+            self.grid.add_line(line)
 
-    for line in lines:
-        grid.add_line(line)
+        for initial_rider_state in riders:
+            self.state_cache[0].append(make_rider(initial_rider_state))
 
-    for initial_rider_state in riders:
-        entities.append(make_rider(initial_rider_state))
+    # TODO: Support adding and removing lines, refreshing physics cache
 
-    for frame in range(target_frame):
-        for entity_index, entity in enumerate(entities):
-            # gravity
-            for point_index in range(len(entity["points"])):
-                entities[entity_index]["points"][point_index]["velocity"] += (
-                    GRAVITY * gravity_scale
+    def get_frame(self, target_frame: int) -> Union[list[Entity], None]:
+        if target_frame < 0:
+            return None
+
+        if target_frame < len(self.state_cache):
+            return self.state_cache[target_frame]
+
+        for frame in range(len(self.state_cache) - 1, target_frame):
+            new_entities: list[Entity] = []
+
+            for entity in self.state_cache[frame]:
+                new_entities.append(
+                    {
+                        "bones": [bone.copy() for bone in entity["bones"]],
+                        "points": [point.copy() for point in entity["points"]],
+                        "state": entity["state"],
+                    }
                 )
 
-            # momentum
-            for point_index, point in enumerate(entity["points"]):
-                entities[entity_index]["points"][point_index]["position"] += point[
-                    "velocity"
-                ]
+            for entity_index, entity in enumerate(new_entities):
+                # gravity
+                for point_index in range(len(entity["points"])):
+                    new_entities[entity_index]["points"][point_index]["velocity"] += (
+                        GRAVITY * self.gravity_scale
+                    )
 
-            for _ in range(NUM_ITERATIONS):
-                # bones
-                for bone in entity["bones"]:
-                    simulate_bone(bone, entity, entities, entity_index)
-
-                # line collisions
+                # momentum
                 for point_index, point in enumerate(entity["points"]):
-                    position = point["position"]
-                    involved_cells: list[GridCell] = []
+                    new_entities[entity_index]["points"][point_index]["position"] += (
+                        point["velocity"]
+                    )
 
-                    # get cells in a 3 x 3, but more if line_hitbox_height >= grid_cell_size
-                    bounds_size = int(1 + LINE_HITBOX_HEIGHT / grid.cell_size)
-                    for x_offset in range(-bounds_size, bounds_size + 1):
-                        for y_offset in range(-bounds_size, bounds_size + 1):
-                            cell = grid.get_cell(
-                                position + grid.cell_size * Vector(x_offset, y_offset)
-                            )
+                for _ in range(NUM_ITERATIONS):
+                    # bones
+                    for bone in entity["bones"]:
+                        simulate_bone(bone, entity, new_entities, entity_index)
 
-                            if cell != None:
-                                involved_cells.append(cell)
+                    # line collisions
+                    for point_index, point in enumerate(entity["points"]):
+                        position = point["position"]
+                        involved_cells: list[GridCell] = []
 
-                    # collide with involved cells
-                    for cell in involved_cells:
-                        for line in cell.lines:
-                            _collision_occurred = interact_with_line(point, line)
+                        # get cells in a 3 x 3, but more if line_hitbox_height >= grid_cell_size
+                        bounds_size = int(1 + LINE_HITBOX_HEIGHT / self.grid.cell_size)
+                        for x_offset in range(-bounds_size, bounds_size + 1):
+                            for y_offset in range(-bounds_size, bounds_size + 1):
+                                cell = self.grid.get_cell(
+                                    position
+                                    + self.grid.cell_size * Vector(x_offset, y_offset)
+                                )
 
-    return entities
+                                if cell != None:
+                                    involved_cells.append(cell)
+
+                        # collide with involved cells
+                        for cell in involved_cells:
+                            for line in cell.lines:
+                                _collision_occurred = interact_with_line(point, line)
+
+            self.state_cache.append(new_entities)
+
+        return self.state_cache[target_frame]

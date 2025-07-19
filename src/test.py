@@ -1,6 +1,6 @@
 # Reads test case data from tests.json and run tests
 
-from engine import get_frame
+from engine import Engine
 from convert import convert_lines, convert_riders, convert_version
 import json
 from typing import Union
@@ -8,7 +8,7 @@ from lrtypes import Entity
 
 tests = json.load(open("tests.json", "r"))
 fail_count = 0
-loaded = {}
+loaded: dict[str, Engine] = {}
 
 
 def check_equal(state1: Union[list[Entity], None], state2: Union[list[Entity], None]):
@@ -39,18 +39,16 @@ for [
     track_file,
     rider_data,
 ] in tests:
-    if track_file in loaded:
-        lines = loaded[track_file]["lines"]
-        riders = loaded[track_file]["riders"]
-        version = loaded[track_file]["version"]
-    else:
+    if track_file not in loaded:
         track_data = json.load(open(f"fixtures/{track_file}.track.json", "r"))
-        lines = convert_lines(track_data["lines"])
-        riders = convert_riders(track_data["riders"])
         version = convert_version(track_data["version"])
-        loaded[track_file] = {"lines": lines, "riders": riders, "version": version}
+        riders = convert_riders(track_data["riders"])
+        lines = convert_lines(track_data["lines"])
+        loaded[track_file] = Engine(version, riders, lines)
 
-    if not check_equal(get_frame(version, frame, riders, lines), rider_data):
+    engine = loaded[track_file]
+
+    if not check_equal(engine.get_frame(frame), rider_data):
         print("FAIL\t", test_name)
         fail_count += 1
     else:

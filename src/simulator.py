@@ -4,7 +4,7 @@ TARGET_TRACK = "fixtures/line_flags.track.json"
 ZOOM = 8
 
 from engine import (
-    get_frame,
+    Engine,
     MAX_LINE_EXTENSION_RATIO,
     LINE_HITBOX_HEIGHT,
     FRAMES_PER_SECOND,
@@ -16,9 +16,10 @@ import tkinter as tk
 import json
 
 track = json.load(open(TARGET_TRACK, "r"))
+version = convert_version(track["version"])
 riders = convert_riders(track["riders"])
 lines = convert_lines(track["lines"])
-version = convert_version(track["version"])
+engine = Engine(version, riders, lines)
 
 focused_rider = 0
 frame = 0
@@ -73,7 +74,8 @@ canvas.bind("<Up>", next_rider)
 
 
 def update():
-    entities = get_frame(version, frame, riders, lines)
+    print(frame)
+    entities = engine.get_frame(frame)
 
     if entities == None:
         print("Moment returned none")
@@ -246,7 +248,7 @@ def draw_line(i: int, line: PhysicsLine):
 
 
 def draw_text():
-    minutes = int(frame / 60 * FRAMES_PER_SECOND)
+    minutes = int(frame / (60 * FRAMES_PER_SECOND))
     seconds = str(100 + int((frame / FRAMES_PER_SECOND) % 60))[1:]
     frames = str(100 + frame % FRAMES_PER_SECOND)[1:]
     timestamp = f"{minutes}:{seconds}:{frames}"
