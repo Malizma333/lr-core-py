@@ -3,15 +3,16 @@
 TARGET_TRACK = "fixtures/line_flags.track.json"
 ZOOM = 8
 
-from engine import (
+from engine.engine import (
     Engine,
     MAX_LINE_EXTENSION_RATIO,
     LINE_HITBOX_HEIGHT,
     FRAMES_PER_SECOND,
+    PhysicsLine,
 )
-from vector import Vector
+from engine.vector import Vector
+from engine.entity import Entity
 from convert import convert_lines, convert_riders, convert_version
-from lrtypes import Entity, PhysicsLine
 import tkinter as tk
 import json
 
@@ -100,9 +101,9 @@ def redraw(entities: list[Entity]):
 def adjust_camera(entities: list[Entity]):
     global origin
     new_origin = Vector(0, 0)
-    for point in entities[focused_rider]["points"]:
+    for point in entities[focused_rider].points:
         new_origin += point["position"]
-    origin = new_origin / len(entities[focused_rider]["points"])
+    origin = new_origin / len(entities[focused_rider].points)
 
 
 def physics_to_canvas(v: Vector) -> Vector:
@@ -113,12 +114,9 @@ def draw_entity(i: int, entity: Entity):
     CP_RADIUS = 0.5
     MV_SIZE = 3
 
-    for index, bone in enumerate(entity["bones"]):
-        bone_p1 = entity["points"][bone["POINT1"]]
-        bone_p2 = entity["points"][bone["POINT2"]]
-
-        canvas_bone_point1 = physics_to_canvas(bone_p1["position"])
-        canvas_bone_point2 = physics_to_canvas(bone_p2["position"])
+    for index, bone in enumerate(entity.bones):
+        canvas_bone_point1 = physics_to_canvas(bone["BASE"]["POINT1"]["position"])
+        canvas_bone_point2 = physics_to_canvas(bone["BASE"]["POINT2"]["position"])
 
         bone_object = canvas_cache.setdefault(
             f"entities_{i}_bones_{index}",
@@ -134,7 +132,7 @@ def draw_entity(i: int, entity: Entity):
             canvas_bone_point2.y,
         )
 
-    for index, point in enumerate(entity["points"]):
+    for index, point in enumerate(entity.points):
         point_pos = point["position"]
 
         canvas_point_pos = physics_to_canvas(point_pos)

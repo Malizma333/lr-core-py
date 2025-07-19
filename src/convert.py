@@ -1,7 +1,10 @@
 # Converts .track.json file portions for usage in test cases
 
-from lrtypes import PhysicsLine, InitialEntityParams, GridVersion
-from vector import Vector
+import math
+from engine.vector import Vector
+from engine.entity import create_default_rider, Entity, InitialEntityParams
+from engine.grid import GridVersion
+from engine.engine import PhysicsLine
 
 
 # TODO add scenery lines to grid as well?
@@ -25,22 +28,21 @@ def convert_lines(lines: list) -> list[PhysicsLine]:
     return converted_lines
 
 
-def convert_riders(riders: list) -> list[InitialEntityParams]:
-    converted_riders: list[InitialEntityParams] = []
+def convert_riders(riders: list) -> list[Entity]:
+    converted_riders: list[Entity] = []
     for rider in riders:
-        converted_riders.append(
-            {
-                "POSITION": Vector(
-                    rider["startPosition"]["x"], rider["startPosition"]["y"]
-                ),
-                "VELOCITY": Vector(
-                    rider["startVelocity"]["x"],
-                    rider["startVelocity"]["y"],
-                ),
-                "ANGLE": rider.get("startAngle", 0),
-                "REMOUNT": bool(rider.get("remountable", False)),
-            }
-        )
+        initial_state: InitialEntityParams = {
+            "POSITION": Vector(
+                rider["startPosition"]["x"], rider["startPosition"]["y"]
+            ),
+            "VELOCITY": Vector(
+                rider["startVelocity"]["x"],
+                rider["startVelocity"]["y"],
+            ),
+            "ROTATION": rider.get("startAngle", 0) * math.pi / 180,
+            "REMOUNT": bool(rider.get("remountable", False)),
+        }
+        converted_riders.append(create_default_rider(initial_state))
 
     return converted_riders
 

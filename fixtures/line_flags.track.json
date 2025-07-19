@@ -1,1 +1,81 @@
-{"label":"line_flags","creator":"","description":"","duration":1200,"version":"6.2","audio":null,"startPosition":{"x":0,"y":0},"riders":[{"startPosition":{"x":0,"y":0},"startVelocity":{"x":0.4,"y":0},"remountable":1}],"layers":[{"id":0,"type":0,"name":"#000000Base Layer","visible":true,"editable":true,"folderId":-1},{"id":1,"type":0,"name":"#000000Base Layer","visible":true,"editable":true,"folderId":-1},{"id":2,"type":0,"name":"#000000Base Layer","visible":true,"editable":true,"folderId":-1},{"id":3,"type":0,"name":"#000000Base Layer","visible":true,"editable":true,"folderId":-1},{"id":4,"type":0,"name":"#000000Base Layer","visible":true,"editable":true,"folderId":-1}],"script":"","lines":[{"id":1,"type":0,"x1":-11.18597181766417,"y1":9.23250127902219,"x2":27.26141104856822,"y2":13.792865781091214,"flipped":false,"leftExtended":false,"rightExtended":false},{"id":2,"type":0,"x1":32.197134779761804,"y1":44.80283884655363,"x2":76.18220012844286,"y2":16.3568973376656,"layer":1,"flipped":false,"leftExtended":true,"rightExtended":false},{"id":3,"type":0,"x1":-8.884144422823127,"y1":76.51613794301635,"x2":34.058265144034884,"y2":89.30370774603135,"layer":2,"flipped":false,"leftExtended":false,"rightExtended":true},{"id":4,"type":0,"x1":64.9217273320432,"y1":142.0666662241418,"x2":97.69823998295492,"y2":123.98014168817693,"layer":3,"flipped":true,"leftExtended":true,"rightExtended":true},{"id":5,"type":0,"x1":105.3475779295813,"y1":154.48736665582905,"x2":85.19306959278173,"y2":192.42214121476826,"layer":4,"flipped":true,"leftExtended":true,"rightExtended":true}]}
+{
+  "label": "line_flags",
+  "creator": "",
+  "description": "",
+  "duration": 1200,
+  "version": "6.2",
+  "audio": null,
+  "startPosition": { "x": 0, "y": 0 },
+  "riders": [
+    { "startPosition": { "x": 0, "y": 0 }, "startVelocity": { "x": 0.4, "y": 0 }, "remountable": 1, "startAngle": 180 }
+  ],
+  "layers": [
+    { "id": 0, "type": 0, "name": "#000000Base Layer", "visible": true, "editable": true, "folderId": -1 },
+    { "id": 1, "type": 0, "name": "#000000Base Layer", "visible": true, "editable": true, "folderId": -1 },
+    { "id": 2, "type": 0, "name": "#000000Base Layer", "visible": true, "editable": true, "folderId": -1 },
+    { "id": 3, "type": 0, "name": "#000000Base Layer", "visible": true, "editable": true, "folderId": -1 },
+    { "id": 4, "type": 0, "name": "#000000Base Layer", "visible": true, "editable": true, "folderId": -1 }
+  ],
+  "script": "",
+  "lines": [
+    {
+      "id": 1,
+      "type": 0,
+      "x1": -11.18597181766417,
+      "y1": 9.23250127902219,
+      "x2": 27.26141104856822,
+      "y2": 13.792865781091214,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    },
+    {
+      "id": 2,
+      "type": 0,
+      "x1": 32.197134779761804,
+      "y1": 44.80283884655363,
+      "x2": 76.18220012844286,
+      "y2": 16.3568973376656,
+      "layer": 1,
+      "flipped": false,
+      "leftExtended": true,
+      "rightExtended": false
+    },
+    {
+      "id": 3,
+      "type": 0,
+      "x1": -8.884144422823127,
+      "y1": 76.51613794301635,
+      "x2": 34.058265144034884,
+      "y2": 89.30370774603135,
+      "layer": 2,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": true
+    },
+    {
+      "id": 4,
+      "type": 0,
+      "x1": 64.9217273320432,
+      "y1": 142.0666662241418,
+      "x2": 97.69823998295492,
+      "y2": 123.98014168817693,
+      "layer": 3,
+      "flipped": true,
+      "leftExtended": true,
+      "rightExtended": true
+    },
+    {
+      "id": 5,
+      "type": 0,
+      "x1": 105.3475779295813,
+      "y1": 154.48736665582905,
+      "x2": 85.19306959278173,
+      "y2": 192.42214121476826,
+      "layer": 4,
+      "flipped": true,
+      "leftExtended": true,
+      "rightExtended": true
+    }
+  ]
+}
