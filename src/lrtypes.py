@@ -1,24 +1,26 @@
 # Types for linting
 
 from typing import TypedDict, Union
-from math_utils import Vector
+from vector import Vector
 from enum import Enum
 
 
 class GridVersion(Enum):
-    V6_0 = 0
+    V6_2 = 0
     V6_1 = 1
-    V6_2 = 2
+    V6_0 = 2
+    V6_7 = 3
 
 
-class InitialEntityParams(TypedDict):
-    POSITION: Vector
-    VELOCITY: Vector
-    ANGLE: float
-    REMOUNT: bool
+class CellPosition(TypedDict):
+    X: int
+    Y: int
+    REMAINDER_X: float
+    REMAINDER_Y: float
 
 
 class PhysicsLine(TypedDict):
+    ID: int
     ENDPOINTS: tuple[Vector, Vector]
     FLIPPED: bool
     LEFT_EXTENSION: bool
@@ -52,14 +54,16 @@ class RepelBone(TypedDict):
     LENGTH_FACTOR: float
 
 
-class Joint(TypedDict):
-    POINT_PAIR1: tuple[int, int]
-    POINT_PAIR2: tuple[int, int]
-
-
 class EntityState(Enum):
     MOUNTED = 0
     DISMOUNTED = 1
+
+
+class InitialEntityParams(TypedDict):
+    POSITION: Vector
+    VELOCITY: Vector
+    ANGLE: float
+    REMOUNT: bool
 
 
 class Entity(TypedDict):

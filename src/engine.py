@@ -11,8 +11,9 @@ from lrtypes import (
     MountBone,
     RepelBone,
     ContactPoint,
+    CellPosition,
 )
-from math_utils import Vector, hash_pair
+from vector import Vector
 
 ACCELERATION_MULT = 0.1
 FRAMES_PER_SECOND = 40
@@ -22,11 +23,12 @@ GRID_CELL_SIZE = 14
 MAX_LINE_EXTENSION_RATIO = 0.25
 GRAVITY = Vector(0, 1)
 GRAVITY_SCALE = 0.175
+GRAVITY_SCALE_V6_7 = 0.17500000000000002  # Just one bit off :(
 BONE_ENDURANCE = 0.0285
 
 # TODO remove side effects from functions
-# TODO remount physics? + remount versions?
-# TODO scarf physics? + scarf versions?
+# TODO remount physics? + remount versions (lra vs .com)?
+# TODO scarf physics? + scarf versions (lra vs .com)?
 
 
 def make_rider(startState: InitialEntityParams) -> Entity:
@@ -155,17 +157,19 @@ def interact_with_line(point: ContactPoint, line: PhysicsLine):
 
     new_position = point["position"] - dist_from_line_top * line_normal_vector
     previous_position = point["position"] - point["velocity"]
-    friction = line_normal_vector.copy() * point["FRICTION"] * dist_from_line_top
+    friction_vector = line_normal_vector * point["FRICTION"] * dist_from_line_top
 
     if previous_position.x >= new_position.x:
-        friction.x = -friction.x
+        friction_vector.x = -friction_vector.x
     if previous_position.y >= new_position.y:
-        friction.y = -friction.y
+        friction_vector.y = -friction_vector.y
 
     # Side effects
     # TODO this might be wrong (StandardLine.Interact + RedLine.Interact)
     point["position"] = new_position
-    point["velocity"] = point["position"] - (previous_position + friction + accel)
+    point["velocity"] = point["position"] - (
+        previous_position + friction_vector + accel
+    )
 
     return True
 
@@ -204,14 +208,171 @@ def simulate_bone(
             entities[entity_index]["points"][joint2]["position"] += delta * scalar
 
 
-# TODO 6.1 and 6.2 grid cell checks (SimulationGridStatic)
-# TODO class for this?
-def get_grid_cell(hash: int) -> list[PhysicsLine]:
-    return []
+# A container for lines that serves as an ordered list
+class GridCell:
+    def __init__(self, position: CellPosition):
+        self.lines: list[PhysicsLine] = []
+        self.ids = set()
+        self.position = position
+
+    def add_line(self, new_line: PhysicsLine):
+        for i, line in enumerate(self.lines):
+            if line["ID"] < new_line["ID"]:
+                self.lines.insert(i, new_line)
+                self.ids.add(new_line["ID"])
+                return
+
+        self.lines.append(new_line)
+        self.ids.add(new_line["ID"])
+
+    def remove_line(self, line_id: int):
+        for i, line in enumerate(self.lines):
+            if line["ID"] == line_id:
+                del self.lines[i]
+                self.ids.remove(line_id)
+                return
 
 
-def add_line_to_grid():
-    pass
+# TODO 6.1
+# TODO 6.0?
+
+
+# A grid of GridCells that processes all of the lines
+class Grid:
+    def __init__(self, version: GridVersion, cell_size: float):
+        self.version = version
+        self.cells: dict[int, GridCell] = {}
+        self.cell_size = cell_size
+
+    def add_line(self, line: PhysicsLine):
+        for position in self.get_cell_positions_between(
+            line["ENDPOINTS"][0], line["ENDPOINTS"][1]
+        ):
+            self.register(line, position)
+
+    def remove_line(self, line: PhysicsLine):
+        for position in self.get_cell_positions_between(
+            line["ENDPOINTS"][0], line["ENDPOINTS"][1]
+        ):
+            self.unregister(line, position)
+
+    def move_line(self, line: PhysicsLine, old_pos1: Vector, old_pos2: Vector):
+        for position in self.get_cell_positions_between(old_pos1, old_pos2):
+            self.unregister(line, position)
+        for position in self.get_cell_positions_between(
+            line["ENDPOINTS"][0], line["ENDPOINTS"][1]
+        ):
+            self.register(line, position)
+
+    def register(self, line: PhysicsLine, position: CellPosition):
+        cell_key = self.hash_int_pair(position["X"], position["Y"])
+        if cell_key not in self.cells:
+            self.cells[cell_key] = GridCell(position.copy())
+        self.cells[cell_key].add_line(line)
+
+    def unregister(self, line: PhysicsLine, position: CellPosition):
+        cell_key = self.hash_int_pair(position["X"], position["Y"])
+        if cell_key in self.cells:
+            self.cells[cell_key].remove_line(line["ID"])
+
+    # No specific implementation, just needs to be deterministic
+    def hash_int_pair(self, x: int, y: int) -> int:
+        return (x * 73856093) ^ (y * 19349663)
+
+    def get_cell(self, position: Vector):
+        cell_position = self.get_cell_position(position)
+        cell_key = self.hash_int_pair(cell_position["X"], cell_position["Y"])
+        if cell_key in self.cells:
+            return self.cells[cell_key]
+        return None
+
+    def get_cell_position(self, position: Vector) -> CellPosition:
+        x = int(position.x / self.cell_size)
+        y = int(position.y / self.cell_size)
+
+        return {
+            "X": x,
+            "Y": y,
+            "REMAINDER_X": position.x - x * self.cell_size,
+            "REMAINDER_Y": position.y - y * self.cell_size,
+        }
+
+    def get_step(self, forwards: bool, cellpos: float, remainder: float):
+        if forwards:
+            if cellpos < 0:
+                return self.cell_size + remainder
+            else:
+                return self.cell_size - remainder
+        else:
+            if cellpos < 0:
+                return -(self.cell_size + remainder)
+            else:
+                return -(remainder + 1)
+
+    def get_cell_positions_between(
+        self, pos1: Vector, pos2: Vector
+    ) -> list[CellPosition]:
+        delta = pos2 - pos1
+        initial_cell = self.get_cell_position(pos1)
+        final_cell = self.get_cell_position(pos2)
+
+        cells = [initial_cell]
+
+        if (
+            initial_cell["X"] == final_cell["X"]
+            and initial_cell["Y"] == final_cell["Y"]
+        ):
+            return cells
+
+        lower_bound = (
+            min(initial_cell["X"], final_cell["X"]),
+            min(initial_cell["Y"], final_cell["Y"]),
+        )
+
+        upper_bound = (
+            max(initial_cell["X"], final_cell["X"]),
+            max(initial_cell["Y"], final_cell["Y"]),
+        )
+
+        current_position = pos1.copy()
+        current_cell = initial_cell
+        x_forwards = delta.x > 0
+        y_forwards = delta.y > 0
+
+        if self.version == GridVersion.V6_2 or self.version == GridVersion.V6_7:
+            while True:
+                boundary_x = self.get_step(
+                    x_forwards, current_cell["X"], current_cell["REMAINDER_X"]
+                )
+                boundary_y = self.get_step(
+                    y_forwards, current_cell["Y"], current_cell["REMAINDER_Y"]
+                )
+                step = Vector(
+                    boundary_y * delta.x / delta.y, boundary_x * delta.y / delta.x
+                )
+
+                if abs(step.x) > abs(boundary_x):
+                    step.x = boundary_x
+
+                if abs(step.y) > abs(boundary_y):
+                    step.y = boundary_y
+
+                current_position += step
+                current_cell = self.get_cell_position(current_position)
+
+                if not (
+                    lower_bound[0] <= current_cell["X"]
+                    and current_cell["X"] <= upper_bound[0]
+                    and lower_bound[1] <= current_cell["Y"]
+                    and current_cell["Y"] <= upper_bound[1]
+                ):
+                    return cells
+
+                cells.append(current_cell)
+        else:
+            pass
+
+        return cells
 
 
 def get_frame(
@@ -223,7 +384,15 @@ def get_frame(
     if target_frame < 0:
         return None
 
+    gravity_scale = GRAVITY_SCALE
+    if grid_version == GridVersion.V6_7:
+        gravity_scale = GRAVITY_SCALE_V6_7
+
     entities: list[Entity] = []
+    grid = Grid(grid_version, GRID_CELL_SIZE)
+
+    for line in lines:
+        grid.add_line(line)
 
     for initial_rider_state in riders:
         entities.append(make_rider(initial_rider_state))
@@ -233,7 +402,7 @@ def get_frame(
             # gravity
             for point_index in range(len(entity["points"])):
                 entities[entity_index]["points"][point_index]["velocity"] += (
-                    GRAVITY * GRAVITY_SCALE
+                    GRAVITY * gravity_scale
                 )
 
             # momentum
@@ -242,34 +411,30 @@ def get_frame(
                     "velocity"
                 ]
 
-            # bones
             for _ in range(NUM_ITERATIONS):
+                # bones
                 for bone in entity["bones"]:
                     simulate_bone(bone, entity, entities, entity_index)
 
-            # line collisions
-            for point_index, point in enumerate(entity["points"]):
-                position = point["position"]
-                cell_position = (
-                    int(position.x / GRID_CELL_SIZE),
-                    int(position.y / GRID_CELL_SIZE),
-                )
+                # line collisions
+                for point_index, point in enumerate(entity["points"]):
+                    position = point["position"]
+                    involved_cells: list[GridCell] = []
 
-                # get cells in a 3 x 3, but more if line_hitbox_height >= grid_cell_size
-                box_boundary_size = int(1 + LINE_HITBOX_HEIGHT / GRID_CELL_SIZE)
-
-                for x_offset in range(-box_boundary_size, box_boundary_size + 1):
-                    for y_offset in range(-box_boundary_size, box_boundary_size + 1):
-                        cell = get_grid_cell(
-                            hash_pair(
-                                cell_position[0] + x_offset, cell_position[1] + y_offset
+                    # get cells in a 3 x 3, but more if line_hitbox_height >= grid_cell_size
+                    bounds_size = int(1 + LINE_HITBOX_HEIGHT / grid.cell_size)
+                    for x_offset in range(-bounds_size, bounds_size + 1):
+                        for y_offset in range(-bounds_size, bounds_size + 1):
+                            cell = grid.get_cell(
+                                position + grid.cell_size * Vector(x_offset, y_offset)
                             )
-                        )
 
-                        if cell == None:
-                            continue
+                            if cell != None:
+                                involved_cells.append(cell)
 
-                        for line in cell:
+                    # collide with involved cells
+                    for cell in involved_cells:
+                        for line in cell.lines:
                             _collision_occurred = interact_with_line(point, line)
 
     return entities

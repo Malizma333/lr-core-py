@@ -9,7 +9,7 @@ from engine import (
     LINE_HITBOX_HEIGHT,
     FRAMES_PER_SECOND,
 )
-from math_utils import Vector
+from vector import Vector
 from convert import convert_lines, convert_riders, convert_version
 from lrtypes import Entity, PhysicsLine
 import tkinter as tk
