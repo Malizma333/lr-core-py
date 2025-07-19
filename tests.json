@@ -2,7 +2,7 @@
   ["track start with nothing", 0, "", []],
   ["negative frame error", -1, "", null],
   [
-    "single rider track with default initial state",
+    "single rider initial state",
     0,
     "line_flags",
     [

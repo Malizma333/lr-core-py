@@ -11,31 +11,31 @@ fail_count = 0
 loaded: dict[str, Engine] = {}
 
 
-def check_equal(
-    state1: Union[list[Entity], None], state2: Union[list[list[list[float]]], None]
-):
-    if state1 == None and state2 == None:
+def equal(
+    result_state: Union[list[Entity], None],
+    expected_state: Union[list[list[list[float]]], None],
+) -> bool:
+    if result_state == None and expected_state == None:
         return True
 
-    if not (state1 != None and state2 != None):
+    if not (result_state != None and expected_state != None):
         return False
 
-    if len(state1) != len(state2):
+    if len(result_state) != len(expected_state):
         return False
 
-    for i, entity_data in enumerate(state2):
+    for i, entity_data in enumerate(expected_state):
         for j, point in enumerate(entity_data):
             # Scarf points (TODO)
-            if len(state1[i].points) == j:
+            if len(result_state[i].points) == j:
                 break
 
-            if state1[i].points[j].position.x != point[0]:
-                return False
-            if state1[i].points[j].position.y != point[1]:
-                return False
-            if state1[i].points[j].velocity.x != point[2]:
-                return False
-            if state1[i].points[j].velocity.y != point[3]:
+            if (
+                result_state[i].points[j].position.x != point[0]
+                or result_state[i].points[j].position.y != point[1]
+                or result_state[i].points[j].velocity.x != point[2]
+                or result_state[i].points[j].velocity.y != point[3]
+            ):
                 return False
 
     return True
@@ -45,7 +45,7 @@ for [
     test_name,
     frame,
     track_file,
-    rider_data,
+    frame_data,
 ] in tests:
     if track_file not in loaded:
         track_data = json.load(open(f"fixtures/{track_file}.track.json", "r"))
@@ -55,12 +55,13 @@ for [
         loaded[track_file] = Engine(version, riders, lines)
 
     engine = loaded[track_file]
+    format_string = "{:<10} {}"
 
-    if not check_equal(engine.get_frame(frame), rider_data):
-        print("FAIL\t", test_name)
-        fail_count += 1
+    if equal(engine.get_frame(frame), frame_data):
+        print(format_string.format("PASS", test_name))
     else:
-        print("PASS\t", test_name)
+        print(format_string.format("FAIL", test_name))
+        fail_count += 1
 
 print("Passed", len(tests) - fail_count)
 print("Failed", fail_count)
