@@ -1,16 +1,8 @@
-from typing import Union, TypedDict
+from typing import Union
 from engine.vector import Vector
 from engine.entity import Entity, ContactPoint
 from engine.grid import Grid, GridCell, GridVersion
-
-
-class PhysicsLine(TypedDict):
-    ID: int
-    ENDPOINTS: tuple[Vector, Vector]
-    FLIPPED: bool
-    LEFT_EXTENSION: bool
-    RIGHT_EXTENSION: bool
-    MULTIPLIER: float  # zero for blue lines, otherwise red line
+from lrtypes import PhysicsLine
 
 
 ACCELERATION_MULT = 0.1
@@ -50,10 +42,10 @@ def interact_with_line(point: ContactPoint, line: PhysicsLine):
     if line["FLIPPED"]:
         accel = accel.rot_cw()
 
-    if not ((point["velocity"] @ line_normal_vector) > 0):
+    if not ((point.velocity @ line_normal_vector) > 0):
         return False
 
-    line_endpoint_to_contact_point = point["position"] - line["ENDPOINTS"][0]
+    line_endpoint_to_contact_point = point.position - line["ENDPOINTS"][0]
     dist_from_line_top = line_normal_vector @ line_endpoint_to_contact_point
 
     if not (0 < dist_from_line_top and dist_from_line_top < LINE_HITBOX_HEIGHT):
@@ -66,9 +58,9 @@ def interact_with_line(point: ContactPoint, line: PhysicsLine):
     if not (limit_left <= pos_between_ends and pos_between_ends <= limit_right):
         return False
 
-    new_position = point["position"] - dist_from_line_top * line_normal_vector
-    previous_position = point["position"] - point["velocity"]
-    friction_vector = line_normal_vector * point["FRICTION"] * dist_from_line_top
+    new_position = point.position - dist_from_line_top * line_normal_vector
+    previous_position = point.position - point.velocity
+    friction_vector = line_normal_vector * point.friction * dist_from_line_top
 
     if previous_position.x >= new_position.x:
         friction_vector.x = -friction_vector.x
@@ -77,10 +69,8 @@ def interact_with_line(point: ContactPoint, line: PhysicsLine):
 
     # TODO this might be wrong (StandardLine.Interact + RedLine.Interact)
     # Side effects
-    point["position"] = new_position
-    point["velocity"] = point["position"] - (
-        previous_position + friction_vector + accel
-    )
+    point.position = new_position
+    point.velocity = point.position - (previous_position + friction_vector + accel)
 
     return True
 
@@ -90,13 +80,12 @@ class Engine:
     def __init__(
         self,
         grid_version: GridVersion,
-        riders: list[Entity],
+        entities: list[Entity],
         lines: list[PhysicsLine],
     ):
         self.grid = Grid(grid_version, GRID_CELL_SIZE)
         self.gravity_scale = GRAVITY_SCALE
-        self.state_cache: list[list[Entity]] = [[]]
-        self.riders = riders
+        self.state_cache: list[list[Entity]] = [[entity.copy() for entity in entities]]
 
         if grid_version == GridVersion.V6_7:
             self.gravity_scale = GRAVITY_SCALE_V6_7
@@ -122,15 +111,15 @@ class Engine:
             for entity_index, entity in enumerate(new_entities):
                 # gravity
                 for point_index in range(len(entity.points)):
-                    new_entities[entity_index].points[point_index]["velocity"] += (
+                    new_entities[entity_index].points[point_index].velocity += (
                         GRAVITY * self.gravity_scale
                     )
 
                 # momentum
                 for point_index, point in enumerate(entity.points):
-                    new_entities[entity_index].points[point_index]["position"] += point[
-                        "velocity"
-                    ]
+                    new_entities[entity_index].points[
+                        point_index
+                    ].position += point.velocity
 
                 for _ in range(NUM_ITERATIONS):
                     # bones
@@ -138,7 +127,6 @@ class Engine:
 
                     # line collisions
                     for point_index, point in enumerate(entity.points):
-                        position = point["position"]
                         involved_cells: list[GridCell] = []
 
                         # get cells in a 3 x 3, but more if line_hitbox_height >= grid_cell_size
@@ -146,7 +134,7 @@ class Engine:
                         for x_offset in range(-bounds_size, bounds_size + 1):
                             for y_offset in range(-bounds_size, bounds_size + 1):
                                 cell = self.grid.get_cell(
-                                    position
+                                    point.position
                                     + self.grid.cell_size * Vector(x_offset, y_offset)
                                 )
 

@@ -4,7 +4,7 @@ import math
 from engine.vector import Vector
 from engine.entity import create_default_rider, Entity, InitialEntityParams
 from engine.grid import GridVersion
-from engine.engine import PhysicsLine
+from lrtypes import PhysicsLine
 
 
 # TODO add scenery lines to grid as well?

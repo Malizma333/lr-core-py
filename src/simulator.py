@@ -8,10 +8,10 @@ from engine.engine import (
     MAX_LINE_EXTENSION_RATIO,
     LINE_HITBOX_HEIGHT,
     FRAMES_PER_SECOND,
-    PhysicsLine,
 )
 from engine.vector import Vector
 from engine.entity import Entity
+from lrtypes import PhysicsLine
 from convert import convert_lines, convert_riders, convert_version
 import tkinter as tk
 import json
@@ -75,11 +75,9 @@ canvas.bind("<Up>", next_rider)
 
 
 def update():
-    print(frame)
     entities = engine.get_frame(frame)
 
     if entities == None:
-        print("Moment returned none")
         root.quit()
         return
 
@@ -102,7 +100,7 @@ def adjust_camera(entities: list[Entity]):
     global origin
     new_origin = Vector(0, 0)
     for point in entities[focused_rider].points:
-        new_origin += point["position"]
+        new_origin += point.position
     origin = new_origin / len(entities[focused_rider].points)
 
 
@@ -115,8 +113,8 @@ def draw_entity(i: int, entity: Entity):
     MV_SIZE = 3
 
     for index, bone in enumerate(entity.bones):
-        canvas_bone_point1 = physics_to_canvas(bone["BASE"]["POINT1"]["position"])
-        canvas_bone_point2 = physics_to_canvas(bone["BASE"]["POINT2"]["position"])
+        canvas_bone_point1 = physics_to_canvas(bone["BASE"]["POINT1"].position)
+        canvas_bone_point2 = physics_to_canvas(bone["BASE"]["POINT2"].position)
 
         bone_object = canvas_cache.setdefault(
             f"entities_{i}_bones_{index}",
@@ -133,10 +131,10 @@ def draw_entity(i: int, entity: Entity):
         )
 
     for index, point in enumerate(entity.points):
-        point_pos = point["position"]
+        point_pos = point.position
 
         canvas_point_pos = physics_to_canvas(point_pos)
-        canvas_mv_tail = canvas_point_pos + MV_SIZE * ZOOM * point["velocity"].unit()
+        canvas_mv_tail = canvas_point_pos + MV_SIZE * ZOOM * point.velocity.unit()
         cp_bounds_offset = ZOOM * Vector(CP_RADIUS, CP_RADIUS)
         canvas_point_bounds = (
             canvas_point_pos - cp_bounds_offset,

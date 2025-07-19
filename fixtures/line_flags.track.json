@@ -7,7 +7,7 @@
   "audio": null,
   "startPosition": { "x": 0, "y": 0 },
   "riders": [
-    { "startPosition": { "x": 0, "y": 0 }, "startVelocity": { "x": 0.4, "y": 0 }, "remountable": 1, "startAngle": 180 }
+    { "startPosition": { "x": 0, "y": 0 }, "startVelocity": { "x": 0.4, "y": 0 }, "remountable": 1, "startAngle": 0 }
   ],
   "layers": [
     { "id": 0, "type": 0, "name": "#000000Base Layer", "visible": true, "editable": true, "folderId": -1 },

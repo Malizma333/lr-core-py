@@ -7,10 +7,11 @@ from engine.vector import Vector
 import math
 
 
-class ContactPoint(TypedDict):
-    position: Vector
-    velocity: Vector
-    FRICTION: float
+class ContactPoint:
+    def __init__(self, position: Vector, velocity: Vector, friction: float):
+        self.position = position
+        self.velocity = velocity
+        self.friction = friction
 
 
 class BaseBone(TypedDict):
@@ -69,22 +70,18 @@ class Entity:
         sin_theta = math.sin(init_state["ROTATION"])
 
         for i, point in enumerate(self.points):
-            offset = point["position"] - origin
-            self.points[i]["position"] = Vector(
+            offset = point.position - origin
+            self.points[i].position = Vector(
                 origin.x + offset.x * cos_theta - offset.y * sin_theta,
                 origin.y + offset.x * sin_theta + offset.y * cos_theta,
             )
 
         for i in range(len(self.points)):
-            self.points[i]["position"] += init_state["POSITION"]
-            self.points[i]["velocity"] += init_state["VELOCITY"]
+            self.points[i].position += init_state["POSITION"]
+            self.points[i].velocity += init_state["VELOCITY"]
 
     def add_point(self, position: Vector, friction: float) -> ContactPoint:
-        point: ContactPoint = {
-            "FRICTION": friction,
-            "position": position.copy(),
-            "velocity": Vector(0, 0),
-        }
+        point = ContactPoint(position, Vector(0, 0), friction)
         self.points.append(point)
         return point
 
@@ -114,7 +111,7 @@ class Entity:
         base: BaseBone = {
             "POINT1": point1,
             "POINT2": point2,
-            "RESTING_LENGTH": point1["position"].distance_from(point2["position"]),
+            "RESTING_LENGTH": point1.position.distance_from(point2.position),
         }
         return base
 
@@ -124,8 +121,8 @@ class Entity:
         point_map: dict[ContactPoint, ContactPoint] = {}
 
         for point in self.points:
-            new_point = new_entity.add_point(point["position"], point["FRICTION"])
-            new_point["velocity"] = point["velocity"].copy()
+            new_point = new_entity.add_point(point.position, point.friction)
+            new_point.velocity = point.velocity.copy()
             point_map[point] = new_point
 
         for bone in self.bones:
@@ -144,8 +141,8 @@ class Entity:
 
     def process_bones(self):
         for bone in self.bones:
-            position1 = bone["BASE"]["POINT1"]["position"]
-            position2 = bone["BASE"]["POINT2"]["position"]
+            position1 = bone["BASE"]["POINT1"].position
+            position2 = bone["BASE"]["POINT2"].position
             delta = position1 - position2
             magnitude = delta.magnitude()
             rest_length = bone["BASE"]["RESTING_LENGTH"]
@@ -165,8 +162,8 @@ class Entity:
                 ):
                     self.state = EntityState.DISMOUNTED
                 else:
-                    bone["BASE"]["POINT1"]["position"] -= delta * scalar
-                    bone["BASE"]["POINT2"]["position"] += delta * scalar
+                    bone["BASE"]["POINT1"].position -= delta * scalar
+                    bone["BASE"]["POINT2"].position += delta * scalar
 
 
 def create_default_rider(init_state: InitialEntityParams) -> Entity:
@@ -203,6 +200,6 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
     entity.add_repel_bone(SHOULDER, LEFT_FOOT, REPEL_FACTOR)
     entity.add_repel_bone(SHOULDER, RIGHT_FOOT, REPEL_FACTOR)
 
-    entity.apply_initial_state(init_state, TAIL["position"])
+    entity.apply_initial_state(init_state, TAIL.position)
 
     return entity
