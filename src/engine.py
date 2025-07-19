@@ -10,24 +10,26 @@ from lrtypes import (
     NormalBone,
     MountBone,
     RepelBone,
+    ContactPoint,
 )
-from math_utils import Vector
+from math_utils import Vector, hash_pair
 
+ACCELERATION_MULT = 0.1
 FRAMES_PER_SECOND = 40
-
 NUM_ITERATIONS = 6
-
 LINE_HITBOX_HEIGHT = 10
 GRID_CELL_SIZE = 14
 MAX_LINE_EXTENSION_RATIO = 0.25
-
 GRAVITY = Vector(0, 1)
 GRAVITY_SCALE = 0.175
-
 BONE_ENDURANCE = 0.0285
 
+# TODO remove side effects from functions
+# TODO remount physics? + remount versions?
+# TODO scarf physics? + scarf versions?
 
-def make_rider(startState: InitialEntityParams):
+
+def make_rider(startState: InitialEntityParams) -> Entity:
     entity: Entity = {"bones": [], "points": [], "state": EntityState.MOUNTED}
 
     POINT_DATA = [
@@ -109,21 +111,110 @@ def make_rider(startState: InitialEntityParams):
     return entity
 
 
-# Step layout?
-# Iteration 0: Momentum tick
-# - gravity
-# - acceleration
-# - friction
-# - momentum
-# Iteration 1 - 6: Bone ticks
-# - bone interactions
-# - bone breaks
-# Iteration 7: Separation ticks
-# - fakie check
-# - remount constraint checks
+def interact_with_line(point: ContactPoint, line: PhysicsLine):
+    line_vector = line["ENDPOINTS"][1] - line["ENDPOINTS"][0]
+    line_magnitude = line_vector.magnitude()
+    unit_line_vector = line_vector / line_magnitude
+
+    line_normal_vector = unit_line_vector.rot_ccw()
+    if line["FLIPPED"]:
+        line_normal_vector = unit_line_vector.rot_cw()
+
+    ext_ratio = min(MAX_LINE_EXTENSION_RATIO, LINE_HITBOX_HEIGHT / line_magnitude)
+
+    limit_left = 0.0
+    if line["LEFT_EXTENSION"]:
+        limit_left -= ext_ratio
+
+    limit_right = 1.0
+    if line["RIGHT_EXTENSION"]:
+        limit_right += ext_ratio
+
+    accel = line_normal_vector * ACCELERATION_MULT * line["MULTIPLIER"]
+
+    # TODO suspicious of this
+    accel = accel.rot_ccw()
+    if line["FLIPPED"]:
+        accel = accel.rot_cw()
+
+    if not ((point["velocity"] @ line_normal_vector) > 0):
+        return False
+
+    line_endpoint_to_contact_point = point["position"] - line["ENDPOINTS"][0]
+    dist_from_line_top = line_normal_vector @ line_endpoint_to_contact_point
+
+    if not (0 < dist_from_line_top and dist_from_line_top < LINE_HITBOX_HEIGHT):
+        return False
+
+    pos_between_ends = (
+        line_endpoint_to_contact_point @ line_vector
+    ) / line_magnitude**2
+
+    if not (limit_left <= pos_between_ends and pos_between_ends <= limit_right):
+        return False
+
+    new_position = point["position"] - dist_from_line_top * line_normal_vector
+    previous_position = point["position"] - point["velocity"]
+    friction = line_normal_vector.copy() * point["FRICTION"] * dist_from_line_top
+
+    if previous_position.x >= new_position.x:
+        friction.x = -friction.x
+    if previous_position.y >= new_position.y:
+        friction.y = -friction.y
+
+    # Side effects
+    # TODO this might be wrong (StandardLine.Interact + RedLine.Interact)
+    point["position"] = new_position
+    point["velocity"] = point["position"] - (previous_position + friction + accel)
+
+    return True
 
 
-def get_moment(
+def simulate_bone(
+    bone: Union[NormalBone, MountBone, RepelBone],
+    entity: Entity,
+    entities: list[Entity],
+    entity_index: int,
+):
+    joint1 = bone["POINT1"]
+    joint2 = bone["POINT2"]
+    position1 = entity["points"][joint1]["position"]
+    position2 = entity["points"][joint2]["position"]
+    delta = position1 - position2
+    magnitude = delta.magnitude()
+    rest_length = bone["RESTING_LENGTH"]
+
+    if type(bone) == RepelBone:
+        rest_length *= bone["LENGTH_FACTOR"]
+
+    if type(bone) != RepelBone or magnitude < rest_length:
+        if magnitude * 0.5 != 0:
+            scalar = (magnitude - rest_length) / magnitude * 0.5
+        else:
+            scalar = 0
+
+        # Side effects
+        if type(bone) == MountBone and (
+            entity["state"] == EntityState.DISMOUNTED
+            or scalar > rest_length * BONE_ENDURANCE
+        ):
+            entities[entity_index]["state"] = EntityState.DISMOUNTED
+        else:
+            entities[entity_index]["points"][joint1]["position"] -= delta * scalar
+            entities[entity_index]["points"][joint2]["position"] += delta * scalar
+
+
+# TODO 6.1 and 6.2 grid cell checks (SimulationGridStatic)
+# TODO class for this?
+def get_grid_cell(hash: int) -> list[PhysicsLine]:
+    return []
+
+
+def add_line_to_grid():
+    pass
+
+
+def get_frame(
     grid_version: GridVersion,
     target_frame: int,
     riders: list[InitialEntityParams],
@@ -154,66 +245,31 @@ def get_moment(
             # bones
             for _ in range(NUM_ITERATIONS):
                 for bone in entity["bones"]:
-                    joint1 = bone["POINT1"]
-                    joint2 = bone["POINT2"]
-                    position1 = entity["points"][joint1]["position"]
-                    position2 = entity["points"][joint2]["position"]
-                    delta = position1 - position2
-                    magnitude = delta.magnitude()
-                    rest_length = bone["RESTING_LENGTH"]
+                    simulate_bone(bone, entity, entities, entity_index)
 
-                    if type(bone) == RepelBone:
-                        rest_length *= bone["LENGTH_FACTOR"]
-
-                    if type(bone) != RepelBone or magnitude < rest_length:
-                        if magnitude * 0.5 != 0:
-                            scalar = (magnitude - rest_length) / magnitude * 0.5
-                        else:
-                            scalar = 0
-
-                        if type(bone) == MountBone and (
-                            entity["state"] == EntityState.DISMOUNTED
-                            or scalar > rest_length * BONE_ENDURANCE
-                        ):
-                            entities[entity_index]["state"] = EntityState.DISMOUNTED
-                        else:
-                            entities[entity_index]["points"][joint1]["position"] -= (
-                                delta * scalar
-                            )
-                            entities[entity_index]["points"][joint2]["position"] += (
-                                delta * scalar
-                            )
-
-            # lines
+            # line collisions
             for point_index, point in enumerate(entity["points"]):
                 position = point["position"]
-                cell_position = Vector(
-                    int(position.x / GRID_CELL_SIZE), int(position.y / GRID_CELL_SIZE)
+                cell_position = (
+                    int(position.x / GRID_CELL_SIZE),
+                    int(position.y / GRID_CELL_SIZE),
                 )
-                box_boundary = int(1 + LINE_HITBOX_HEIGHT / GRID_CELL_SIZE)
-    #
-    #                 int newbox = (int)Math.Floor(1 + StandardLine.Zone / 14);
-    #
-    #                 physinfo.left = Math.Min(cellx - newbox, physinfo.left);
-    #                 physinfo.top = Math.Min(celly - newbox, physinfo.top);
-    #                 physinfo.right = Math.Max(cellx + newbox, physinfo.right);
-    #                 physinfo.bottom = Math.Max(celly + newbox, physinfo.bottom);
-    #                 for (int x = 0 - newbox; x <= newbox; x++)
-    #                 {
-    #                     for (int y = 0 - newbox; y <= newbox; y++)
-    #                     {
-    #                         SimulationCell cell = grid.GetCell(cellx + x, celly + y);
-    #                         if (cell == null)
-    #                             continue;
-    #                         foreach (StandardLine line in cell)
-    #                         {
-    #                             if (line.Interact(ref body[i], accelless, frictionless))
-    #                             {
-    #                                 _ = (collisions?.AddLast(line.ID));
-    #                             }
-    #                         }
-    #                     }
-    #                 }
-    #             }
+
+                # get cells in a 3 x 3, but more if line_hitbox_height >= grid_cell_size
+                box_boundary_size = int(1 + LINE_HITBOX_HEIGHT / GRID_CELL_SIZE)
+
+                for x_offset in range(-box_boundary_size, box_boundary_size + 1):
+                    for y_offset in range(-box_boundary_size, box_boundary_size + 1):
+                        cell = get_grid_cell(
+                            hash_pair(
+                                cell_position[0] + x_offset, cell_position[1] + y_offset
+                            )
+                        )
+
+                        if cell == None:
+                            continue
+
+                        for line in cell:
+                            _collision_occurred = interact_with_line(point, line)
 
     return entities

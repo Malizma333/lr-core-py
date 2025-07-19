@@ -58,3 +58,7 @@ class Vector:
     def distance_from(self, other: Self):
         delta = self - other
         return delta.magnitude()
+
+
+def hash_pair(x: int, y: int) -> int:
+    return (x * 73856093) ^ (y * 19349663)

@@ -1,6 +1,6 @@
 # Reads test case data from tests.json and run tests
 
-from engine import get_moment
+from engine import get_frame
 from convert import convert_lines, convert_riders, convert_version
 import json
 from typing import Union
@@ -49,7 +49,7 @@ for [
         version = convert_version(track_data["version"])
         loaded[track_file] = {"lines": lines, "riders": riders, "version": version}
 
-    if not check_equal(get_moment(version, frame, riders, lines), result):
+    if not check_equal(get_frame(version, frame, riders, lines), result):
         print(message)
         fail_count += 1
 

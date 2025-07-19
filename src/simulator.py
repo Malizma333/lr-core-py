@@ -4,7 +4,7 @@ TARGET_TRACK = "fixtures/line_flags.track.json"
 ZOOM = 8
 
 from engine import (
-    get_moment,
+    get_frame,
     MAX_LINE_EXTENSION_RATIO,
     LINE_HITBOX_HEIGHT,
     FRAMES_PER_SECOND,
@@ -73,7 +73,7 @@ canvas.bind("<Up>", next_rider)
 
 
 def update():
-    entities = get_moment(version, frame, riders, lines)
+    entities = get_frame(version, frame, riders, lines)
 
     if entities == None:
         print("Moment returned none")
