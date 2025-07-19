@@ -2,7 +2,7 @@
 
 from engine.engine import Engine
 from engine.entity import Entity
-from convert import convert_lines, convert_riders, convert_version
+from utils.convert import convert_lines, convert_riders, convert_version
 import json
 from typing import Union
 
@@ -23,8 +23,20 @@ def check_equal(
     if len(state1) != len(state2):
         return False
 
-    for entity_data in state2:
-        return False
+    for i, entity_data in enumerate(state2):
+        for j, point in enumerate(entity_data):
+            # Scarf points (TODO)
+            if len(state1[i].points) == j:
+                break
+
+            if state1[i].points[j].position.x != point[0]:
+                return False
+            if state1[i].points[j].position.y != point[1]:
+                return False
+            if state1[i].points[j].velocity.x != point[2]:
+                return False
+            if state1[i].points[j].velocity.y != point[3]:
+                return False
 
     return True
 

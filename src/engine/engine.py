@@ -2,7 +2,7 @@ from typing import Union
 from engine.vector import Vector
 from engine.entity import Entity, ContactPoint
 from engine.grid import Grid, GridCell, GridVersion
-from lrtypes import PhysicsLine
+from utils.lrtypes import PhysicsLine
 
 
 ACCELERATION_MULT = 0.1

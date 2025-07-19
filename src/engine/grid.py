@@ -1,5 +1,5 @@
 from engine.vector import Vector
-from lrtypes import PhysicsLine
+from utils.lrtypes import PhysicsLine
 from enum import Enum
 from typing import TypedDict
 

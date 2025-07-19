@@ -11,8 +11,8 @@ from engine.engine import (
 )
 from engine.vector import Vector
 from engine.entity import Entity
-from lrtypes import PhysicsLine
-from convert import convert_lines, convert_riders, convert_version
+from utils.lrtypes import PhysicsLine
+from utils.convert import convert_lines, convert_riders, convert_version
 import tkinter as tk
 import json
 
