@@ -23,6 +23,7 @@ def check_equal(state1: Union[list[Entity], None], state2: Union[list[Entity], N
 
     for i in range(len(state1)):
         for index in state1[i]["points"]:
+            return False
             pass
             # if state1[i]["points"][index]["x"] != state2[i]["points"][index]["x"]:
             #     return False
@@ -33,10 +34,10 @@ def check_equal(state1: Union[list[Entity], None], state2: Union[list[Entity], N
 
 
 for [
+    test_name,
     frame,
     track_file,
-    result,
-    message,
+    rider_data,
 ] in tests:
     if track_file in loaded:
         lines = loaded[track_file]["lines"]
@@ -49,9 +50,11 @@ for [
         version = convert_version(track_data["version"])
         loaded[track_file] = {"lines": lines, "riders": riders, "version": version}
 
-    if not check_equal(get_frame(version, frame, riders, lines), result):
-        print(message)
+    if not check_equal(get_frame(version, frame, riders, lines), rider_data):
+        print("FAIL\t", test_name)
         fail_count += 1
+    else:
+        print("PASS\t", test_name)
 
 print("Passed", len(tests) - fail_count)
 print("Failed", fail_count)
