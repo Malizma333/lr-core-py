@@ -14,16 +14,6 @@ loaded: dict[str, Engine] = {}
 # Compare 17 point precision float strings from test cases to python formatting
 def compare(f: float, s: str):
     x = format(f, ".17g")
-    size = len(s)
-    for i in range(len(s) - 1, -1, -1):
-        if s[i] == "0":
-            size -= 1
-        elif s[i] == ".":
-            size -= 1
-            break
-        else:
-            break
-    s = s[:size]
     if x != s:
         print("Fail:", x, s)
     return x == s
