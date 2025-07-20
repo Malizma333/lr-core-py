@@ -168,7 +168,7 @@ class Entity:
             )
 
     def add_point(self, position: Vector, friction: float) -> ContactPoint:
-        point = ContactPoint(position, Vector(0, 0), friction)
+        point = ContactPoint(position, Vector(0, 0), position, friction)
         self.points.append(point)
         return point
 
