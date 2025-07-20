@@ -69,10 +69,10 @@ def equal(
                 to_precision_padded(result_state[i].points[j].velocity.y, 21),
             )
 
-            for k in range(4):
-                print(result_data[k], point[k], len(result_data[k]), len(point[k]))
-
             if not all(result_data[k] == point[k] for k in range(4)):
+                print("Failed on:")
+                for k in range(4):
+                    print(result_data[k], point[k], len(result_data[k]), len(point[k]))
                 return False
 
     return True
