@@ -154,7 +154,11 @@ class TrackSimulator:
             self._generate_line(self.EXTENSION_DRAW_WIDTH, c_p2, right_ext, color="red")
 
         self._generate_line(LINE_HITBOX_HEIGHT, gwell_p1, gwell_p2, color="gray")
-        self._generate_line(self.LINE_DRAW_WIDTH, c_p1, c_p2, round_cap=True)
+
+        line_color = "red" if line.acceleration != 0 else "blue"
+        self._generate_line(
+            self.LINE_DRAW_WIDTH, c_p1, c_p2, round_cap=True, color=line_color
+        )
 
     def _draw_text(self, entities):
         minutes = int(self.frame / (60 * FRAMES_PER_SECOND))
@@ -216,4 +220,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/accel_flags.track.json")
+    TrackSimulator("fixtures/line_flags.track.json")
