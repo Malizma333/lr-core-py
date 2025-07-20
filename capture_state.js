@@ -9,7 +9,14 @@ function captureState(testName) {
   // peg, tail, nose, string, butt, shoulder, rhand, lhand, lfoot, rfoot, scarf0...6
   state.push(
     store.getState().simulator.engine.getFrame(index).snapshot.entities[0].entities.map(entity =>
-      entity.points.map(point => [point.pos.x, point.pos.y, point.vel.x, point.vel.y])
+      entity.points.map(
+        point => [
+          point.pos.x.toPrecision(21),
+          point.pos.y.toPrecision(21),
+          point.vel.x.toPrecision(21),
+          point.vel.y.toPrecision(21),
+        ]
+      )
     ),
   );
 

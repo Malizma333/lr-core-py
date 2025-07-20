@@ -164,8 +164,9 @@ class Entity:
                 self.state = EntityState.DISMOUNTED
                 continue
 
-            bone.base.point1.set_position(position1 - (bone_vector * adjustment))
-            bone.base.point2.set_position(position2 + (bone_vector * adjustment))
+            bone_vector = bone_vector * adjustment
+            bone.base.point1.set_position(position1 - bone_vector)
+            bone.base.point2.set_position(position2 + bone_vector)
 
 
 def create_default_rider(init_state: InitialEntityParams) -> Entity:
@@ -198,6 +199,7 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
     entity.add_normal_bone(SHOULDER, RIGHT_HAND)
     entity.add_normal_bone(BUTT, LEFT_FOOT)
     entity.add_normal_bone(BUTT, RIGHT_FOOT)
+    entity.add_normal_bone(SHOULDER, RIGHT_HAND)
     entity.add_mount_bone(SHOULDER, PEG, MOUNT_BONE_ENDURANCE)
     entity.add_mount_bone(STRING, LEFT_HAND, MOUNT_BONE_ENDURANCE)
     entity.add_mount_bone(STRING, RIGHT_HAND, MOUNT_BONE_ENDURANCE)

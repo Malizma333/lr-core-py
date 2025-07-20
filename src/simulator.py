@@ -14,6 +14,9 @@ from engine.line import PhysicsLine, MAX_LINE_EXTENSION_RATIO
 from utils.convert import convert_lines, convert_entities, convert_version
 import tkinter as tk
 import json
+import decimal
+
+__builtins__.float = lambda x: decimal.Decimal(str(x))
 
 track = json.load(open(TARGET_TRACK, "r"))
 version = convert_version(track["version"])
