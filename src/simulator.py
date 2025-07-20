@@ -3,7 +3,7 @@ import json
 
 from engine.engine import Engine, FRAMES_PER_SECOND
 from engine.vector import Vector
-from engine.entity import Entity, EntityState, NormalBone, MountBone, RepelBone
+from engine.entity import Entity, EntityState, NormalBone, FragileBone, RepelBone
 from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
 from utils.convert import convert_lines, convert_entities, convert_version
 
@@ -115,7 +115,7 @@ class TrackSimulator:
         for bone in entity.bones:
             if isinstance(bone, NormalBone):
                 color = "blue"
-            elif isinstance(bone, MountBone) and entity.state == EntityState.MOUNTED:
+            elif isinstance(bone, FragileBone) and entity.state == EntityState.MOUNTED:
                 color = "red"
             elif isinstance(bone, RepelBone):
                 color = "pink"

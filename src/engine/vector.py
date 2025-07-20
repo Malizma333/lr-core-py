@@ -62,3 +62,6 @@ class Vector:
     def distance_from(self, other: Self):
         delta = self - other
         return delta.length()
+
+    def cross(self, other: Self):
+        return self.x * other.y - self.y * other.x

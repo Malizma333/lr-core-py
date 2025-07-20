@@ -25,7 +25,9 @@ class Engine:
         self.grid = Grid(grid_version, GRID_CELL_SIZE)
         self.gravity_scale = GRAVITY_SCALE
         self.gravity_vector = GRAVITY
-        self.state_cache: list[list[Entity]] = [[entity.copy() for entity in entities]]
+        self.state_cache: list[list[Entity]] = [
+            [entity.deep_copy() for entity in entities]
+        ]
 
         if grid_version == GridVersion.V6_7:
             self.gravity_scale = GRAVITY_SCALE_V6_7
@@ -46,7 +48,7 @@ class Engine:
             new_entities: list[Entity] = []
 
             for entity in self.state_cache[frame]:
-                new_entities.append(entity.copy())
+                new_entities.append(entity.deep_copy())
 
             # track gravity + entity momentum
             for entity in new_entities:
