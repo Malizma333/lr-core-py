@@ -63,7 +63,8 @@ class Engine:
                     # entity-line collisions
                     entity.process_collisions(self.grid)
 
-            # TODO death check
+            for entity in new_entities:
+                entity.process_bind_triggers()
 
             self.state_cache.append(new_entities)
 

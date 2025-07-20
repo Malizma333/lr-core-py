@@ -156,17 +156,17 @@ class Entity:
             point_map[point] = new_point
 
         # Copy each bind trigger structure and add bindings to map
-        for bind in self.bind_triggers:
-            point1 = point_map[bind.bind_joints[0].point1]
-            point2 = point_map[bind.bind_joints[0].point2]
-            point3 = point_map[bind.bind_joints[1].point1]
-            point4 = point_map[bind.bind_joints[1].point2]
+        for bind_trigger in self.bind_triggers:
+            point1 = point_map[bind_trigger.bind_joints[0].point1]
+            point2 = point_map[bind_trigger.bind_joints[0].point2]
+            point3 = point_map[bind_trigger.bind_joints[1].point1]
+            point4 = point_map[bind_trigger.bind_joints[1].point2]
             bind_joint1 = BindJoint(point1, point2)
             bind_joint2 = BindJoint(point3, point4)
             new_binding = Binding()
-            new_binding.broken = bind.binding.broken
-            bind_map[bind.binding] = new_binding
-            BindTrigger(new_binding, (bind_joint1, bind_joint2))
+            new_binding.broken = bind_trigger.binding.broken
+            bind_map[bind_trigger.binding] = new_binding
+            new_entity.add_bind_trigger(new_binding, bind_joint1, bind_joint2)
 
         # Copy each bone and use point map to reconstruct bone endpoints
         for bone in self.bones:
