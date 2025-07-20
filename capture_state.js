@@ -11,11 +11,11 @@ function captureState(testName) {
     store.getState().simulator.engine.getFrame(index).snapshot.entities[0].entities.map(entity =>
       entity.points.map(
         point => [
-          point.pos.x.toPrecision(21),
-          point.pos.y.toPrecision(21),
-          point.vel.x.toPrecision(21),
-          point.vel.y.toPrecision(21),
-        ]
+          point.pos.x.toPrecision(17),
+          point.pos.y.toPrecision(17),
+          point.vel.x.toPrecision(17),
+          point.vel.y.toPrecision(17),
+        ],
       )
     ),
   );
