@@ -48,11 +48,12 @@ class Engine:
 
             for entity_index, entity in enumerate(new_entities):
                 # gravity + momentum
+
                 for point_index, point in enumerate(entity.points):
                     new_velocity = (
                         point.position
                         - point.previous_position
-                        + GRAVITY * self.gravity_scale
+                        + (self.gravity_scale * GRAVITY)
                     )
                     current_position = point.position.copy()
                     new_entities[entity_index].points[point_index].set_velocity(
@@ -65,7 +66,7 @@ class Engine:
                         current_position + new_velocity
                     )
 
-                for _ in range(NUM_ITERATIONS):
+                for i in range(NUM_ITERATIONS):
                     # bones
                     entity.process_bones()
 

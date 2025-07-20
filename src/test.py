@@ -2,7 +2,7 @@
 
 from engine.engine import Engine
 from engine.entity import Entity
-from utils.convert import convert_lines, convert_riders, convert_version
+from utils.convert import convert_lines, convert_entities, convert_version
 import json
 from typing import Union
 
@@ -25,6 +25,11 @@ def equal(
         return False
 
     for i, entity_data in enumerate(expected_state):
+        # Switch hands for .com order
+        entity_data[6], entity_data[7] = (
+            entity_data[7],
+            entity_data[6],
+        )
         for j, point in enumerate(entity_data):
             # Scarf points (TODO)
             if len(result_state[i].points) == j:
@@ -50,9 +55,9 @@ for [
     if track_file not in loaded:
         track_data = json.load(open(f"fixtures/{track_file}.track.json", "r"))
         version = convert_version(track_data["version"])
-        riders = convert_riders(track_data["riders"])
+        entities = convert_entities(track_data["riders"])
         lines = convert_lines(track_data["lines"])
-        loaded[track_file] = Engine(version, riders, lines)
+        loaded[track_file] = Engine(version, entities, lines)
 
     engine = loaded[track_file]
     format_string = "{:<10} {}"

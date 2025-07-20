@@ -11,17 +11,17 @@ from engine.engine import (
 from engine.vector import Vector
 from engine.entity import Entity, EntityState, NormalBone, MountBone, RepelBone
 from engine.line import PhysicsLine, MAX_LINE_EXTENSION_RATIO
-from utils.convert import convert_lines, convert_riders, convert_version
+from utils.convert import convert_lines, convert_entities, convert_version
 import tkinter as tk
 import json
 
 track = json.load(open(TARGET_TRACK, "r"))
 version = convert_version(track["version"])
-riders = convert_riders(track["riders"])
+entities = convert_entities(track["riders"])
 lines = convert_lines(track["lines"])
-engine = Engine(version, riders, lines)
+engine = Engine(version, entities, lines)
 
-focused_rider = 0
+focused_entity = 0
 frame = 0
 
 root = tk.Tk()
@@ -54,23 +54,23 @@ def next_frame(event):
     update()
 
 
-def prev_rider(event):
-    global focused_rider
-    focused_rider = (focused_rider - 1) % len(riders)
+def prev_entity(event):
+    global focused_entity
+    focused_entity = (focused_entity - 1) % len(entities)
     update()
 
 
-def next_rider(event):
-    global focused_rider
-    focused_rider = (focused_rider + 1) % len(riders)
+def next_entity(event):
+    global focused_entity
+    focused_entity = (focused_entity + 1) % len(entities)
     update()
 
 
 # Keybinds
 canvas.bind("<Left>", prev_frame)
 canvas.bind("<Right>", next_frame)
-canvas.bind("<Down>", prev_rider)
-canvas.bind("<Up>", next_rider)
+canvas.bind("<Down>", prev_entity)
+canvas.bind("<Up>", next_entity)
 
 
 def update():
@@ -92,15 +92,15 @@ def redraw(entities: list[Entity]):
     for i, entity in enumerate(entities):
         draw_entity(i, entity)
 
-    draw_text()
+    draw_text(entities)
 
 
 def adjust_camera(entities: list[Entity]):
     global origin
     new_origin = Vector(0, 0)
-    for point in entities[focused_rider].points:
+    for point in entities[focused_entity].points:
         new_origin += point.position
-    origin = new_origin / len(entities[focused_rider].points)
+    origin = new_origin / len(entities[focused_entity].points)
 
 
 def physics_to_canvas(v: Vector) -> Vector:
@@ -248,7 +248,7 @@ def draw_line(i: int, line: PhysicsLine):
     )
 
 
-def draw_text():
+def draw_text(entities: list[Entity]):
     minutes = int(frame / (60 * FRAMES_PER_SECOND))
     seconds = str(100 + int((frame / FRAMES_PER_SECOND) % 60))[1:]
     frames = str(100 + frame % FRAMES_PER_SECOND)[1:]
@@ -256,17 +256,34 @@ def draw_text():
 
     text_object = canvas_cache.setdefault(
         "current_moment_text",
-        canvas.create_text(0, 0, font=("Helvetica", 12), fill="black"),
+        canvas.create_text(
+            canvas_center.x,
+            canvas_center.y * 2 - 50,
+            font=("Helvetica", 12),
+            fill="black",
+        ),
     )
     canvas.itemconfig(text_object, text=timestamp)
-    canvas.coords(text_object, canvas_center.x, canvas_center.y * 2 - 50)
 
     text_object = canvas_cache.setdefault(
         "current_rider_text",
-        canvas.create_text(0, 0, font=("Helvetica", 12), fill="black"),
+        canvas.create_text(
+            canvas_center.x,
+            canvas_center.y * 2 - 25,
+            font=("Helvetica", 12),
+            fill="black",
+        ),
     )
-    canvas.itemconfig(text_object, text=f"Rider {focused_rider}")
-    canvas.coords(text_object, canvas_center.x, canvas_center.y * 2 - 25)
+    canvas.itemconfig(text_object, text=f"Entity {focused_entity}")
+
+    for i, point in enumerate(entities[focused_entity].points):
+        text_object = canvas_cache.setdefault(
+            f"current_entity_coord_{i}",
+            canvas.create_text(
+                10, i * 25 + 25, font=("Helvetica", 12), fill="black", anchor="w"
+            ),
+        )
+        canvas.itemconfig(text_object, text=f"{point.position}")
 
 
 update()

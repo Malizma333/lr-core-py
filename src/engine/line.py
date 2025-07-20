@@ -56,7 +56,7 @@ class PhysicsLine:
             self.limit_right += self.ext_ratio
 
     def set_endpoints(self, p1: Vector, p2: Vector):
-        self.endpoints = (p1.copy(), p2.copy())
+        self.endpoints: tuple[Vector, Vector] = (p1.copy(), p2.copy())
         self.update_computed()
 
     def set_flipped(self, flipped: bool):

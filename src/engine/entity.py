@@ -52,6 +52,7 @@ class RepelBone:
     def __init__(self, base: BaseBone, length_factor: float):
         self.base = base
         self.length_factor = length_factor
+        self.base.rest_length *= length_factor
 
 
 class EntityState(Enum):
@@ -135,6 +136,8 @@ class Entity:
                 new_entity.add_mount_bone(new_bone_p1, new_bone_p2, bone.endurance)
             elif type(bone) == RepelBone:
                 new_entity.add_repel_bone(new_bone_p1, new_bone_p2, bone.length_factor)
+            # Copy original rest length
+            new_entity.bones[-1].base.rest_length = bone.base.rest_length
 
         return new_entity
 
@@ -146,25 +149,23 @@ class Entity:
             current_length = bone_vector.magnitude()
             rest_length = bone.base.rest_length
 
-            if type(bone) == RepelBone:
-                rest_length *= bone.length_factor
-                if current_length >= rest_length:
-                    return
+            if type(bone) == RepelBone and current_length >= rest_length:
+                continue
 
             if current_length == 0:
                 adjustment = 0
             else:
-                adjustment = 0.5 * (current_length - rest_length) / current_length
+                adjustment = (current_length - rest_length) / current_length * 0.5
 
             if type(bone) == MountBone and (
                 self.state == EntityState.DISMOUNTED
                 or adjustment > bone.endurance * rest_length * 0.5
             ):
                 self.state = EntityState.DISMOUNTED
-                return
+                continue
 
-            bone.base.point1.set_position(position1 - bone_vector * adjustment)
-            bone.base.point2.set_position(position2 + bone_vector * adjustment)
+            bone.base.point1.set_position(position1 - (bone_vector * adjustment))
+            bone.base.point2.set_position(position2 + (bone_vector * adjustment))
 
 
 def create_default_rider(init_state: InitialEntityParams) -> Entity:
@@ -178,8 +179,8 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
     STRING = entity.add_point(Vector(17.5, 0.0), 0.0)
     BUTT = entity.add_point(Vector(5.0, 0.0), 0.8)
     SHOULDER = entity.add_point(Vector(5.0, -5.5), 0.8)
-    RIGHT_HAND = entity.add_point(Vector(11.5, -5.0), 0.1)
     LEFT_HAND = entity.add_point(Vector(11.5, -5.0), 0.1)
+    RIGHT_HAND = entity.add_point(Vector(11.5, -5.0), 0.1)
     LEFT_FOOT = entity.add_point(Vector(10.0, 5.0), 0.0)
     RIGHT_FOOT = entity.add_point(Vector(10.0, 5.0), 0.0)
 
@@ -187,6 +188,8 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
     entity.add_normal_bone(TAIL, NOSE)
     entity.add_normal_bone(NOSE, STRING)
     entity.add_normal_bone(STRING, PEG)
+    entity.add_normal_bone(PEG, NOSE)
+    entity.add_normal_bone(STRING, TAIL)
     entity.add_mount_bone(PEG, BUTT, MOUNT_BONE_ENDURANCE)
     entity.add_mount_bone(TAIL, BUTT, MOUNT_BONE_ENDURANCE)
     entity.add_mount_bone(NOSE, BUTT, MOUNT_BONE_ENDURANCE)

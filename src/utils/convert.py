@@ -26,8 +26,8 @@ def convert_lines(lines: list) -> list[PhysicsLine]:
     return converted_lines
 
 
-def convert_riders(riders: list) -> list[Entity]:
-    converted_riders: list[Entity] = []
+def convert_entities(riders: list) -> list[Entity]:
+    converted_entities: list[Entity] = []
     for rider in riders:
         initial_state: InitialEntityParams = {
             "POSITION": Vector(
@@ -40,9 +40,9 @@ def convert_riders(riders: list) -> list[Entity]:
             "ROTATION": rider.get("startAngle", 0) * math.pi / 180,
             "REMOUNT": bool(rider.get("remountable", False)),
         }
-        converted_riders.append(create_default_rider(initial_state))
+        converted_entities.append(create_default_rider(initial_state))
 
-    return converted_riders
+    return converted_entities
 
 
 def convert_version(grid_version_string: str) -> GridVersion:

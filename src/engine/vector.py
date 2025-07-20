@@ -1,6 +1,7 @@
 # Vector class
 
 from typing import Union, Self
+import math
 
 
 class Vector:
@@ -38,10 +39,10 @@ class Vector:
 
     # str(v1), etc
     def __repr__(self):
-        return f"Vector({self.x}, {self.y})"
+        return f"Vector({self.x:.17g}, {self.y:.17g})"
 
     def magnitude(self) -> float:
-        return (self.x * self.x + self.y * self.y) ** 0.5
+        return math.sqrt(self.x * self.x + self.y * self.y)
 
     def unit(self):
         return Vector(self.x / self.magnitude(), self.y / self.magnitude())
