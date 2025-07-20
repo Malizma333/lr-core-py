@@ -48,6 +48,23 @@ class BaseBone:
         self.point2 = point2
         self.rest_length = point1.position.distance_from(point2.position)
 
+    def get_vector(self):
+        return self.point1.position - self.point2.position
+
+    def get_adjustment(self):
+        current_length = self.get_vector().length()
+
+        if current_length == 0:
+            return 0
+
+        adjustment = (current_length - self.rest_length) / current_length * 0.5
+        return adjustment
+
+    def update_points(self, adjustment):
+        bone_vector = self.get_vector()
+        self.point1.set_position(self.point1.position - bone_vector * adjustment)
+        self.point2.set_position(self.point2.position + bone_vector * adjustment)
+
 
 # Bones connecting points to keep them as the same structure
 class NormalBone:
@@ -55,21 +72,8 @@ class NormalBone:
         self.base = base
 
     def process(self):
-        position1 = self.base.point1.position
-        position2 = self.base.point2.position
-        bone_vector = position1 - position2
-        current_length = bone_vector.length()
-        rest_length = self.base.rest_length
-
-        if current_length == 0:
-            adjustment = 0
-        else:
-            adjustment = (current_length - rest_length) / current_length * 0.5
-
-        bone_vector *= adjustment
-
-        self.base.point1.set_position(position1 - bone_vector)
-        self.base.point2.set_position(position2 + bone_vector)
+        adjustment = self.base.get_adjustment()
+        self.base.update_points(adjustment)
 
 
 # Bones that can also break after a certain threshold
@@ -80,52 +84,31 @@ class FragileBone:
         self.binding = binding
 
     def process(self):
-        position1 = self.base.point1.position
-        position2 = self.base.point2.position
-        bone_vector = position1 - position2
-        current_length = bone_vector.length()
-        rest_length = self.base.rest_length
+        adjustment = self.base.get_adjustment()
 
-        if current_length == 0:
-            adjustment = 0
-        else:
-            adjustment = (current_length - rest_length) / current_length * 0.5
-
-        if self.binding.broken or adjustment > self.endurance * rest_length * 0.5:
+        if (
+            self.binding.broken
+            or adjustment > self.endurance * self.base.rest_length * 0.5
+        ):
             self.binding.broken = True
             return
 
-        bone_vector *= adjustment
-
-        self.base.point1.set_position(position1 - bone_vector)
-        self.base.point2.set_position(position2 + bone_vector)
+        self.base.update_points(adjustment)
 
 
-# Bones designed to "repel" points without connecting them with a traditional bone
+# Bones designed to only repel points after a certain fraction of their rest length is reached
 class RepelBone:
     def __init__(self, base: BaseBone, length_factor: float):
         self.base = base
-        self.length_factor = length_factor
+        self.base.rest_length *= length_factor
 
     def process(self):
-        position1 = self.base.point1.position
-        position2 = self.base.point2.position
-        bone_vector = position1 - position2
-        current_length = bone_vector.length()
-        rest_length = self.base.rest_length * self.length_factor
+        adjustment = self.base.get_adjustment()
 
-        if current_length >= rest_length:
+        if self.base.get_vector().length() >= self.base.rest_length:
             return
 
-        if current_length == 0:
-            adjustment = 0
-        else:
-            adjustment = (current_length - rest_length) / current_length * 0.5
-
-        bone_vector *= adjustment
-
-        self.base.point1.set_position(position1 - bone_vector)
-        self.base.point2.set_position(position2 + bone_vector)
+        self.base.update_points(adjustment)
 
 
 class EntityState(Enum):
@@ -238,7 +221,7 @@ class Entity:
                     new_bone_p1, new_bone_p2, bone.endurance, binding
                 )
             elif type(bone) == RepelBone:
-                new_entity.add_repel_bone(new_bone_p1, new_bone_p2, bone.length_factor)
+                new_entity.add_repel_bone(new_bone_p1, new_bone_p2, 1)
             # Copy original rest length
             new_entity.bones[-1].base.rest_length = bone.base.rest_length
 
