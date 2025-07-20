@@ -1,33 +1,16 @@
 # TODO remount physics? + remount versions (lra vs .com)?
 # TODO scarf physics? + scarf versions (lra vs .com)?
 
+from engine.grid import Grid
+from engine.vector import Vector
+from engine.contact_point import ContactPoint
+
 from enum import Enum
 from typing import TypedDict, Union
-from engine.vector import Vector
 import math
 
 MOUNT_BONE_ENDURANCE = 0.057
 REPEL_BONE_LENGTH_FACTOR = 0.5
-
-
-class ContactPoint:
-    def __init__(self, position: Vector, velocity: Vector, friction: float):
-        self.friction = friction
-        self.position = position.copy()
-        self.velocity = velocity.copy()
-        self.previous_position = position - velocity
-
-    def set_position(self, new_position: Vector):
-        self.position = new_position.copy()
-
-    def set_velocity(self, new_velocity: Vector):
-        self.velocity = new_velocity.copy()
-
-    def set_prev_position(self, new_prev_position: Vector):
-        self.previous_position = new_prev_position.copy()
-
-    def __repr__(self):
-        return f"ContactPoint(position: {self.position}, velocity: {self.velocity}, prev_position: {self.previous_position})"
 
 
 class BaseBone:
@@ -141,32 +124,48 @@ class Entity:
 
         return new_entity
 
-    def process_bone(self, bone):
-        position1 = bone.base.point1.position
-        position2 = bone.base.point2.position
-        bone_vector = position1 - position2
-        current_length = bone_vector.length()
-        rest_length = bone.base.rest_length
+    def initial_step(self, gravity: Vector):
+        for point_index, point in enumerate(self.points):
+            new_velocity = point.position - point.previous_position + gravity
+            current_position = point.position.copy()
+            self.points[point_index].set_velocity(new_velocity)
+            self.points[point_index].set_prev_position(current_position)
+            self.points[point_index].set_position(current_position + new_velocity)
 
-        if type(bone) == RepelBone and current_length >= rest_length:
-            return
+    def process_bones(self):
+        for bone in self.bones:
+            position1 = bone.base.point1.position
+            position2 = bone.base.point2.position
+            bone_vector = position1 - position2
+            current_length = bone_vector.length()
+            rest_length = bone.base.rest_length
 
-        if current_length == 0:
-            adjustment = 0
-        else:
-            adjustment = (current_length - rest_length) / current_length * 0.5
+            if type(bone) == RepelBone and current_length >= rest_length:
+                return
 
-        if type(bone) == MountBone and (
-            self.state == EntityState.DISMOUNTED
-            or adjustment > bone.endurance * rest_length * 0.5
-        ):
-            self.state = EntityState.DISMOUNTED
-            return
+            if current_length == 0:
+                adjustment = 0
+            else:
+                adjustment = (current_length - rest_length) / current_length * 0.5
 
-        bone_vector = bone_vector * adjustment
-        # TODO side effects
-        bone.base.point1.set_position(position1 - bone_vector)
-        bone.base.point2.set_position(position2 + bone_vector)
+            if type(bone) == MountBone and (
+                self.state == EntityState.DISMOUNTED
+                or adjustment > bone.endurance * rest_length * 0.5
+            ):
+                self.state = EntityState.DISMOUNTED
+                return
+
+            bone_vector = bone_vector * adjustment
+
+            bone.base.point1.set_position(position1 - bone_vector)
+            bone.base.point2.set_position(position2 + bone_vector)
+
+    def process_collisions(self, grid: Grid):
+        for point_index, point in enumerate(self.points):
+            for line in grid.get_interacting_lines(point):
+                new_pos, new_prev_pos = line.interact(point)
+                point.set_position(new_pos)
+                point.set_prev_position(new_prev_pos)
 
 
 def create_default_rider(init_state: InitialEntityParams) -> Entity:

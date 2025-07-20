@@ -58,7 +58,7 @@ def equal(
             entity_data[6],
         )
         for j, point in enumerate(entity_data):
-            # Scarf points (TODO)
+            # TODO scarf points
             if len(result_state[i].points) == j:
                 break
 

@@ -1,6 +1,6 @@
 from engine.vector import Vector
 from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
-from engine.entity import ContactPoint
+from engine.contact_point import ContactPoint
 from enum import Enum
 from typing import TypedDict
 import math
@@ -196,7 +196,6 @@ class Grid:
                 curr_cell_pos = next_cell_pos
         else:
             pass
-        print(len(cells))
         return cells
 
     def get_interacting_lines(self, point: ContactPoint):
@@ -211,5 +210,7 @@ class Grid:
 
                 if cell != None:
                     for line in cell.lines:
+                        # Intentionally contains duplicates, ordered by id
                         involved_lines.append(line)
+        print(len(involved_lines))
         return involved_lines

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Union
 from engine.vector import Vector
 from engine.entity import Entity
@@ -23,6 +24,7 @@ class Engine:
     ):
         self.grid = Grid(grid_version, GRID_CELL_SIZE)
         self.gravity_scale = GRAVITY_SCALE
+        self.gravity_vector = GRAVITY
         self.state_cache: list[list[Entity]] = [[entity.copy() for entity in entities]]
 
         if grid_version == GridVersion.V6_7:
@@ -46,35 +48,18 @@ class Engine:
             for entity in self.state_cache[frame]:
                 new_entities.append(entity.copy())
 
-            for entity_index, entity in enumerate(new_entities):
-                # gravity + momentum
+            # track gravity + entity momentum
+            for entity in new_entities:
+                entity.initial_step(self.gravity_scale * self.gravity_vector)
 
-                for point_index, point in enumerate(entity.points):
-                    new_velocity = (
-                        point.position
-                        - point.previous_position
-                        + (self.gravity_scale * GRAVITY)
-                    )
-                    current_position = point.position.copy()
-                    new_entities[entity_index].points[point_index].set_velocity(
-                        new_velocity
-                    )
-                    new_entities[entity_index].points[point_index].set_prev_position(
-                        current_position
-                    )
-                    new_entities[entity_index].points[point_index].set_position(
-                        current_position + new_velocity
-                    )
+            for _ in range(NUM_ITERATIONS):
+                for entity in new_entities:
+                    # entity bones
+                    entity.process_bones()
 
-                for _ in range(NUM_ITERATIONS):
-                    # bones
-                    for _bone_index, bone in enumerate(entity.bones):
-                        entity.process_bone(bone)
-
-                    # point-line collisions
-                    for point_index, point in enumerate(entity.points):
-                        for line in self.grid.get_interacting_lines(point):
-                            line.interact(point)
+                for entity in new_entities:
+                    # entity-line collisions
+                    entity.process_collisions(self.grid)
 
             # TODO death check
 

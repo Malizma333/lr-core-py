@@ -1,5 +1,5 @@
 from engine.vector import Vector
-from engine.entity import ContactPoint
+from engine.contact_point import ContactPoint
 
 ACCELERATION_MULT = 0.1
 MAX_LINE_EXTENSION_RATIO = 0.25
@@ -95,8 +95,10 @@ class PhysicsLine:
             if point.previous_position.y < new_position.y:
                 friction_vector.y *= -1
 
-            # TODO: Extract these side effects
-            point.set_position(new_position)
-            point.set_prev_position(
+            new_previous_position = (
                 point.previous_position + friction_vector + self.acceleration_vector
             )
+
+            return (new_position, new_previous_position)
+        else:
+            return (point.position, point.previous_position)

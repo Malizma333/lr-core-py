@@ -7,7 +7,6 @@ from engine.grid import GridVersion
 from engine.line import PhysicsLine
 
 
-# TODO add scenery lines to grid as well?
 def convert_lines(lines: list) -> list[PhysicsLine]:
     converted_lines: list[PhysicsLine] = []
     for line in lines:
