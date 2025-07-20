@@ -3,6 +3,7 @@ from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
 from engine.entity import ContactPoint
 from enum import Enum
 from typing import TypedDict
+import math
 
 
 class CellPosition(TypedDict):
@@ -98,8 +99,8 @@ class Grid:
         return None
 
     def get_cell_position(self, position: Vector) -> CellPosition:
-        x = int(position.x / self.cell_size)
-        y = int(position.y / self.cell_size)
+        x = math.floor(position.x / self.cell_size)
+        y = math.floor(position.y / self.cell_size)
 
         return {
             "X": x,
@@ -108,87 +109,100 @@ class Grid:
             "REMAINDER_Y": position.y - y * self.cell_size,
         }
 
-    def get_step(self, forwards: bool, cellpos: float, remainder: float):
-        if forwards:
-            if cellpos < 0:
-                return self.cell_size + remainder
+    def get_step_to_boundary(
+        self,
+        stepping_forwards: bool,
+        cell_pos_component: float,
+        cell_remainder_component: float,
+    ) -> float:
+        if cell_pos_component < 0:
+            if stepping_forwards:
+                return self.cell_size + cell_remainder_component
             else:
-                return self.cell_size - remainder
+                return -(self.cell_size + cell_remainder_component)
         else:
-            if cellpos < 0:
-                return -(self.cell_size + remainder)
+            if stepping_forwards:
+                return self.cell_size - cell_remainder_component
             else:
-                return -(remainder + 1)
+                return -1 - cell_remainder_component
+
+    def get_step(self, line_vector: Vector, cell_pos: CellPosition) -> Vector:
+        delta_x = self.get_step_to_boundary(
+            line_vector.x > 0,
+            cell_pos["X"],
+            cell_pos["REMAINDER_X"],
+        )
+        delta_y = self.get_step_to_boundary(
+            line_vector.y > 0,
+            cell_pos["Y"],
+            cell_pos["REMAINDER_Y"],
+        )
+
+        if line_vector.x == 0:
+            step = Vector(0, delta_y)
+        elif line_vector.y == 0:
+            step = Vector(delta_x, 0)
+        else:
+            step = Vector(
+                delta_y * line_vector.x / line_vector.y,
+                delta_x * line_vector.y / line_vector.x,
+            )
+            if abs(step.y) <= abs(delta_y):
+                step.x = delta_x
+            else:
+                step.y = delta_y
+
+        return step
 
     def get_cell_positions_between(
         self, pos1: Vector, pos2: Vector
     ) -> list[CellPosition]:
-        delta = pos2 - pos1
         initial_cell = self.get_cell_position(pos1)
         final_cell = self.get_cell_position(pos2)
-
-        cells = [initial_cell]
+        cells = []
 
         if (
             initial_cell["X"] == final_cell["X"]
             and initial_cell["Y"] == final_cell["Y"]
         ):
-            return cells
+            return [initial_cell]
 
-        lower_bound = (
-            min(initial_cell["X"], final_cell["X"]),
-            min(initial_cell["Y"], final_cell["Y"]),
-        )
-
-        upper_bound = (
-            max(initial_cell["X"], final_cell["X"]),
-            max(initial_cell["Y"], final_cell["Y"]),
-        )
+        lower_bound_x = min(initial_cell["X"], final_cell["X"])
+        lower_bound_y = min(initial_cell["Y"], final_cell["Y"])
+        upper_bound_x = max(initial_cell["X"], final_cell["X"])
+        upper_bound_y = max(initial_cell["Y"], final_cell["Y"])
 
         current_position = pos1.copy()
-        current_cell = initial_cell
-        x_forwards = delta.x > 0
-        y_forwards = delta.y > 0
+        curr_cell_pos = initial_cell
 
         if self.version == GridVersion.V6_2 or self.version == GridVersion.V6_7:
-            while True:
-                boundary_x = self.get_step(
-                    x_forwards, current_cell["X"], current_cell["REMAINDER_X"]
-                )
-                boundary_y = self.get_step(
-                    y_forwards, current_cell["Y"], current_cell["REMAINDER_Y"]
-                )
-                step = Vector(
-                    boundary_y * delta.x / delta.y, boundary_x * delta.y / delta.x
-                )
+            while (
+                lower_bound_x <= curr_cell_pos["X"]
+                and curr_cell_pos["X"] <= upper_bound_x
+                and lower_bound_y <= curr_cell_pos["Y"]
+                and curr_cell_pos["Y"] <= upper_bound_y
+            ):
+                cells.append(curr_cell_pos)
+                current_position += self.get_step(pos2 - pos1, curr_cell_pos)
+                next_cell_pos = self.get_cell_position(current_position)
 
-                if abs(step.x) > abs(boundary_x):
-                    step.x = boundary_x
-
-                if abs(step.y) > abs(boundary_y):
-                    step.y = boundary_y
-
-                current_position += step
-                current_cell = self.get_cell_position(current_position)
-
-                if not (
-                    lower_bound[0] <= current_cell["X"]
-                    and current_cell["X"] <= upper_bound[0]
-                    and lower_bound[1] <= current_cell["Y"]
-                    and current_cell["Y"] <= upper_bound[1]
+                # Avoid 6.1 grid bug (TODO merge in?)
+                if (
+                    next_cell_pos["X"] == curr_cell_pos["X"]
+                    and next_cell_pos["Y"] == curr_cell_pos["Y"]
                 ):
-                    return cells
+                    break
 
-                cells.append(current_cell)
+                curr_cell_pos = next_cell_pos
         else:
             pass
-
+        print(len(cells))
         return cells
 
     def get_interacting_lines(self, point: ContactPoint):
         involved_lines: list[PhysicsLine] = []
         # get cells in a 3 x 3, but more if line_hitbox_height >= grid_cell_size
-        bounds_size = int(1 + LINE_HITBOX_HEIGHT / self.cell_size)
+        bounds_size = math.floor(1 + LINE_HITBOX_HEIGHT / self.cell_size)
         for x_offset in range(-bounds_size, bounds_size + 1):
             for y_offset in range(-bounds_size, bounds_size + 1):
                 cell = self.get_cell(
