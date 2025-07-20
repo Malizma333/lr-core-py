@@ -54,6 +54,23 @@ class NormalBone:
     def __init__(self, base: BaseBone):
         self.base = base
 
+    def process(self):
+        position1 = self.base.point1.position
+        position2 = self.base.point2.position
+        bone_vector = position1 - position2
+        current_length = bone_vector.length()
+        rest_length = self.base.rest_length
+
+        if current_length == 0:
+            adjustment = 0
+        else:
+            adjustment = (current_length - rest_length) / current_length * 0.5
+
+        bone_vector *= adjustment
+
+        self.base.point1.set_position(position1 - bone_vector)
+        self.base.point2.set_position(position2 + bone_vector)
+
 
 # Bones that can also break after a certain threshold
 class FragileBone:
@@ -62,13 +79,53 @@ class FragileBone:
         self.endurance = endurance
         self.binding = binding
 
+    def process(self):
+        position1 = self.base.point1.position
+        position2 = self.base.point2.position
+        bone_vector = position1 - position2
+        current_length = bone_vector.length()
+        rest_length = self.base.rest_length
+
+        if current_length == 0:
+            adjustment = 0
+        else:
+            adjustment = (current_length - rest_length) / current_length * 0.5
+
+        if self.binding.broken or adjustment > self.endurance * rest_length * 0.5:
+            self.binding.broken = True
+            return
+
+        bone_vector *= adjustment
+
+        self.base.point1.set_position(position1 - bone_vector)
+        self.base.point2.set_position(position2 + bone_vector)
+
 
 # Bones designed to "repel" points without connecting them with a traditional bone
 class RepelBone:
     def __init__(self, base: BaseBone, length_factor: float):
         self.base = base
         self.length_factor = length_factor
-        self.base.rest_length *= length_factor
+
+    def process(self):
+        position1 = self.base.point1.position
+        position2 = self.base.point2.position
+        bone_vector = position1 - position2
+        current_length = bone_vector.length()
+        rest_length = self.base.rest_length * self.length_factor
+
+        if current_length >= rest_length:
+            return
+
+        if current_length == 0:
+            adjustment = 0
+        else:
+            adjustment = (current_length - rest_length) / current_length * 0.5
+
+        bone_vector *= adjustment
+
+        self.base.point1.set_position(position1 - bone_vector)
+        self.base.point2.set_position(position2 + bone_vector)
 
 
 class EntityState(Enum):
@@ -145,6 +202,7 @@ class Entity:
     def deep_copy(self):
         new_entity = Entity()
         new_entity.state = self.state
+        # TODO see if we can get rid of these in favor of indices
         point_map: dict[ContactPoint, ContactPoint] = {}
         bind_map: dict[Binding, Binding] = {}
 
@@ -196,32 +254,7 @@ class Entity:
 
     def process_bones(self):
         for bone in self.bones:
-            # TODO put into bone classes?
-            position1 = bone.base.point1.position
-            position2 = bone.base.point2.position
-            bone_vector = position1 - position2
-            current_length = bone_vector.length()
-            rest_length = bone.base.rest_length
-
-            if type(bone) == RepelBone and current_length >= rest_length:
-                return
-
-            if current_length == 0:
-                adjustment = 0
-            else:
-                adjustment = (current_length - rest_length) / current_length * 0.5
-
-            if type(bone) == FragileBone and (
-                self.state == EntityState.DISMOUNTED
-                or adjustment > bone.endurance * rest_length * 0.5
-            ):
-                self.state = EntityState.DISMOUNTED
-                return
-
-            bone_vector = bone_vector * adjustment
-
-            bone.base.point1.set_position(position1 - bone_vector)
-            bone.base.point2.set_position(position2 + bone_vector)
+            bone.process()
 
     def process_collisions(self, grid: Grid):
         for point_index, point in enumerate(self.points):
