@@ -47,7 +47,6 @@ class PhysicsLine:
 
         if self.flipped:
             self.normal_unit *= -1
-            self.acceleration_vector *= -1
 
         if self.left_ext:
             self.limit_left -= self.ext_ratio
@@ -96,7 +95,7 @@ class PhysicsLine:
                 friction_vector.y *= -1
 
             new_previous_position = (
-                point.previous_position + friction_vector + self.acceleration_vector
+                point.previous_position + friction_vector - self.acceleration_vector
             )
 
             return (new_position, new_previous_position)

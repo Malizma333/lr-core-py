@@ -15,7 +15,7 @@ loaded: dict[str, Engine] = {}
 def compare(f: float, s: str):
     x = format(f, ".17g")
     if x != s:
-        print("Fail:", x, s)
+        print(x, "!=", s)
     return x == s
 
 

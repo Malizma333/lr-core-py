@@ -19,7 +19,7 @@ def convert_lines(lines: list) -> list[PhysicsLine]:
                     line["flipped"],
                     line["leftExtended"],
                     line["rightExtended"],
-                    line.get("multiplier", 0),
+                    line.get("multiplier", 1 if line["type"] == 1 else 0),
                 )
             )
     return converted_lines
