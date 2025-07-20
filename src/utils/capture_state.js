@@ -6,15 +6,16 @@ function captureState(testName) {
   state.push(testName);
   state.push(index);
   state.push(store.getState().trackData.label);
+  const formatNumber = (n) => n.toPrecision(17).replace(/\.?0+$/, "");
   // peg, tail, nose, string, butt, shoulder, rhand, lhand, lfoot, rfoot, scarf0...6
   state.push(
     store.getState().simulator.engine.getFrame(index).snapshot.entities[0].entities.map(entity =>
       entity.points.map(
         point => [
-          point.pos.x.toPrecision(17),
-          point.pos.y.toPrecision(17),
-          point.vel.x.toPrecision(17),
-          point.vel.y.toPrecision(17),
+          formatNumber(point.pos.x),
+          formatNumber(point.pos.y),
+          formatNumber(point.vel.x),
+          formatNumber(point.vel.y),
         ],
       )
     ),
