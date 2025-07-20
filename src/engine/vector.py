@@ -41,21 +41,24 @@ class Vector:
     def __repr__(self):
         return f"Vector({self.x:.17g}, {self.y:.17g})"
 
-    def magnitude(self) -> float:
-        return math.sqrt(self.x * self.x + self.y * self.y)
+    def length_sq(self) -> float:
+        return self.x * self.x + self.y * self.y
+
+    def length(self) -> float:
+        return math.sqrt(self.length_sq())
 
     def unit(self):
-        return Vector(self.x / self.magnitude(), self.y / self.magnitude())
+        return Vector(self.x / self.length(), self.y / self.length())
 
     def copy(self):
         return Vector(self.x, self.y)
 
-    def rot_ccw(self):
-        return Vector(-self.y, self.x)
-
     def rot_cw(self):
         return Vector(self.y, -self.x)
 
+    def rot_ccw(self):
+        return Vector(-self.y, self.x)
+
     def distance_from(self, other: Self):
         delta = self - other
-        return delta.magnitude()
+        return delta.length()

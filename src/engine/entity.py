@@ -141,32 +141,32 @@ class Entity:
 
         return new_entity
 
-    def process_bones(self):
-        for i, bone in enumerate(self.bones):
-            position1 = bone.base.point1.position
-            position2 = bone.base.point2.position
-            bone_vector = position1 - position2
-            current_length = bone_vector.magnitude()
-            rest_length = bone.base.rest_length
+    def process_bone(self, bone):
+        position1 = bone.base.point1.position
+        position2 = bone.base.point2.position
+        bone_vector = position1 - position2
+        current_length = bone_vector.length()
+        rest_length = bone.base.rest_length
 
-            if type(bone) == RepelBone and current_length >= rest_length:
-                continue
+        if type(bone) == RepelBone and current_length >= rest_length:
+            return
 
-            if current_length == 0:
-                adjustment = 0
-            else:
-                adjustment = (current_length - rest_length) / current_length * 0.5
+        if current_length == 0:
+            adjustment = 0
+        else:
+            adjustment = (current_length - rest_length) / current_length * 0.5
 
-            if type(bone) == MountBone and (
-                self.state == EntityState.DISMOUNTED
-                or adjustment > bone.endurance * rest_length * 0.5
-            ):
-                self.state = EntityState.DISMOUNTED
-                continue
+        if type(bone) == MountBone and (
+            self.state == EntityState.DISMOUNTED
+            or adjustment > bone.endurance * rest_length * 0.5
+        ):
+            self.state = EntityState.DISMOUNTED
+            return
 
-            bone_vector = bone_vector * adjustment
-            bone.base.point1.set_position(position1 - bone_vector)
-            bone.base.point2.set_position(position2 + bone_vector)
+        bone_vector = bone_vector * adjustment
+        # TODO side effects
+        bone.base.point1.set_position(position1 - bone_vector)
+        bone.base.point2.set_position(position2 + bone_vector)
 
 
 def create_default_rider(init_state: InitialEntityParams) -> Entity:

@@ -1,8 +1,8 @@
 from typing import Union
 from engine.vector import Vector
 from engine.entity import Entity
-from engine.grid import Grid, GridCell, GridVersion
-from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
+from engine.grid import Grid, GridVersion
+from engine.line import PhysicsLine
 
 
 GRID_CELL_SIZE = 14
@@ -66,31 +66,16 @@ class Engine:
                         current_position + new_velocity
                     )
 
-                for i in range(NUM_ITERATIONS):
+                for _ in range(NUM_ITERATIONS):
                     # bones
-                    entity.process_bones()
+                    for _bone_index, bone in enumerate(entity.bones):
+                        entity.process_bone(bone)
 
-                    # line collisions
-                    # TODO put this in grid class?
+                    # point-line collisions
                     for point_index, point in enumerate(entity.points):
-                        involved_cells: list[GridCell] = []
+                        for line in self.grid.get_interacting_lines(point):
+                            line.interact(point)
 
-                        # get cells in a 3 x 3, but more if line_hitbox_height >= grid_cell_size
-                        bounds_size = int(1 + LINE_HITBOX_HEIGHT / self.grid.cell_size)
-                        for x_offset in range(-bounds_size, bounds_size + 1):
-                            for y_offset in range(-bounds_size, bounds_size + 1):
-                                cell = self.grid.get_cell(
-                                    point.position
-                                    + self.grid.cell_size * Vector(x_offset, y_offset)
-                                )
-
-                                if cell != None:
-                                    involved_cells.append(cell)
-
-                        # collide with involved cells
-                        for cell in involved_cells:
-                            for line in cell.lines:
-                                line.interact(point)
             # TODO death check
 
             self.state_cache.append(new_entities)

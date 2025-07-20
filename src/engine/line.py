@@ -2,8 +2,8 @@ from engine.vector import Vector
 from engine.entity import ContactPoint
 
 ACCELERATION_MULT = 0.1
-LINE_HITBOX_HEIGHT = 10
 MAX_LINE_EXTENSION_RATIO = 0.25
+LINE_HITBOX_HEIGHT = 10
 
 
 class PhysicsLine:
@@ -31,12 +31,11 @@ class PhysicsLine:
         # Line as a vector component
         self.vector = self.endpoints[1] - self.endpoints[0]
         # Length of the line
-        self.length = self.vector.magnitude()
-        # Unit vector pointing along the line
-        if self.length != 0:
-            self.unit = self.vector / self.length
-        else:
-            self.unit = Vector(0, 0)
+        self.length = self.vector.length()
+        # Inverse length squared
+        self.inv_length_squared = 1 / self.vector.length_sq()
+        # Unit vector pointing along line
+        self.unit = self.vector / self.length
         # Unit vector pointing up from the line
         self.normal_unit = self.unit.rot_ccw()
         # Size of extension relative to line length
@@ -44,10 +43,11 @@ class PhysicsLine:
         # Left and right limits with extension applied
         self.limit_left = 0.0
         self.limit_right = 1.0
+        self.acceleration_vector = self.unit * ACCELERATION_MULT * self.acceleration
 
         if self.flipped:
-            self.unit *= -1
             self.normal_unit *= -1
+            self.acceleration_vector *= -1
 
         if self.left_ext:
             self.limit_left -= self.ext_ratio
@@ -69,10 +69,10 @@ class PhysicsLine:
         self.update_computed()
 
     def interact(self, point: ContactPoint):
-        moving_into_line = (self.normal_unit @ point.velocity) > 0
         offset_from_point = point.position - self.endpoints[0]
+        moving_into_line = (self.normal_unit @ point.velocity) > 0
         dist_from_line_top = self.normal_unit @ offset_from_point
-        pos_between_ends = (self.unit @ offset_from_point) / (self.length**2)
+        pos_between_ends = (self.vector @ offset_from_point) * self.inv_length_squared
 
         # if in line hitbox and moving into line
         if (
@@ -83,17 +83,20 @@ class PhysicsLine:
             and pos_between_ends <= self.limit_right
         ):
             # collide
-            new_position = point.position - dist_from_line_top * self.normal_unit
-            friction_vector = self.normal_unit * point.friction * dist_from_line_top
-            acceleration_vector = self.unit * ACCELERATION_MULT * self.acceleration
+            new_position = (
+                (self.normal_unit * dist_from_line_top) - point.position
+            ) * -1
+            friction_vector = (
+                self.normal_unit.rot_cw() * point.friction
+            ) * dist_from_line_top
 
             if point.previous_position.x >= new_position.x:
                 friction_vector.x *= -1
-            if point.previous_position.y >= new_position.y:
+            if point.previous_position.y < new_position.y:
                 friction_vector.y *= -1
 
             # TODO: Extract these side effects
             point.set_position(new_position)
             point.set_prev_position(
-                point.previous_position + friction_vector + acceleration_vector
+                point.previous_position + friction_vector + self.acceleration_vector
             )

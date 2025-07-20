@@ -1,5 +1,6 @@
 from engine.vector import Vector
-from engine.line import PhysicsLine
+from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
+from engine.entity import ContactPoint
 from enum import Enum
 from typing import TypedDict
 
@@ -183,3 +184,18 @@ class Grid:
             pass
 
         return cells
+
+    def get_interacting_lines(self, point: ContactPoint):
+        involved_lines: list[PhysicsLine] = []
+        # get cells in a 3 x 3, but more if line_hitbox_height >= grid_cell_size
+        bounds_size = int(1 + LINE_HITBOX_HEIGHT / self.cell_size)
+        for x_offset in range(-bounds_size, bounds_size + 1):
+            for y_offset in range(-bounds_size, bounds_size + 1):
+                cell = self.get_cell(
+                    point.position + self.cell_size * Vector(x_offset, y_offset)
+                )
+
+                if cell != None:
+                    for line in cell.lines:
+                        involved_lines.append(line)
+        return involved_lines
