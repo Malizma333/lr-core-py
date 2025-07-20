@@ -220,4 +220,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/dismount.track.json")
+    TrackSimulator("fixtures/accel_flags.track.json")

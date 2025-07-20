@@ -62,8 +62,16 @@ class BaseBone:
 
     def update_points(self, adjustment):
         bone_vector = self.get_vector()
-        self.point1.set_position(self.point1.position - bone_vector * adjustment)
-        self.point2.set_position(self.point2.position + bone_vector * adjustment)
+        self.point1.update_state(
+            self.point1.position - bone_vector * adjustment,
+            self.point1.velocity,
+            self.point1.previous_position,
+        )
+        self.point2.update_state(
+            self.point2.position + bone_vector * adjustment,
+            self.point2.velocity,
+            self.point2.previous_position,
+        )
 
 
 # Bones connecting points to keep them as the same structure
@@ -143,18 +151,20 @@ class Entity:
 
         for i, point in enumerate(self.points):
             offset = point.position - origin
-            self.points[i].set_position(
+            self.points[i].update_state(
                 Vector(
                     origin.x + offset.x * cos_theta - offset.y * sin_theta,
                     origin.y + offset.x * sin_theta + offset.y * cos_theta,
-                )
+                ),
+                self.points[i].velocity,
+                self.points[i].previous_position,
             )
 
         for i, point in enumerate(self.points):
-            self.points[i].set_position(point.position + init_state["POSITION"])
-            self.points[i].set_velocity(point.velocity + init_state["VELOCITY"])
-            self.points[i].set_prev_position(
-                self.points[i].position - self.points[i].velocity
+            start_position = point.position + init_state["POSITION"]
+            start_velocity = point.velocity + init_state["VELOCITY"]
+            self.points[i].update_state(
+                start_position, start_velocity, start_position - start_velocity
             )
 
     def add_point(self, position: Vector, friction: float) -> ContactPoint:
@@ -192,8 +202,9 @@ class Entity:
         # Copy each contact point and add points to map
         for point in self.points:
             new_point = new_entity.add_point(point.position, point.friction)
-            new_point.set_velocity(point.velocity.copy())
-            new_point.set_prev_position(point.previous_position.copy())
+            new_point.update_state(
+                new_point.position, point.velocity, point.previous_position
+            )
             point_map[point] = new_point
 
         # Copy each bind trigger structure and add bindings to map
@@ -230,10 +241,10 @@ class Entity:
     def initial_step(self, gravity: Vector):
         for point_index, point in enumerate(self.points):
             new_velocity = point.position - point.previous_position + gravity
-            current_position = point.position.copy()
-            self.points[point_index].set_velocity(new_velocity)
-            self.points[point_index].set_prev_position(current_position)
-            self.points[point_index].set_position(current_position + new_velocity)
+            current_position = point.position
+            self.points[point_index].update_state(
+                current_position + new_velocity, new_velocity, current_position
+            )
 
     def process_bones(self):
         for bone in self.bones:
@@ -244,8 +255,7 @@ class Entity:
             interacting_lines = grid.get_interacting_lines(point)
             for line in interacting_lines:
                 new_pos, new_prev_pos = line.interact(point)
-                point.set_position(new_pos)
-                point.set_prev_position(new_prev_pos)
+                point.update_state(new_pos, point.velocity, new_prev_pos)
 
     def process_bind_triggers(self):
         for bind in self.bind_triggers:
