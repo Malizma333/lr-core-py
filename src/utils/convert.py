@@ -4,7 +4,7 @@ import math
 from engine.vector import Vector
 from engine.entity import create_default_rider, Entity, InitialEntityParams
 from engine.grid import GridVersion
-from utils.lrtypes import PhysicsLine
+from engine.line import PhysicsLine
 
 
 # TODO add scenery lines to grid as well?
@@ -13,17 +13,15 @@ def convert_lines(lines: list) -> list[PhysicsLine]:
     for line in lines:
         if line["type"] != 2:
             converted_lines.append(
-                {
-                    "ID": line["id"],
-                    "ENDPOINTS": (
-                        Vector(line["x1"], line["y1"]),
-                        Vector(line["x2"], line["y2"]),
-                    ),
-                    "FLIPPED": line["flipped"],
-                    "LEFT_EXTENSION": line["leftExtended"],
-                    "RIGHT_EXTENSION": line["rightExtended"],
-                    "MULTIPLIER": line.get("multiplier", 0),
-                }
+                PhysicsLine(
+                    line["id"],
+                    Vector(line["x1"], line["y1"]),
+                    Vector(line["x2"], line["y2"]),
+                    line["flipped"],
+                    line["leftExtended"],
+                    line["rightExtended"],
+                    line.get("multiplier", 0),
+                )
             )
     return converted_lines
 

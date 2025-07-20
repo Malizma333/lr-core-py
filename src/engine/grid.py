@@ -1,5 +1,5 @@
 from engine.vector import Vector
-from utils.lrtypes import PhysicsLine
+from engine.line import PhysicsLine
 from enum import Enum
 from typing import TypedDict
 
@@ -27,17 +27,17 @@ class GridCell:
 
     def add_line(self, new_line: PhysicsLine):
         for i, line in enumerate(self.lines):
-            if line["ID"] < new_line["ID"]:
+            if line.id < new_line.id:
                 self.lines.insert(i, new_line)
-                self.ids.add(new_line["ID"])
+                self.ids.add(new_line.id)
                 return
 
         self.lines.append(new_line)
-        self.ids.add(new_line["ID"])
+        self.ids.add(new_line.id)
 
     def remove_line(self, line_id: int):
         for i, line in enumerate(self.lines):
-            if line["ID"] == line_id:
+            if line.id == line_id:
                 del self.lines[i]
                 self.ids.remove(line_id)
                 return
@@ -56,13 +56,13 @@ class Grid:
 
     def add_line(self, line: PhysicsLine):
         for position in self.get_cell_positions_between(
-            line["ENDPOINTS"][0], line["ENDPOINTS"][1]
+            line.endpoints[0], line.endpoints[1]
         ):
             self.register(line, position)
 
     def remove_line(self, line: PhysicsLine):
         for position in self.get_cell_positions_between(
-            line["ENDPOINTS"][0], line["ENDPOINTS"][1]
+            line.endpoints[0], line.endpoints[1]
         ):
             self.unregister(line, position)
 
@@ -70,7 +70,7 @@ class Grid:
         for position in self.get_cell_positions_between(old_pos1, old_pos2):
             self.unregister(line, position)
         for position in self.get_cell_positions_between(
-            line["ENDPOINTS"][0], line["ENDPOINTS"][1]
+            line.endpoints[0], line.endpoints[1]
         ):
             self.register(line, position)
 
@@ -83,7 +83,7 @@ class Grid:
     def unregister(self, line: PhysicsLine, position: CellPosition):
         cell_key = self.hash_int_pair(position["X"], position["Y"])
         if cell_key in self.cells:
-            self.cells[cell_key].remove_line(line["ID"])
+            self.cells[cell_key].remove_line(line.id)
 
     # No specific implementation, just needs to be deterministic
     def hash_int_pair(self, x: int, y: int) -> int:

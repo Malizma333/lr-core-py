@@ -1,17 +1,16 @@
 # Opens a track file in a read-only simulator
 
 TARGET_TRACK = "fixtures/line_flags.track.json"
-ZOOM = 8
+ZOOM = 12
 
 from engine.engine import (
     Engine,
-    MAX_LINE_EXTENSION_RATIO,
     LINE_HITBOX_HEIGHT,
     FRAMES_PER_SECOND,
 )
 from engine.vector import Vector
-from engine.entity import Entity
-from utils.lrtypes import PhysicsLine
+from engine.entity import Entity, EntityState, NormalBone, MountBone, RepelBone
+from engine.line import PhysicsLine, MAX_LINE_EXTENSION_RATIO
 from utils.convert import convert_lines, convert_riders, convert_version
 import tkinter as tk
 import json
@@ -109,18 +108,28 @@ def physics_to_canvas(v: Vector) -> Vector:
 
 
 def draw_entity(i: int, entity: Entity):
-    CP_RADIUS = 0.5
-    MV_SIZE = 3
+    CP_RADIUS = 0.25
+    BONE_WIDTH = 0.25
+    MV_LENGTH = 3
+    MV_WIDTH = 0.25
+    MV_COLOR = "green"
+    CP_COLOR = "white"
 
     for index, bone in enumerate(entity.bones):
-        canvas_bone_point1 = physics_to_canvas(bone["BASE"]["POINT1"].position)
-        canvas_bone_point2 = physics_to_canvas(bone["BASE"]["POINT2"].position)
+        color = ""
+        if type(bone) == NormalBone:
+            color = "blue"
+        elif type(bone) == MountBone and entity.state == EntityState.MOUNTED:
+            color = "red"
+        elif type(bone) == RepelBone:
+            color = "pink"
+
+        canvas_bone_point1 = physics_to_canvas(bone.base.point1.position)
+        canvas_bone_point2 = physics_to_canvas(bone.base.point2.position)
 
         bone_object = canvas_cache.setdefault(
             f"entities_{i}_bones_{index}",
-            canvas.create_line(
-                0, 0, 0, 0, width=MAX_LINE_EXTENSION_RATIO * ZOOM, fill="pink"
-            ),
+            canvas.create_line(0, 0, 0, 0, width=BONE_WIDTH * ZOOM, fill=color),
         )
         canvas.coords(
             bone_object,
@@ -134,7 +143,7 @@ def draw_entity(i: int, entity: Entity):
         point_pos = point.position
 
         canvas_point_pos = physics_to_canvas(point_pos)
-        canvas_mv_tail = canvas_point_pos + MV_SIZE * ZOOM * point.velocity.unit()
+        canvas_mv_tail = canvas_point_pos + MV_LENGTH * ZOOM * point.velocity.unit()
         cp_bounds_offset = ZOOM * Vector(CP_RADIUS, CP_RADIUS)
         canvas_point_bounds = (
             canvas_point_pos - cp_bounds_offset,
@@ -143,9 +152,7 @@ def draw_entity(i: int, entity: Entity):
 
         mv_object = canvas_cache.setdefault(
             f"entities_{i}_vectors_{index}",
-            canvas.create_line(
-                0, 0, 0, 0, width=MAX_LINE_EXTENSION_RATIO * ZOOM, fill="red"
-            ),
+            canvas.create_line(0, 0, 0, 0, width=MV_WIDTH * ZOOM, fill=MV_COLOR),
         )
         canvas.coords(
             mv_object,
@@ -156,7 +163,8 @@ def draw_entity(i: int, entity: Entity):
         )
 
         cp_object = canvas_cache.setdefault(
-            f"entities_{i}_points_{index}", canvas.create_oval(0, 0, 0, 0, fill="cyan")
+            f"entities_{i}_points_{index}",
+            canvas.create_oval(0, 0, 0, 0, fill=CP_COLOR),
         )
         canvas.coords(
             cp_object,
@@ -171,28 +179,25 @@ def draw_line(i: int, line: PhysicsLine):
     EXTENSION_DRAW_WIDTH = 1
     LINE_DRAW_WIDTH = 2
 
-    point1 = line["ENDPOINTS"][0]
-    point2 = line["ENDPOINTS"][1]
+    point1 = line.endpoints[0]
+    point2 = line.endpoints[1]
 
-    if line["FLIPPED"]:
+    if line.flipped:
         point1, point2 = point2, point1
 
-    line_vector = point2 - point1
-    magnitude = line_vector.magnitude()
-    unit = line_vector.unit()
-    ext_amount = magnitude * min(
-        MAX_LINE_EXTENSION_RATIO, LINE_HITBOX_HEIGHT / magnitude
+    ext_amount = line.length * min(
+        MAX_LINE_EXTENSION_RATIO, LINE_HITBOX_HEIGHT / line.length
     )
-    hitbox_vec = unit.rot_cw() * LINE_HITBOX_HEIGHT / 2
+    hitbox_vec = line.normal_unit * LINE_HITBOX_HEIGHT / 2
 
     canvas_point1 = physics_to_canvas(point1)
     canvas_point2 = physics_to_canvas(point2)
-    canvas_left_ext = physics_to_canvas(point1 - ext_amount * unit)
-    canvas_right_ext = physics_to_canvas(point2 + ext_amount * unit)
-    canvas_gwell_point1 = physics_to_canvas(point1 - hitbox_vec)
-    canvas_gwell_point2 = physics_to_canvas(point2 - hitbox_vec)
+    canvas_left_ext = physics_to_canvas(point1 - ext_amount * line.unit)
+    canvas_right_ext = physics_to_canvas(point2 + ext_amount * line.unit)
+    canvas_gwell_point1 = physics_to_canvas(point1 + hitbox_vec)
+    canvas_gwell_point2 = physics_to_canvas(point2 + hitbox_vec)
 
-    if line["LEFT_EXTENSION"]:
+    if line.left_ext:
         line_left_ext_object = canvas_cache.setdefault(
             f"lines_{i}_left_ext",
             canvas.create_line(
@@ -207,7 +212,7 @@ def draw_line(i: int, line: PhysicsLine):
             canvas_left_ext.y,
         )
 
-    if line["RIGHT_EXTENSION"]:
+    if line.right_ext:
         line_right_ext_object = canvas_cache.setdefault(
             f"lines_{i}_right_ext",
             canvas.create_line(
