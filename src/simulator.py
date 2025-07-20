@@ -6,7 +6,7 @@ ZOOM = 12
 from engine.engine import Engine, FRAMES_PER_SECOND
 from engine.vector import Vector
 from engine.entity import Entity, EntityState, NormalBone, MountBone, RepelBone
-from engine.line import PhysicsLine, MAX_LINE_EXTENSION_RATIO, LINE_HITBOX_HEIGHT
+from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
 from utils.convert import convert_lines, convert_entities, convert_version
 import tkinter as tk
 import json
@@ -20,17 +20,18 @@ entities = convert_entities(track["riders"])
 lines = convert_lines(track["lines"])
 engine = Engine(version, entities, lines)
 
-focused_entity = 0
-frame = 0
-playing = False
 
 root = tk.Tk()
 root.title("Line Rider Python Engine")
 canvas = tk.Canvas(root, width=1280, height=720, bg="white")
 canvas.pack(fill=tk.BOTH, expand=True)
-canvas_cache = {}
+canvas_cache = []
 canvas_center = Vector(int(canvas["width"]) / 2, int(canvas["height"]) / 2)
 origin = Vector(0, 0)
+current_draw_index = 0
+focused_entity = 0
+frame = 0
+playing = False
 
 
 def on_resize(event: tk.Event) -> None:
@@ -77,31 +78,37 @@ def update():
 
 
 def redraw(entities: list[Entity]):
+    global current_draw_index
+    current_draw_index = 0
+
     adjust_camera(entities)
 
-    for i, line in enumerate(lines):
-        draw_line(i, line)
+    for line in lines:
+        draw_line(line)
 
-    for i, entity in enumerate(entities):
-        draw_entity(i, entity)
+    for entity in entities:
+        draw_entity(entity)
 
     draw_text(entities)
 
 
 def adjust_camera(entities: list[Entity]):
     global origin
-    new_origin = Vector(0, 0)
+    new_origin_x = 0
+    new_origin_y = 0
     for point in entities[focused_entity].points:
-        new_origin += point.position
-    origin = new_origin / len(entities[focused_entity].points)
+        new_origin_x += point.position.x
+        new_origin_y += point.position.y
+    num_points = len(entities[focused_entity].points)
+    origin = Vector(new_origin_x / num_points, new_origin_y / num_points)
 
 
 def physics_to_canvas(v: Vector) -> Vector:
     return canvas_center + ZOOM * (v - origin)
 
 
-def draw_entity(i: int, entity: Entity):
-    CP_RADIUS = 0.25
+def draw_entity(entity: Entity):
+    CP_RADIUS = 2
     BONE_WIDTH = 0.25
     MV_LENGTH = 3
     MV_WIDTH = 0.25
@@ -109,7 +116,6 @@ def draw_entity(i: int, entity: Entity):
     CP_COLOR = "white"
 
     mv_len_zoom = MV_LENGTH * ZOOM
-    cp_radius_zoom = CP_RADIUS * ZOOM
 
     for index, bone in enumerate(entity.bones):
         if type(bone) == NormalBone:
@@ -124,18 +130,7 @@ def draw_entity(i: int, entity: Entity):
         c_bone_p1 = physics_to_canvas(bone.base.point1.position)
         c_bone_p2 = physics_to_canvas(bone.base.point2.position)
 
-        bone_id = f"entities_{i}_bones_{index}"
-        bone_object = canvas_cache.get(bone_id)
-
-        if bone_object is None:
-            bone_object = canvas.create_line(
-                0, 0, 0, 0, width=BONE_WIDTH * ZOOM, fill=color
-            )
-            canvas_cache[bone_id] = bone_object
-        else:
-            canvas.itemconfig(bone_object, fill=color)
-
-        canvas.coords(bone_object, c_bone_p1.x, c_bone_p1.y, c_bone_p2.x, c_bone_p2.y)
+        generate_line(BONE_WIDTH, c_bone_p1, c_bone_p2, color=color)
 
     for index, point in enumerate(entity.points):
         c_cp_pos = physics_to_canvas(point.position)
@@ -144,32 +139,12 @@ def draw_entity(i: int, entity: Entity):
             c_cp_pos.x + mv_len_zoom * velocity_unit.x,
             c_cp_pos.y + mv_len_zoom * velocity_unit.y,
         )
-        cp_bounds_offset = Vector(cp_radius_zoom, cp_radius_zoom)
-        bound_tl = c_cp_pos - cp_bounds_offset
-        bound_br = c_cp_pos + cp_bounds_offset
 
-        mv_id = f"entities_{i}_vectors_{index}"
-        mv_line = canvas_cache.get(mv_id)
-
-        if mv_line is None:
-            mv_line = canvas.create_line(
-                0, 0, 0, 0, width=MV_WIDTH * ZOOM, fill=MV_COLOR
-            )
-            canvas_cache[mv_id] = mv_line
-
-        canvas.coords(mv_line, c_cp_pos.x, c_cp_pos.y, c_mv_tail.x, c_mv_tail.y)
-
-        cp_id = f"entities_{i}_points_{index}"
-        cp_oval = canvas_cache.get(cp_id)
-
-        if cp_oval is None:
-            cp_oval = canvas.create_oval(0, 0, 0, 0, fill=CP_COLOR)
-            canvas_cache[cp_id] = cp_oval
-
-        canvas.coords(cp_oval, bound_tl.x, bound_tl.y, bound_br.x, bound_br.y)
+        generate_line(MV_WIDTH, c_cp_pos, c_mv_tail, color=MV_COLOR)
+        generate_circle(c_cp_pos.x, c_cp_pos.y, CP_RADIUS, color=CP_COLOR)
 
 
-def draw_line(i: int, line: PhysicsLine):
+def draw_line(line: PhysicsLine):
     EXTENSION_DRAW_WIDTH = 1
     LINE_DRAW_WIDTH = 2
 
@@ -189,42 +164,13 @@ def draw_line(i: int, line: PhysicsLine):
     c_gwell_p2 = physics_to_canvas(point2 + hitbox_vec)
 
     if line.left_ext:
-        id = f"lines_{i}_left_ext"
-        obj = canvas_cache.get(id)
-        if obj is None:
-            obj = canvas.create_line(
-                0, 0, 0, 0, width=EXTENSION_DRAW_WIDTH * ZOOM, fill="red"
-            )
-            canvas_cache[id] = obj
-        canvas.coords(obj, c_line_p1.x, c_line_p1.y, c_left_ext.x, c_left_ext.y)
+        generate_line(EXTENSION_DRAW_WIDTH, c_line_p1, c_left_ext, color="red")
 
     if line.right_ext:
-        id = f"lines_{i}_right_ext"
-        obj = canvas_cache.get(id)
-        if obj is None:
-            obj = canvas.create_line(
-                0, 0, 0, 0, width=EXTENSION_DRAW_WIDTH * ZOOM, fill="red"
-            )
-            canvas_cache[id] = obj
-        canvas.coords(obj, c_line_p2.x, c_line_p2.y, c_right_ext.x, c_right_ext.y)
+        generate_line(EXTENSION_DRAW_WIDTH, c_line_p2, c_right_ext, color="red")
 
-    gwell_id = f"lines_{i}_gwell"
-    gwell = canvas_cache.get(gwell_id)
-    if gwell is None:
-        gwell = canvas.create_line(
-            0, 0, 0, 0, width=LINE_HITBOX_HEIGHT * ZOOM, fill="gray"
-        )
-        canvas_cache[gwell_id] = gwell
-    canvas.coords(gwell, c_gwell_p1.x, c_gwell_p1.y, c_gwell_p2.x, c_gwell_p2.y)
-
-    line_id = f"lines_{i}"
-    line_obj = canvas_cache.get(line_id)
-    if line_obj is None:
-        line_obj = canvas.create_line(
-            0, 0, 0, 0, width=LINE_DRAW_WIDTH * ZOOM, capstyle="round"
-        )
-        canvas_cache[line_id] = line_obj
-    canvas.coords(line_obj, c_line_p1.x, c_line_p1.y, c_line_p2.x, c_line_p2.y)
+    generate_line(LINE_HITBOX_HEIGHT, c_gwell_p1, c_gwell_p2, color="gray")
+    generate_line(LINE_DRAW_WIDTH, c_line_p1, c_line_p2, round_cap=True)
 
 
 def draw_text(entities: list[Entity]):
@@ -233,36 +179,63 @@ def draw_text(entities: list[Entity]):
     frames = str(100 + frame % FRAMES_PER_SECOND)[1:]
     timestamp = f"{minutes}:{seconds}:{frames}"
 
-    text_object = canvas_cache.setdefault(
-        "current_moment_text",
-        canvas.create_text(
-            canvas_center.x,
-            canvas_center.y * 2 - 50,
-            font=("Helvetica", 12),
-            fill="black",
-        ),
-    )
-    canvas.itemconfig(text_object, text=timestamp)
-
-    text_object = canvas_cache.setdefault(
-        "current_rider_text",
-        canvas.create_text(
-            canvas_center.x,
-            canvas_center.y * 2 - 25,
-            font=("Helvetica", 12),
-            fill="black",
-        ),
-    )
-    canvas.itemconfig(text_object, text=f"Entity {focused_entity}")
+    generate_text(timestamp, canvas_center.x, canvas_center.y * 2 - 50)
+    generate_text(f"Entity {focused_entity}", canvas_center.x, canvas_center.y * 2 - 25)
 
     for i, point in enumerate(entities[focused_entity].points):
-        text_object = canvas_cache.setdefault(
-            f"current_entity_coord_{i}",
-            canvas.create_text(
-                10, i * 25 + 25, font=("Helvetica", 12), fill="black", anchor="w"
-            ),
+        generate_text(f"{point.position}", 10, i * 25 + 25)
+
+
+def generate_line(width: float, p1: Vector, p2: Vector, color="black", round_cap=False):
+    global current_draw_index
+
+    if current_draw_index == len(canvas_cache):
+        line_obj = canvas.create_line(0, 0, 0, 0)
+        canvas.itemconfig(
+            line_obj,
+            width=width * ZOOM,
+            capstyle="round" if round_cap else "butt",
+            fill=color,
         )
-        canvas.itemconfig(text_object, text=f"{point.position}")
+        canvas_cache.append(line_obj)
+    else:
+        line_obj = canvas_cache[current_draw_index]
+
+    canvas.coords(line_obj, p1.x, p1.y, p2.x, p2.y)
+
+    current_draw_index += 1
+
+
+def generate_circle(pos_x: float, pos_y: float, radius: float, color="black"):
+    global current_draw_index
+
+    if current_draw_index == len(canvas_cache):
+        circle_obj = canvas.create_oval(0, 0, 0, 0, fill=color)
+        canvas_cache.append(circle_obj)
+    else:
+        circle_obj = canvas_cache[current_draw_index]
+
+    canvas.coords(
+        circle_obj, pos_x - radius, pos_y - radius, pos_x + radius, pos_y + radius
+    )
+
+    current_draw_index += 1
+
+
+def generate_text(text: str, x: float, y: float):
+    global current_draw_index
+
+    if current_draw_index == len(canvas_cache):
+        text_object = canvas.create_text(
+            x, y, font=("Helvetica", 12), fill="black", anchor="w"
+        )
+        canvas_cache.append(text_object)
+    else:
+        text_object = canvas_cache[current_draw_index]
+
+    canvas.itemconfig(text_object, text=text)
+
+    current_draw_index += 1
 
 
 def tick():
