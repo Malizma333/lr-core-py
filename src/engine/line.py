@@ -35,7 +35,7 @@ class PhysicsLine:
         # Inverse length squared
         self.inv_length_squared = 1 / self.vector.length_sq()
         # Unit vector pointing along line
-        self.unit = self.vector / self.length
+        self.unit = self.vector * (1 / self.length)
         # Unit vector pointing up from the line
         self.normal_unit = self.unit.rot_ccw()
         # Size of extension relative to line length

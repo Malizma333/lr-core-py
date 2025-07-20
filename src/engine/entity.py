@@ -162,7 +162,8 @@ class Entity:
 
     def process_collisions(self, grid: Grid):
         for point_index, point in enumerate(self.points):
-            for line in grid.get_interacting_lines(point):
+            interacting_lines = grid.get_interacting_lines(point)
+            for line in interacting_lines:
                 new_pos, new_prev_pos = line.interact(point)
                 point.set_position(new_pos)
                 point.set_prev_position(new_prev_pos)

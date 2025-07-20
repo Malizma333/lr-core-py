@@ -20,7 +20,7 @@ class GridVersion(Enum):
     V6_7 = 3
 
 
-# A container for lines that serves as an ordered list
+# A container for lines that serves as an ordered list (descending line id order)
 class GridCell:
     def __init__(self, position: CellPosition):
         self.lines: list[PhysicsLine] = []
@@ -29,7 +29,7 @@ class GridCell:
 
     def add_line(self, new_line: PhysicsLine):
         for i, line in enumerate(self.lines):
-            if line.id < new_line.id:
+            if line.id > new_line.id:
                 self.lines.insert(i, new_line)
                 self.ids.add(new_line.id)
                 return
@@ -212,5 +212,5 @@ class Grid:
                     for line in cell.lines:
                         # Intentionally contains duplicates, ordered by id
                         involved_lines.append(line)
-        print(len(involved_lines))
+
         return involved_lines

@@ -52,7 +52,7 @@ class Engine:
             for entity in new_entities:
                 entity.initial_step(self.gravity_scale * self.gravity_vector)
 
-            for _ in range(NUM_ITERATIONS):
+            for i in range(NUM_ITERATIONS):
                 for entity in new_entities:
                     # entity bones
                     entity.process_bones()
