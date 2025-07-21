@@ -105,94 +105,106 @@ class Grid:
             "REMAINDER_Y": position.y - y * self.cell_size,
         }
 
-    def get_step_to_boundary(
+    def get_next_pos_v62(
         self,
-        stepping_forwards: bool,
-        cell_pos_component: float,
-        cell_remainder_component: float,
-    ) -> float:
-        if cell_pos_component < 0:
-            if stepping_forwards:
-                return self.cell_size + cell_remainder_component
-            else:
-                return -(self.cell_size + cell_remainder_component)
-        else:
-            if stepping_forwards:
-                return self.cell_size - cell_remainder_component
-            else:
-                return -1 - cell_remainder_component
+        curr_pos: Vector,
+        curr_cell_pos: CellPosition,
+        line_point_1: Vector,
+        line_point_2: Vector,
+    ) -> Vector:
+        line_vector = line_point_2 - line_point_1
 
-    def get_next_pos(self, line_vector: Vector, cell_pos: CellPosition) -> Vector:
-        delta_x = self.get_step_to_boundary(
-            line_vector.x > 0,
-            cell_pos["X"],
-            cell_pos["REMAINDER_X"],
-        )
-        delta_y = self.get_step_to_boundary(
-            line_vector.y > 0,
-            cell_pos["Y"],
-            cell_pos["REMAINDER_Y"],
-        )
+        if line_vector.x > 0:
+            delta_x = self.cell_size - curr_cell_pos["REMAINDER_X"]
+        else:
+            delta_x = -1 - curr_cell_pos["REMAINDER_X"]
+
+        if line_vector.y > 0:
+            delta_y = self.cell_size - curr_cell_pos["REMAINDER_Y"]
+        else:
+            delta_y = -1 - curr_cell_pos["REMAINDER_Y"]
+
+        # Adds correction for negative cell positions
+        if curr_cell_pos["X"] < 0:
+            if line_vector.x > 0:
+                delta_x = self.cell_size + curr_cell_pos["REMAINDER_X"]
+            else:
+                delta_x = -(self.cell_size + curr_cell_pos["REMAINDER_X"])
+
+        if curr_cell_pos["Y"] < 0:
+            if line_vector.y > 0:
+                delta_y = self.cell_size + curr_cell_pos["REMAINDER_X"]
+            else:
+                delta_y = -(self.cell_size + curr_cell_pos["REMAINDER_Y"])
 
         if line_vector.x == 0:
-            step = Vector(0, delta_y)
+            next_pos = Vector(curr_pos.x, curr_pos.y + delta_y)
         elif line_vector.y == 0:
-            step = Vector(delta_x, 0)
+            next_pos = Vector(curr_pos.x + delta_x, curr_pos.y)
         else:
-            step = Vector(
-                delta_y * line_vector.x / line_vector.y,
-                delta_x * line_vector.y / line_vector.x,
-            )
-            if abs(step.y) <= abs(delta_y):
-                step.x = delta_x
+            # Uses a different slope algorithm for getting next position
+            y_based_delta_x = delta_y * line_vector.x / line_vector.y
+            x_based_delta_y = delta_x * line_vector.y / line_vector.x
+            next_x = curr_pos.x + y_based_delta_x
+            next_y = curr_pos.y + x_based_delta_y
+            if abs(x_based_delta_y) < abs(delta_y):
+                next_pos = Vector(curr_pos.x + delta_x, next_y)
+            elif abs(x_based_delta_y) == abs(delta_y):
+                next_pos = Vector(curr_pos.x + delta_x, curr_pos.y + delta_y)
             else:
-                step.y = delta_y
+                next_pos = Vector(next_x, curr_pos.y + delta_y)
 
-        return step
+        return next_pos
 
     def get_next_pos_v61(
         self,
         curr_pos: Vector,
-        line_vector: Vector,
-        cell_pos: CellPosition,
+        curr_cell_pos: CellPosition,
         line_point_1: Vector,
+        line_point_2: Vector,
     ) -> Vector:
-        step = Vector(0, 0)
-        slope = 0.0
+        line_vector = line_point_2 - line_point_1
 
         if line_vector.x != 0 and line_vector.y != 0:
             slope = line_vector.y / line_vector.x
+        else:
+            slope = 0
 
-        dx = -cell_pos["REMAINDER_X"] + (self.cell_size if line_vector.x > 0 else -1)
-        dy = -cell_pos["REMAINDER_Y"] + (self.cell_size if line_vector.y > 0 else -1)
+        if line_vector.x > 0:
+            delta_x = self.cell_size - curr_cell_pos["REMAINDER_X"]
+        else:
+            delta_x = -1 - curr_cell_pos["REMAINDER_X"]
+
+        if line_vector.y > 0:
+            delta_y = self.cell_size - curr_cell_pos["REMAINDER_Y"]
+        else:
+            delta_y = -1 - curr_cell_pos["REMAINDER_Y"]
 
         if line_vector.x == 0:
-            return Vector(curr_pos.x, curr_pos.x + dy)
-
-        if line_vector.y == 0:
-            return Vector(dx + curr_pos.x, curr_pos.y)
-
-        isbelowactualY = line_point_1.y - slope * line_point_1.x
-        yDoesThisEvenWork = round(slope * (curr_pos.x + dx) + isbelowactualY)
-        if abs(yDoesThisEvenWork - curr_pos.y) < abs(dy):
-            step = Vector(curr_pos.x + dx, yDoesThisEvenWork)
-        elif abs(yDoesThisEvenWork - curr_pos.y) == abs(dy):
-            step = Vector(curr_pos.x + dx, curr_pos.y + dy)
+            next_pos = Vector(curr_pos.x, curr_pos.x + delta_y)
+        elif line_vector.y == 0:
+            next_pos = Vector(delta_x + curr_pos.x, curr_pos.y)
         else:
-            step = Vector(
-                round((curr_pos.y + dy - isbelowactualY) / slope), curr_pos.y + dy
-            )
-        return step
+            y_intercept = line_point_1.y - slope * line_point_1.x
+            next_x = round((curr_pos.y + delta_y - y_intercept) / slope)
+            next_y = round(slope * (curr_pos.x + delta_x) + y_intercept)
+            if abs(next_y - curr_pos.y) < abs(delta_y):
+                next_pos = Vector(curr_pos.x + delta_x, next_y)
+            elif abs(next_y - curr_pos.y) == abs(delta_y):
+                next_pos = Vector(curr_pos.x + delta_x, curr_pos.y + delta_y)
+            else:
+                next_pos = Vector(next_x, curr_pos.y + delta_y)
+
+        return next_pos
 
     def get_cell_positions_between(
-        self, pos1: Vector, pos2: Vector
+        self, line_pos1: Vector, line_pos2: Vector
     ) -> list[CellPosition]:
         cells = []
-        line_vector = pos2 - pos1
-        initial_cell = self.get_cell_position(pos1)
-        final_cell = self.get_cell_position(pos2)
+        initial_cell = self.get_cell_position(line_pos1)
+        final_cell = self.get_cell_position(line_pos2)
 
-        if (line_vector.x == 0 and line_vector.y == 0) or (
+        if line_pos1 == line_pos2 or (
             initial_cell["X"] == final_cell["X"]
             and initial_cell["Y"] == final_cell["Y"]
         ):
@@ -203,7 +215,7 @@ class Grid:
         upper_bound_x = max(initial_cell["X"], final_cell["X"])
         upper_bound_y = max(initial_cell["Y"], final_cell["Y"])
 
-        current_position = pos1.copy()
+        current_position = line_pos1.copy()
         curr_cell_pos = initial_cell
 
         while (
@@ -218,10 +230,12 @@ class Grid:
                 break  # TODO
             elif self.version == GridVersion.V6_1:
                 current_position = self.get_next_pos_v61(
-                    current_position, line_vector, curr_cell_pos, pos1
+                    current_position, curr_cell_pos, line_pos1, line_pos2
                 )
             else:
-                current_position += self.get_next_pos(line_vector, curr_cell_pos)
+                current_position = self.get_next_pos_v62(
+                    current_position, curr_cell_pos, line_pos1, line_pos2
+                )
 
             next_cell_pos = self.get_cell_position(current_position)
 
