@@ -29,7 +29,7 @@ class GridCell:
 
     def add_line(self, new_line: PhysicsLine):
         for i, line in enumerate(self.lines):
-            if line.id > new_line.id:
+            if line.id < new_line.id:
                 self.lines.insert(i, new_line)
                 self.ids.add(new_line.id)
                 return
