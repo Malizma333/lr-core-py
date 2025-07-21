@@ -120,6 +120,7 @@ class Grid:
             delta_y = -1 - curr_cell_pos.remainder.y
 
         if self.version == GridVersion.V6_2 or self.version == GridVersion.V6_7:
+            # Add correction for negative cell positions
             if curr_cell_pos.x < 0:
                 if line_vector.x > 0:
                     delta_x = self.cell_size + curr_cell_pos.remainder.x
@@ -136,45 +137,7 @@ class Grid:
             next_pos = Vector(curr_pos.x, curr_pos.y + delta_y)
         elif line_vector.y == 0:
             next_pos = Vector(curr_pos.x + delta_x, curr_pos.y)
-        else:
-            # Uses a different slope algorithm for getting next position
-            y_based_delta_x = delta_y * line_vector.x / line_vector.y
-            x_based_delta_y = delta_x * line_vector.y / line_vector.x
-            next_x = curr_pos.x + y_based_delta_x
-            next_y = curr_pos.y + x_based_delta_y
-            if abs(x_based_delta_y) < abs(delta_y):
-                next_pos = Vector(curr_pos.x + delta_x, next_y)
-            elif abs(x_based_delta_y) == abs(delta_y):
-                next_pos = Vector(curr_pos.x + delta_x, curr_pos.y + delta_y)
-            else:
-                next_pos = Vector(next_x, curr_pos.y + delta_y)
-
-        return next_pos
-
-    def get_next_pos_v61(
-        self,
-        curr_pos: Vector,
-        curr_cell_pos: CellPosition,
-        line_point_1: Vector,
-        line_point_2: Vector,
-    ) -> Vector:
-        line_vector = line_point_2 - line_point_1
-
-        if line_vector.x > 0:
-            delta_x = self.cell_size - curr_cell_pos.remainder.x
-        else:
-            delta_x = -1 - curr_cell_pos.remainder.x
-
-        if line_vector.y > 0:
-            delta_y = self.cell_size - curr_cell_pos.remainder.y
-        else:
-            delta_y = -1 - curr_cell_pos.remainder.y
-
-        if line_vector.x == 0:
-            next_pos = Vector(curr_pos.x, curr_pos.x + delta_y)
-        elif line_vector.y == 0:
-            next_pos = Vector(delta_x + curr_pos.x, curr_pos.y)
-        else:
+        elif self.version == GridVersion.V6_1:
             if line_vector.x != 0 and line_vector.y != 0:
                 slope = line_vector.y / line_vector.x
             else:
@@ -188,6 +151,21 @@ class Grid:
                 next_pos = Vector(curr_pos.x + delta_x, curr_pos.y + delta_y)
             else:
                 next_pos = Vector(next_x, curr_pos.y + delta_y)
+        elif self.version == GridVersion.V6_2 or self.version == GridVersion.V6_7:
+            # Uses a different slope algorithm for getting next position
+            y_based_delta_x = delta_y * line_vector.x / line_vector.y
+            x_based_delta_y = delta_x * line_vector.y / line_vector.x
+            next_x = curr_pos.x + y_based_delta_x
+            next_y = curr_pos.y + x_based_delta_y
+            if abs(x_based_delta_y) < abs(delta_y):
+                next_pos = Vector(curr_pos.x + delta_x, next_y)
+            elif abs(x_based_delta_y) == abs(delta_y):
+                next_pos = Vector(curr_pos.x + delta_x, curr_pos.y + delta_y)
+            else:
+                next_pos = Vector(next_x, curr_pos.y + delta_y)
+        else:
+            # Technically unreachable
+            next_pos = Vector(curr_pos.x + delta_x, curr_pos.y + delta_y)
 
         return next_pos
 
@@ -217,18 +195,9 @@ class Grid:
             and curr_cell_pos.y <= upper_bound_y
         ):
             cells.append(curr_cell_pos)
-
-            if self.version == GridVersion.V6_0:
-                break  # TODO
-            elif self.version == GridVersion.V6_1:
-                current_position = self.get_next_pos_v61(
-                    current_position, curr_cell_pos, line_pos1, line_pos2
-                )
-            else:
-                current_position = self.get_next_pos(
-                    current_position, curr_cell_pos, line_pos1, line_pos2
-                )
-
+            current_position = self.get_next_pos(
+                current_position, curr_cell_pos, line_pos1, line_pos2
+            )
             next_cell_pos = self.get_cell_position(current_position)
 
             # This causes a crash in 6.1, so we break early
