@@ -45,10 +45,6 @@ class GridCell:
                 return
 
 
-# TODO 6.1
-# TODO 6.0?
-
-
 # A grid of GridCells that processes all of the lines
 class Grid:
     def __init__(self, version: GridVersion, cell_size: float):
@@ -126,7 +122,7 @@ class Grid:
             else:
                 return -1 - cell_remainder_component
 
-    def get_step(self, line_vector: Vector, cell_pos: CellPosition) -> Vector:
+    def get_next_pos(self, line_vector: Vector, cell_pos: CellPosition) -> Vector:
         delta_x = self.get_step_to_boundary(
             line_vector.x > 0,
             cell_pos["X"],
@@ -154,14 +150,49 @@ class Grid:
 
         return step
 
+    def get_next_pos_v61(
+        self,
+        curr_pos: Vector,
+        line_vector: Vector,
+        cell_pos: CellPosition,
+        line_point_1: Vector,
+    ) -> Vector:
+        step = Vector(0, 0)
+        slope = 0.0
+
+        if line_vector.x != 0 and line_vector.y != 0:
+            slope = line_vector.y / line_vector.x
+
+        dx = -cell_pos["REMAINDER_X"] + (self.cell_size if line_vector.x > 0 else -1)
+        dy = -cell_pos["REMAINDER_Y"] + (self.cell_size if line_vector.y > 0 else -1)
+
+        if line_vector.x == 0:
+            return Vector(curr_pos.x, curr_pos.x + dy)
+
+        if line_vector.y == 0:
+            return Vector(dx + curr_pos.x, curr_pos.y)
+
+        isbelowactualY = line_point_1.y - slope * line_point_1.x
+        yDoesThisEvenWork = round(slope * (curr_pos.x + dx) + isbelowactualY)
+        if abs(yDoesThisEvenWork - curr_pos.y) < abs(dy):
+            step = Vector(curr_pos.x + dx, yDoesThisEvenWork)
+        elif abs(yDoesThisEvenWork - curr_pos.y) == abs(dy):
+            step = Vector(curr_pos.x + dx, curr_pos.y + dy)
+        else:
+            step = Vector(
+                round((curr_pos.y + dy - isbelowactualY) / slope), curr_pos.y + dy
+            )
+        return step
+
     def get_cell_positions_between(
         self, pos1: Vector, pos2: Vector
     ) -> list[CellPosition]:
+        cells = []
+        line_vector = pos2 - pos1
         initial_cell = self.get_cell_position(pos1)
         final_cell = self.get_cell_position(pos2)
-        cells = []
 
-        if (
+        if (line_vector.x == 0 and line_vector.y == 0) or (
             initial_cell["X"] == final_cell["X"]
             and initial_cell["Y"] == final_cell["Y"]
         ):
@@ -175,27 +206,34 @@ class Grid:
         current_position = pos1.copy()
         curr_cell_pos = initial_cell
 
-        if self.version == GridVersion.V6_2 or self.version == GridVersion.V6_7:
-            while (
-                lower_bound_x <= curr_cell_pos["X"]
-                and curr_cell_pos["X"] <= upper_bound_x
-                and lower_bound_y <= curr_cell_pos["Y"]
-                and curr_cell_pos["Y"] <= upper_bound_y
+        while (
+            lower_bound_x <= curr_cell_pos["X"]
+            and curr_cell_pos["X"] <= upper_bound_x
+            and lower_bound_y <= curr_cell_pos["Y"]
+            and curr_cell_pos["Y"] <= upper_bound_y
+        ):
+            cells.append(curr_cell_pos)
+
+            if self.version == GridVersion.V6_0:
+                break  # TODO
+            elif self.version == GridVersion.V6_1:
+                current_position = self.get_next_pos_v61(
+                    current_position, line_vector, curr_cell_pos, pos1
+                )
+            else:
+                current_position += self.get_next_pos(line_vector, curr_cell_pos)
+
+            next_cell_pos = self.get_cell_position(current_position)
+
+            # Avoid 6.1 grid bug
+            if (
+                next_cell_pos["X"] == curr_cell_pos["X"]
+                and next_cell_pos["Y"] == curr_cell_pos["Y"]
             ):
-                cells.append(curr_cell_pos)
-                current_position += self.get_step(pos2 - pos1, curr_cell_pos)
-                next_cell_pos = self.get_cell_position(current_position)
+                break
 
-                # Avoid 6.1 grid bug (TODO merge in?)
-                if (
-                    next_cell_pos["X"] == curr_cell_pos["X"]
-                    and next_cell_pos["Y"] == curr_cell_pos["Y"]
-                ):
-                    break
+            curr_cell_pos = next_cell_pos
 
-                curr_cell_pos = next_cell_pos
-        else:
-            pass
         return cells
 
     def get_interacting_lines(self, point: ContactPoint):
