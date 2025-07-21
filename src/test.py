@@ -71,12 +71,12 @@ for [
         loaded[track_file] = Engine(version, entities, lines)
 
     engine = loaded[track_file]
-    format_string = "{:<10} {}"
+    format_string = "{:<5} {:<15} {}"
 
     if equal(engine.get_frame(frame), frame_data):
-        print(format_string.format("PASS", test_name))
+        print(format_string.format("PASS", track_file, test_name))
     else:
-        print(format_string.format("FAIL", test_name))
+        print(format_string.format("FAIL", track_file, test_name))
         fail_count += 1
 
 print("Passed", len(tests) - fail_count)

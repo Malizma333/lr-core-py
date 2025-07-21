@@ -10,7 +10,9 @@ from engine.line import PhysicsLine
 def convert_lines(lines: list) -> list[PhysicsLine]:
     converted_lines: list[PhysicsLine] = []
     for line in lines:
-        if line["type"] != 2:
+        if line["type"] != 2 and not (
+            line["x1"] == line["x2"] and line["y1"] == line["y2"]
+        ):
             converted_lines.append(
                 PhysicsLine(
                     line["id"],
