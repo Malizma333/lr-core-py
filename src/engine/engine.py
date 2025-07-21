@@ -5,6 +5,7 @@ from engine.entity import Entity
 from engine.grid import Grid, GridVersion
 from engine.line import PhysicsLine
 
+# TODO: Review files for python-specific features
 
 GRID_CELL_SIZE = 14
 FRAMES_PER_SECOND = 40
