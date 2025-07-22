@@ -1,6 +1,3 @@
-# TODO remount physics? + remount versions (lra vs .com)?
-# TODO scarf physics? + scarf versions (lra vs .com)?
-
 from engine.grid import Grid
 from engine.vector import Vector
 from engine.contact_point import ContactPoint
@@ -132,13 +129,15 @@ class Entity:
         self.bones: list[Union[NormalBone, RepelBone, FragileBone]] = []
         self.points: list[ContactPoint] = []
         self.bind_triggers: list[BindTrigger] = []
-        # TODO Boolean for remount enabled, which sets the sled and bosh remount enabled, unless the sled breaks
-        # TODO Boolean for remountable state, which is what gets set by remount enabled
+        # TODO
+        #  Boolean for remount enabled, which sets for both sled and rider entities whether they can join other entities
+        #  Gets set to false if sled breaks
+        #  Boolean for remountable state, which is what gets set by remount enabled
 
     def apply_initial_state(
         self, init_state: InitialEntityParams, rotation_origin: Vector
     ):
-        # TODO: Remount
+        # TODO: Set remount boolean
 
         origin = rotation_origin
         cos_theta = math.cos(init_state["ROTATION"])

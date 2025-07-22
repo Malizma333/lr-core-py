@@ -61,8 +61,6 @@ class Grid:
         for position in self.get_cell_positions_for(line):
             self.unregister(line, position)
 
-    # TODO move_line?
-
     def register(self, line: PhysicsLine, position: CellPosition):
         cell_key = self.hash_int_pair(position.x, position.y)
         if cell_key not in self.cells:

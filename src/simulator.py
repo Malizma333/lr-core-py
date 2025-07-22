@@ -228,4 +228,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/grid_60_test.track.json")
+    TrackSimulator("fixtures/remount_two_riders.track.json")

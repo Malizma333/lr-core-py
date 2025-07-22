@@ -36,8 +36,6 @@ class Engine:
         for line in lines:
             self.grid.add_line(line)
 
-    # TODO: Support adding and removing lines, refreshing physics cache
-
     def get_frame(self, target_frame: int) -> Union[list[Entity], None]:
         if target_frame < 0:
             return None
