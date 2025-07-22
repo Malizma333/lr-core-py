@@ -18,4 +18,4 @@ jobs:
           python-version: '3.11'
 
       - name: Run test script
-        run: python count_failures.py
+        run: python src/test.py
