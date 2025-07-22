@@ -1,6 +1,6 @@
 // Utility to download track state from linerider.com for test case usage
 
-function captureState(testName) {
+function captureState(testName, includeScarf = false) {
   const state = [];
   const index = Math.floor(store.getState().player.index);
   state.push(testName);
@@ -20,6 +20,12 @@ function captureState(testName) {
       )
     ),
   );
+
+  if (!includeScarf) {
+    for (let i = 0; i < state[3].length; i++) {
+      state[3][i].splice(10, 7)
+    }
+  }
 
   return JSON.stringify(state) + ",";
 }

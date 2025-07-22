@@ -31,9 +31,11 @@ def equal(
         return True
 
     if not (result_state != None and expected_state != None):
+        print("one state was null")
         return False
 
     if len(result_state) != len(expected_state):
+        print("states did not match in length")
         return False
 
     for i, entity_data in enumerate(expected_state):
@@ -43,9 +45,9 @@ def equal(
             entity_data[6],
         )
         for j, point in enumerate(entity_data):
-            # TODO scarf points
-            if len(result_state[i].points) == j:
-                break
+            if len(result_state[i].points) != len(entity_data):
+                print("entity points did not match in length")
+                return False
 
             result_data = (
                 (result_state[i].points[j].position.x),
