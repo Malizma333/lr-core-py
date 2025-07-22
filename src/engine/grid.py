@@ -168,31 +168,25 @@ class Grid:
                 for cell_y in range(lower_bound_y, upper_bound_y + 1):
                     curr_pos = self.cell_size * Vector(cell_x + 0.5, cell_y + 0.5)
                     next_cell_pos = self.get_cell_position(curr_pos)
-                    half_line_vector = 0.5 * Vector(
-                        abs(line.vector.x), abs(line.vector.y)
-                    )
+                    line_halfway = 0.5 * Vector(abs(line.vector.x), abs(line.vector.y))
                     line_midpoint = line.endpoints[0] + line.vector * 0.5
                     dist_between_centers = line_midpoint - next_cell_pos.world_position
                     absolute_normal = Vector(
                         abs(line.normal_unit.x), abs(line.normal_unit.y)
                     )
-                    dist_from_cell_origin = absolute_normal @ next_cell_pos.remainder
+                    dist_from_cell_center = absolute_normal @ next_cell_pos.remainder
                     cell_overlap_into_hitbox = (
-                        Vector(dist_from_cell_origin, dist_from_cell_origin)
+                        Vector(dist_from_cell_center, dist_from_cell_center)
                         @ absolute_normal
                     )
                     norm_dist_between_centers = line.normal_unit @ dist_between_centers
-                    dist_from_line = (
-                        Vector(
-                            abs(norm_dist_between_centers),
-                            abs(norm_dist_between_centers),
-                        )
-                        @ line.normal_unit
-                    )
+                    dist_from_line = abs(
+                        norm_dist_between_centers * line.normal_unit.x
+                    ) + abs(norm_dist_between_centers * line.normal_unit.y)
                     if (
-                        half_line_vector.x + next_cell_pos.remainder.x
+                        line_halfway.x + next_cell_pos.remainder.x
                         >= abs(dist_between_centers.x)
-                        and half_line_vector.y + next_cell_pos.remainder.y
+                        and line_halfway.y + next_cell_pos.remainder.y
                         >= abs(dist_between_centers.y)
                         and cell_overlap_into_hitbox >= dist_from_line
                     ):

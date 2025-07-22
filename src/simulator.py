@@ -10,7 +10,7 @@ from utils.convert import convert_lines, convert_entities, convert_version
 
 class TrackSimulator:
     DRAW_LINES = False
-    START_FRAME = 18 * 40
+    START_FRAME = 2 * 60 * 40
     ZOOM = 12
     CP_RADIUS = 2
     BONE_WIDTH = 0.25
@@ -94,6 +94,11 @@ class TrackSimulator:
             self._redraw(frame_entities)
 
     def _redraw(self, entities: list[Entity]):
+        for entity in entities:
+            for point in entity.points:
+                print(
+                    f'["{point.position.x:.17g}", "{point.position.y:.17g}","{point.velocity.x:.17g}","{point.velocity.y:.17g}"]'
+                )
         self.current_draw_index = 0
         self._adjust_camera(entities)
         for line in self.lines:
