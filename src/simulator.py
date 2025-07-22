@@ -10,7 +10,7 @@ from utils.convert import convert_lines, convert_entities, convert_version
 
 class TrackSimulator:
     DRAW_LINES = False
-    START_FRAME = 2 * 60 * 40
+    START_FRAME = 0
     ZOOM = 12
     CP_RADIUS = 2
     BONE_WIDTH = 0.25
@@ -94,11 +94,6 @@ class TrackSimulator:
             self._redraw(frame_entities)
 
     def _redraw(self, entities: list[Entity]):
-        for entity in entities:
-            for point in entity.points:
-                print(
-                    f'["{point.position.x:.17g}", "{point.position.y:.17g}","{point.velocity.x:.17g}","{point.velocity.y:.17g}"]'
-                )
         self.current_draw_index = 0
         self._adjust_camera(entities)
         for line in self.lines:
@@ -136,7 +131,10 @@ class TrackSimulator:
 
         for point in entity.points:
             pos = self._physics_to_canvas(point.position)
-            vel_unit = point.velocity.unit()
+            vel_length = point.velocity.length()
+            vel_unit = Vector(0, 1)
+            if vel_length != 0:
+                vel_unit = point.velocity / vel_length
             tail = pos + mv_len_zoom * vel_unit
             self._generate_line(self.MV_WIDTH, pos, tail, color=self.MV_COLOR)
             self._generate_circle(pos.x, pos.y, self.CP_RADIUS, color=self.CP_COLOR)
@@ -228,4 +226,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/remount_two_riders.track.json")
+    TrackSimulator("fixtures/initial_state.track.json")

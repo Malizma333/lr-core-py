@@ -11,7 +11,6 @@ fail_count = 0
 loaded: dict[str, Engine] = {}
 # TODO dismount test + sled break test
 # TODO remount single rider + multi rider tests
-# TODO initial state test
 # TODO replace first feature.track.json test with scarf position test
 
 

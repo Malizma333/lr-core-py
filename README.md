@@ -16,6 +16,7 @@ Current features:
 - 6.7 gravity fix
 - rider bones, points, and bindings
 - line extensions, flipped lines, acceleration multipliers
+- multiple riders
 
 Planned TODOs:
 - Scarf implementation (.com only, not worried about compatibility)

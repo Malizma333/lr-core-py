@@ -47,9 +47,6 @@ class Vector:
     def length(self) -> float:
         return math.sqrt(self.length_sq())
 
-    def unit(self):
-        return Vector(self.x / self.length(), self.y / self.length())
-
     def copy(self):
         return Vector(self.x, self.y)
 
