@@ -133,7 +133,6 @@ class Grid:
             else:
                 next_pos = Vector(next_x, curr_pos.y + delta_y)
         else:
-            # Uses a different slope algorithm for getting next position
             y_based_delta_x = delta_y * line.vector.x / line.vector.y
             x_based_delta_y = delta_x * line.vector.y / line.vector.x
             next_x = curr_pos.x + y_based_delta_x
@@ -164,40 +163,42 @@ class Grid:
             return [initial_cell]
 
         if self.version == GridVersion.V6_0:
+            # Finds axis-aligned bounding box and filters it
             for cell_x in range(lower_bound_x, upper_bound_x + 1):
                 for cell_y in range(lower_bound_y, upper_bound_y + 1):
                     curr_pos = self.cell_size * Vector(cell_x + 0.5, cell_y + 0.5)
                     next_cell_pos = self.get_cell_position(curr_pos)
-
-                    # Check bounds
-                    line_halfway = 0.5 * Vector(abs(line.vector.x), abs(line.vector.y))
+                    half_line_vector = 0.5 * Vector(
+                        abs(line.vector.x), abs(line.vector.y)
+                    )
                     line_midpoint = line.endpoints[0] + line.vector * 0.5
-                    difference = line_midpoint - next_cell_pos.world_position
+                    dist_between_centers = line_midpoint - next_cell_pos.world_position
                     absolute_normal = Vector(
                         abs(line.normal_unit.x), abs(line.normal_unit.y)
                     )
-                    sum_a = (
-                        absolute_normal.x * next_cell_pos.remainder.x
-                        + next_cell_pos.remainder.y * absolute_normal.y
-                    ) * absolute_normal.x + (
-                        absolute_normal.x * next_cell_pos.remainder.x
-                        + absolute_normal.y * next_cell_pos.remainder.y
-                    ) * absolute_normal.y
-                    sum_b = (
-                        line.normal_unit.x * difference.x
-                        + line.normal_unit.y * difference.y
+                    dist_from_cell_origin = absolute_normal @ next_cell_pos.remainder
+                    cell_overlap_into_hitbox = (
+                        Vector(dist_from_cell_origin, dist_from_cell_origin)
+                        @ absolute_normal
                     )
-                    sum_c = abs(sum_b * line.normal_unit.x) + abs(
-                        sum_b * line.normal_unit.y
+                    norm_dist_between_centers = line.normal_unit @ dist_between_centers
+                    dist_from_line = (
+                        Vector(
+                            abs(norm_dist_between_centers),
+                            abs(norm_dist_between_centers),
+                        )
+                        @ line.normal_unit
                     )
                     if (
-                        line_halfway.x + next_cell_pos.remainder.x >= abs(difference.x)
-                        and line_halfway.y + next_cell_pos.remainder.y
-                        >= abs(difference.y)
-                        and sum_a >= sum_c
+                        half_line_vector.x + next_cell_pos.remainder.x
+                        >= abs(dist_between_centers.x)
+                        and half_line_vector.y + next_cell_pos.remainder.y
+                        >= abs(dist_between_centers.y)
+                        and cell_overlap_into_hitbox >= dist_from_line
                     ):
                         cells.append(next_cell_pos)
         else:
+            # Performs DDA stepping
             while (
                 lower_bound_x <= curr_cell_pos.x
                 and curr_cell_pos.x <= upper_bound_x
