@@ -3,12 +3,14 @@ import json
 
 from engine.engine import Engine, FRAMES_PER_SECOND
 from engine.vector import Vector
-from engine.entity import Entity, EntityState, NormalBone, FragileBone, RepelBone
+from engine.entity import Entity, NormalBone, FragileBone, RepelBone
 from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
 from utils.convert import convert_lines, convert_entities, convert_version
 
 
 class TrackSimulator:
+    DRAW_LINES = False
+    START_FRAME = 2 * 40 * 60
     ZOOM = 12
     CP_RADIUS = 2
     BONE_WIDTH = 0.25
@@ -37,7 +39,7 @@ class TrackSimulator:
         )
         self.origin = Vector(0, 0)
 
-        self.frame = 0
+        self.frame = self.START_FRAME
         self.focused_entity = 0
         self.playing = False
         self.current_draw_index = 0
@@ -95,7 +97,8 @@ class TrackSimulator:
         self.current_draw_index = 0
         self._adjust_camera(entities)
         for line in self.lines:
-            self._draw_line(line)
+            if self.DRAW_LINES:
+                self._draw_line(line)
         for entity in entities:
             self._draw_entity(entity)
         self._draw_text(entities)
@@ -115,12 +118,12 @@ class TrackSimulator:
         for bone in entity.bones:
             if isinstance(bone, NormalBone):
                 color = "blue"
-            elif isinstance(bone, FragileBone) and entity.state == EntityState.MOUNTED:
+            elif isinstance(bone, FragileBone):
                 color = "red"
             elif isinstance(bone, RepelBone):
                 color = "pink"
             else:
-                continue
+                color = "white"
 
             p1 = self._physics_to_canvas(bone.base.point1.position)
             p2 = self._physics_to_canvas(bone.base.point2.position)
@@ -220,4 +223,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/feature_legacy_test.track.json")
+    TrackSimulator("fixtures/bolted_to_the_wall.track.json")

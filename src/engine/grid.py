@@ -54,24 +54,14 @@ class Grid:
         self.cell_size = cell_size
 
     def add_line(self, line: PhysicsLine):
-        for position in self.get_cell_positions_between(
-            line.endpoints[0], line.endpoints[1]
-        ):
+        for position in self.get_cell_positions_for(line):
             self.register(line, position)
 
     def remove_line(self, line: PhysicsLine):
-        for position in self.get_cell_positions_between(
-            line.endpoints[0], line.endpoints[1]
-        ):
+        for position in self.get_cell_positions_for(line):
             self.unregister(line, position)
 
-    def move_line(self, line: PhysicsLine, old_pos1: Vector, old_pos2: Vector):
-        for position in self.get_cell_positions_between(old_pos1, old_pos2):
-            self.unregister(line, position)
-        for position in self.get_cell_positions_between(
-            line.endpoints[0], line.endpoints[1]
-        ):
-            self.register(line, position)
+    # TODO move_line?
 
     def register(self, line: PhysicsLine, position: CellPosition):
         cell_key = self.hash_int_pair(position.x, position.y)
@@ -100,21 +90,15 @@ class Grid:
     def get_cell_position(self, position: Vector) -> CellPosition:
         return CellPosition(position, self.cell_size)
 
-    def get_next_pos(
-        self,
-        curr_pos: Vector,
-        curr_cell_pos: CellPosition,
-        line_point_1: Vector,
-        line_point_2: Vector,
+    def get_next_position(
+        self, curr_pos: Vector, curr_cell_pos: CellPosition, line: PhysicsLine
     ) -> Vector:
-        line_vector = line_point_2 - line_point_1
-
-        if line_vector.x > 0:
+        if line.vector.x > 0:
             delta_x = self.cell_size - curr_cell_pos.remainder.x
         else:
             delta_x = -1 - curr_cell_pos.remainder.x
 
-        if line_vector.y > 0:
+        if line.vector.y > 0:
             delta_y = self.cell_size - curr_cell_pos.remainder.y
         else:
             delta_y = -1 - curr_cell_pos.remainder.y
@@ -122,27 +106,24 @@ class Grid:
         if self.version == GridVersion.V6_2 or self.version == GridVersion.V6_7:
             # Add correction for negative cell positions
             if curr_cell_pos.x < 0:
-                if line_vector.x > 0:
+                if line.vector.x > 0:
                     delta_x = self.cell_size + curr_cell_pos.remainder.x
                 else:
                     delta_x = -(self.cell_size + curr_cell_pos.remainder.x)
 
             if curr_cell_pos.y < 0:
-                if line_vector.y > 0:
+                if line.vector.y > 0:
                     delta_y = self.cell_size + curr_cell_pos.remainder.x
                 else:
                     delta_y = -(self.cell_size + curr_cell_pos.remainder.x)
 
-        if line_vector.x == 0:
+        if line.vector.x == 0:
             next_pos = Vector(curr_pos.x, curr_pos.y + delta_y)
-        elif line_vector.y == 0:
+        elif line.vector.y == 0:
             next_pos = Vector(curr_pos.x + delta_x, curr_pos.y)
         elif self.version == GridVersion.V6_1:
-            if line_vector.x != 0 and line_vector.y != 0:
-                slope = line_vector.y / line_vector.x
-            else:
-                slope = 0
-            y_intercept = line_point_1.y - slope * line_point_1.x
+            slope = line.vector.y / line.vector.x
+            y_intercept = line.endpoints[0].y - slope * line.endpoints[0].x
             next_x = round((curr_pos.y + delta_y - y_intercept) / slope)
             next_y = round(slope * (curr_pos.x + delta_x) + y_intercept)
             if abs(next_y - curr_pos.y) < abs(delta_y):
@@ -153,8 +134,8 @@ class Grid:
                 next_pos = Vector(next_x, curr_pos.y + delta_y)
         elif self.version == GridVersion.V6_2 or self.version == GridVersion.V6_7:
             # Uses a different slope algorithm for getting next position
-            y_based_delta_x = delta_y * line_vector.x / line_vector.y
-            x_based_delta_y = delta_x * line_vector.y / line_vector.x
+            y_based_delta_x = delta_y * line.vector.x / line.vector.y
+            x_based_delta_y = delta_x * line.vector.y / line.vector.x
             next_x = curr_pos.x + y_based_delta_x
             next_y = curr_pos.y + x_based_delta_y
             if abs(x_based_delta_y) < abs(delta_y):
@@ -169,45 +150,75 @@ class Grid:
 
         return next_pos
 
-    def get_cell_positions_between(
-        self, line_pos1: Vector, line_pos2: Vector
-    ) -> list[CellPosition]:
+    def get_cell_positions_for(self, line: PhysicsLine) -> list[CellPosition]:
         cells = []
-        initial_cell = self.get_cell_position(line_pos1)
-        final_cell = self.get_cell_position(line_pos2)
+        initial_cell = self.get_cell_position(line.endpoints[0])
+        final_cell = self.get_cell_position(line.endpoints[1])
         lower_bound_x = min(initial_cell.x, final_cell.x)
         lower_bound_y = min(initial_cell.y, final_cell.y)
         upper_bound_x = max(initial_cell.x, final_cell.x)
         upper_bound_y = max(initial_cell.y, final_cell.y)
+        curr_pos = line.endpoints[0]
+        curr_cell_pos = initial_cell
 
-        if line_pos1 == line_pos2 or (
+        if line.endpoints[0] == line.endpoints[1] or (
             initial_cell.x == final_cell.x and initial_cell.y == final_cell.y
         ):
             return [initial_cell]
 
-        current_position = line_pos1.copy()
-        curr_cell_pos = initial_cell
+        if self.version == GridVersion.V6_0:
+            for cell_x in range(lower_bound_x, upper_bound_x + 1):
+                for cell_y in range(lower_bound_y, upper_bound_y + 1):
+                    curr_pos = self.cell_size * Vector(cell_x + 0.5, cell_y + 0.5)
+                    next_cell_pos = self.get_cell_position(curr_pos)
 
-        while (
-            lower_bound_x <= curr_cell_pos.x
-            and curr_cell_pos.x <= upper_bound_x
-            and lower_bound_y <= curr_cell_pos.y
-            and curr_cell_pos.y <= upper_bound_y
-        ):
-            cells.append(curr_cell_pos)
-            current_position = self.get_next_pos(
-                current_position, curr_cell_pos, line_pos1, line_pos2
-            )
-            next_cell_pos = self.get_cell_position(current_position)
-
-            # This causes a crash in 6.1, so we break early
-            if (
-                next_cell_pos.x == curr_cell_pos.x
-                and next_cell_pos.y == curr_cell_pos.y
+                    # Check bounds
+                    line_halfway = 0.5 * Vector(abs(line.vector.x), abs(line.vector.y))
+                    line_midpoint = line.endpoints[0] + line.vector * 0.5
+                    difference = line_midpoint - next_cell_pos.world_position
+                    absolute_normal = Vector(
+                        abs(line.normal_unit.x), abs(line.normal_unit.y)
+                    )
+                    sum_a = (
+                        absolute_normal.x * next_cell_pos.remainder.x
+                        + next_cell_pos.remainder.y * absolute_normal.y
+                    ) * absolute_normal.x + (
+                        absolute_normal.x * next_cell_pos.remainder.x
+                        + absolute_normal.y * next_cell_pos.remainder.y
+                    ) * absolute_normal.y
+                    sum_b = (
+                        line.normal_unit.x * difference.x
+                        + line.normal_unit.y * difference.y
+                    )
+                    sum_c = abs(sum_b * line.normal_unit.x) + abs(
+                        sum_b * line.normal_unit.y
+                    )
+                    if (
+                        line_halfway.x + next_cell_pos.remainder.x >= abs(difference.x)
+                        and line_halfway.y + next_cell_pos.remainder.y
+                        >= abs(difference.y)
+                        and sum_a >= sum_c
+                    ):
+                        cells.append(next_cell_pos)
+        else:
+            while (
+                lower_bound_x <= curr_cell_pos.x
+                and curr_cell_pos.x <= upper_bound_x
+                and lower_bound_y <= curr_cell_pos.y
+                and curr_cell_pos.y <= upper_bound_y
             ):
-                break
+                cells.append(curr_cell_pos)
+                curr_pos = self.get_next_position(curr_pos, curr_cell_pos, line)
+                next_cell_pos = self.get_cell_position(curr_pos)
 
-            curr_cell_pos = next_cell_pos
+                # This causes a crash in 6.1, so we break early
+                if (
+                    next_cell_pos.x == curr_cell_pos.x
+                    and next_cell_pos.y == curr_cell_pos.y
+                ):
+                    break
+
+                curr_cell_pos = next_cell_pos
 
         return cells
 

@@ -1,14 +1,7 @@
 {
-  "label": "feature_legacy_test",
+  "label": "grid_61_test",
   "version": "6.1",
-  "riders": [{
-    "startPosition": {
-      "x": 383.6,
-      "y": 324.6
-    },
-    "startVelocity": { "x": 0.4, "y": 0 },
-    "remountable": 1
-  }],
+  "riders": [{ "startPosition": { "x": 383.6, "y": 324.6 }, "startVelocity": { "x": 0.4, "y": 0 }, "remountable": 1 }],
   "startPosition": {
     "x": 383.6,
     "y": 324.6

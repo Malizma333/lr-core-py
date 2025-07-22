@@ -23,6 +23,7 @@ class BindJoint:
         return self.point2.position - self.point1.position
 
 
+# TODO refactor bindings into internal entity dictionary with [str, bool] state
 # Bindings used to mark bones that get broken by joints crossing
 class Binding:
     def __init__(self):
@@ -119,11 +120,6 @@ class RepelBone:
         self.base.update_points(adjustment)
 
 
-class EntityState(Enum):
-    MOUNTED = 0
-    DISMOUNTED = 1
-
-
 class InitialEntityParams(TypedDict):
     POSITION: Vector
     VELOCITY: Vector
@@ -136,7 +132,6 @@ class Entity:
         self.bones: list[Union[NormalBone, RepelBone, FragileBone]] = []
         self.points: list[ContactPoint] = []
         self.bind_triggers: list[BindTrigger] = []
-        self.state: EntityState = EntityState.MOUNTED
         # TODO Boolean for remount enabled, which sets the sled and bosh remount enabled, unless the sled breaks
         # TODO Boolean for remountable state, which is what gets set by remount enabled
 
@@ -194,7 +189,6 @@ class Entity:
 
     def deep_copy(self):
         new_entity = Entity()
-        new_entity.state = self.state
         # TODO see if we can get rid of these in favor of indices
         point_map: dict[ContactPoint, ContactPoint] = {}
         bind_map: dict[Binding, Binding] = {}
