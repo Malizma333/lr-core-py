@@ -1,5 +1,6 @@
 import tkinter as tk
 import json
+from enum import Enum
 
 from engine.engine import Engine, FRAMES_PER_SECOND
 from engine.vector import Vector
@@ -8,18 +9,34 @@ from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
 from utils.convert import convert_lines, convert_entities, convert_version
 
 
+class DrawTag(Enum):
+    Line = "line"
+    Ext = "ext"
+    Hitbox = "hitbox"
+    Bone = "bone"
+    Point = "point"
+    Vec = "vec"
+
+
 class TrackSimulator:
-    DRAW_LINES = False
+    DRAW_LINES = True
     START_FRAME = 0
-    ZOOM = 12
-    CP_RADIUS = 2
-    BONE_WIDTH = 0.25
+    ZOOM = 6
     MV_LENGTH = 3
     MV_WIDTH = 0.25
     MV_COLOR = "green"
+    CP_RADIUS = 2
     CP_COLOR = "white"
-    EXTENSION_DRAW_WIDTH = 1
-    LINE_DRAW_WIDTH = 2
+    BONE_WIDTH = 0.25
+    EXTENSION_WIDTH = 1
+    EXTENSION_COLOR = "red"
+    LINE_WIDTH = 2
+    LINE_RED_COLOR = "red"
+    LINE_BLUE_COLOR = "blue"
+    NORMAL_BONE_COLOR = "blue"
+    FRAGILE_BONE_COLOR = "red"
+    REPEL_BONE_COLOR = "pink"
+    HITBOX_COLOR = "gray"
 
     def __init__(self, track_path: str):
         self.track_path = track_path
@@ -34,8 +51,8 @@ class TrackSimulator:
         self.canvas = tk.Canvas(self.root, width=1280, height=720, bg="white")
         self.canvas.pack(fill=tk.BOTH, expand=True)
         self.canvas_cache = []
-        self.canvas_center = Vector(
-            int(self.canvas["width"]) / 2, int(self.canvas["height"]) / 2
+        self.canvas_center = 0.5 * Vector(
+            int(self.canvas["width"]), int(self.canvas["height"])
         )
         self.origin = Vector(0, 0)
 
@@ -49,6 +66,12 @@ class TrackSimulator:
         self._update()
         self._tick()
         self.canvas.focus_set()
+        self.canvas.tag_raise(DrawTag.Hitbox.name)
+        self.canvas.tag_raise(DrawTag.Ext.name)
+        self.canvas.tag_raise(DrawTag.Line.name)
+        self.canvas.tag_raise(DrawTag.Bone.name)
+        self.canvas.tag_raise(DrawTag.Vec.name)
+        self.canvas.tag_raise(DrawTag.Point.name)
         self.root.mainloop()
 
     def _bind_keys(self):
@@ -117,17 +140,17 @@ class TrackSimulator:
 
         for bone in entity.bones:
             if isinstance(bone, NormalBone):
-                color = "blue"
+                color = self.NORMAL_BONE_COLOR
             elif isinstance(bone, FragileBone):
-                color = "red"
+                color = self.FRAGILE_BONE_COLOR
             elif isinstance(bone, RepelBone):
-                color = "pink"
+                color = self.REPEL_BONE_COLOR
             else:
                 color = "white"
 
             p1 = self._physics_to_canvas(bone.base.point1.position)
             p2 = self._physics_to_canvas(bone.base.point2.position)
-            self._generate_line(self.BONE_WIDTH, p1, p2, color=color)
+            self._generate_line(DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=color)
 
         for point in entity.points:
             pos = self._physics_to_canvas(point.position)
@@ -136,8 +159,12 @@ class TrackSimulator:
             if vel_length != 0:
                 vel_unit = point.velocity / vel_length
             tail = pos + mv_len_zoom * vel_unit
-            self._generate_line(self.MV_WIDTH, pos, tail, color=self.MV_COLOR)
-            self._generate_circle(pos.x, pos.y, self.CP_RADIUS, color=self.CP_COLOR)
+            self._generate_line(
+                DrawTag.Vec, self.MV_WIDTH, pos, tail, color=self.MV_COLOR
+            )
+            self._generate_circle(
+                DrawTag.Point, pos.x, pos.y, self.CP_RADIUS, color=self.CP_COLOR
+            )
 
     def _draw_line(self, line: PhysicsLine):
         p1, p2 = line.endpoints
@@ -155,15 +182,35 @@ class TrackSimulator:
         gwell_p2 = self._physics_to_canvas(p2 + hitbox_vec)
 
         if line.left_ext:
-            self._generate_line(self.EXTENSION_DRAW_WIDTH, c_p1, left_ext, color="red")
+            self._generate_line(
+                DrawTag.Ext,
+                self.EXTENSION_WIDTH,
+                c_p1,
+                left_ext,
+                color=self.EXTENSION_COLOR,
+            )
         if line.right_ext:
-            self._generate_line(self.EXTENSION_DRAW_WIDTH, c_p2, right_ext, color="red")
+            self._generate_line(
+                DrawTag.Ext,
+                self.EXTENSION_WIDTH,
+                c_p2,
+                right_ext,
+                color=self.EXTENSION_COLOR,
+            )
 
-        self._generate_line(LINE_HITBOX_HEIGHT, gwell_p1, gwell_p2, color="gray")
-
-        line_color = "red" if line.acceleration != 0 else "blue"
         self._generate_line(
-            self.LINE_DRAW_WIDTH, c_p1, c_p2, round_cap=True, color=line_color
+            DrawTag.Hitbox,
+            LINE_HITBOX_HEIGHT,
+            gwell_p1,
+            gwell_p2,
+            color=self.HITBOX_COLOR,
+        )
+
+        line_color = (
+            self.LINE_RED_COLOR if line.acceleration != 0 else self.LINE_BLUE_COLOR
+        )
+        self._generate_line(
+            DrawTag.Line, self.LINE_WIDTH, c_p1, c_p2, round_cap=True, color=line_color
         )
 
     def _draw_text(self, entities: list[Entity]):
@@ -185,7 +232,13 @@ class TrackSimulator:
             self._generate_text(f"{point.position}", 10, i * 25 + 25)
 
     def _generate_line(
-        self, width: float, p1: Vector, p2: Vector, color="black", round_cap=False
+        self,
+        tag: DrawTag,
+        width: float,
+        p1: Vector,
+        p2: Vector,
+        color: str,
+        round_cap=False,
     ):
         if self.current_draw_index == len(self.canvas_cache):
             line_obj = self.canvas.create_line(0, 0, 0, 0)
@@ -194,6 +247,7 @@ class TrackSimulator:
                 width=width * self.ZOOM,
                 capstyle="round" if round_cap else "butt",
                 fill=color,
+                tags=tag.name,
             )
             self.canvas_cache.append(line_obj)
         else:
@@ -202,9 +256,11 @@ class TrackSimulator:
         self.canvas.coords(line_obj, p1.x, p1.y, p2.x, p2.y)
         self.current_draw_index += 1
 
-    def _generate_circle(self, x: float, y: float, radius: float, color="black"):
+    def _generate_circle(
+        self, tag: DrawTag, x: float, y: float, radius: float, color: str
+    ):
         if self.current_draw_index == len(self.canvas_cache):
-            circle = self.canvas.create_oval(0, 0, 0, 0, fill=color)
+            circle = self.canvas.create_oval(0, 0, 0, 0, fill=color, tags=tag.name)
             self.canvas_cache.append(circle)
         else:
             circle = self.canvas_cache[self.current_draw_index]
@@ -222,8 +278,9 @@ class TrackSimulator:
             text_obj = self.canvas_cache[self.current_draw_index]
 
         self.canvas.itemconfig(text_obj, text=text)
+        self.canvas.coords(text_obj, x, y)
         self.current_draw_index += 1
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/initial_state.track.json")
+    TrackSimulator("fixtures/grid_61.track.json")
