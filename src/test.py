@@ -39,11 +39,6 @@ def equal(
         return False
 
     for i, entity_data in enumerate(expected_state):
-        # Switch hands for .com order
-        entity_data[6], entity_data[7] = (
-            entity_data[7],
-            entity_data[6],
-        )
         for j, point in enumerate(entity_data):
             if len(result_state[i].points) != len(entity_data):
                 print("entity points did not match in length")

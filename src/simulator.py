@@ -16,6 +16,7 @@ class DrawTag(Enum):
     Bone = "bone"
     Point = "point"
     Vec = "vec"
+    Text = "text"
 
 
 class TrackSimulator:
@@ -28,15 +29,15 @@ class TrackSimulator:
     CP_RADIUS = 2
     CP_COLOR = "white"
     BONE_WIDTH = 0.25
-    EXTENSION_WIDTH = 1
+    EXTENSION_WIDTH = 0.5
     EXTENSION_COLOR = "red"
     LINE_WIDTH = 2
-    LINE_RED_COLOR = "red"
-    LINE_BLUE_COLOR = "blue"
+    LINE_RED_COLOR = "#fd4f38"
+    LINE_BLUE_COLOR = "#3995fd"
     NORMAL_BONE_COLOR = "blue"
     FRAGILE_BONE_COLOR = "red"
-    REPEL_BONE_COLOR = "pink"
-    HITBOX_COLOR = "gray"
+    REPEL_BONE_COLOR = "magenta"
+    HITBOX_COLOR = "lightgray"
 
     def __init__(self, track_path: str):
         self.track_path = track_path
@@ -72,6 +73,7 @@ class TrackSimulator:
         self.canvas.tag_raise(DrawTag.Bone.name)
         self.canvas.tag_raise(DrawTag.Vec.name)
         self.canvas.tag_raise(DrawTag.Point.name)
+        self.canvas.tag_raise(DrawTag.Text.name)
         self.root.mainloop()
 
     def _bind_keys(self):
@@ -188,6 +190,7 @@ class TrackSimulator:
                 c_p1,
                 left_ext,
                 color=self.EXTENSION_COLOR,
+                round_cap=True,
             )
         if line.right_ext:
             self._generate_line(
@@ -196,6 +199,7 @@ class TrackSimulator:
                 c_p2,
                 right_ext,
                 color=self.EXTENSION_COLOR,
+                round_cap=True,
             )
 
         self._generate_line(
@@ -228,8 +232,15 @@ class TrackSimulator:
             self.canvas_center.y * 2 - 25,
         )
 
-        for i, point in enumerate(entities[self.focused_entity].points):
-            self._generate_text(f"{point.position}", 10, i * 25 + 25)
+        pos_strings = []
+        for point in entities[self.focused_entity].points:
+            pos_strings.append(f"{point.position}")
+
+        # Match LRO order
+        pos_strings[6], pos_strings[7] = pos_strings[7], pos_strings[6]
+
+        for i, pos_str in enumerate(pos_strings):
+            self._generate_text(f"{pos_str}", 10, i * 25 + 25)
 
     def _generate_line(
         self,
@@ -271,7 +282,12 @@ class TrackSimulator:
     def _generate_text(self, text: str, x: float, y: float):
         if self.current_draw_index == len(self.canvas_cache):
             text_obj = self.canvas.create_text(
-                x, y, font=("Helvetica", 12), fill="black", anchor="w"
+                x,
+                y,
+                font=("Helvetica", 12),
+                fill="black",
+                anchor="w",
+                tags=DrawTag.Text.name,
             )
             self.canvas_cache.append(text_obj)
         else:

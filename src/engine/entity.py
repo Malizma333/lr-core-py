@@ -259,16 +259,16 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
     entity = Entity()
 
     # Create the contact points first, at their initial positions
-    # Order doesn't really matter, added in this order for ease of conversion
-    # to linerider.com order in test cases
+    # Order doesn't really matter, added in this order to match linerider.com
+    # based test cases
     PEG = entity.add_point(Vector(0.0, 0.0), 0.8)
     TAIL = entity.add_point(Vector(0.0, 5.0), 0.0)
     NOSE = entity.add_point(Vector(15.0, 5.0), 0.0)
     STRING = entity.add_point(Vector(17.5, 0.0), 0.0)
     BUTT = entity.add_point(Vector(5.0, 0.0), 0.8)
     SHOULDER = entity.add_point(Vector(5.0, -5.5), 0.8)
-    LEFT_HAND = entity.add_point(Vector(11.5, -5.0), 0.1)
     RIGHT_HAND = entity.add_point(Vector(11.5, -5.0), 0.1)
+    LEFT_HAND = entity.add_point(Vector(11.5, -5.0), 0.1)
     LEFT_FOOT = entity.add_point(Vector(10.0, 5.0), 0.0)
     RIGHT_FOOT = entity.add_point(Vector(10.0, 5.0), 0.0)
 
