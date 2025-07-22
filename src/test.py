@@ -5,6 +5,7 @@ from engine.entity import Entity
 from utils.convert import convert_lines, convert_entities, convert_version
 import json
 from typing import Union
+import sys
 
 tests = json.load(open("tests.json", "r"))
 fail_count = 0
@@ -83,3 +84,6 @@ for [
 
 print("Passed", len(tests) - fail_count)
 print("Failed", fail_count)
+
+if fail_count > 0:
+    sys.exit(1)
