@@ -10,7 +10,7 @@ from utils.convert import convert_lines, convert_entities, convert_version
 
 class TrackSimulator:
     DRAW_LINES = False
-    START_FRAME = 2 * 40 * 60
+    START_FRAME = 18 * 40
     ZOOM = 12
     CP_RADIUS = 2
     BONE_WIDTH = 0.25
@@ -93,7 +93,7 @@ class TrackSimulator:
         else:
             self._redraw(frame_entities)
 
-    def _redraw(self, entities):
+    def _redraw(self, entities: list[Entity]):
         self.current_draw_index = 0
         self._adjust_camera(entities)
         for line in self.lines:
@@ -103,7 +103,7 @@ class TrackSimulator:
             self._draw_entity(entity)
         self._draw_text(entities)
 
-    def _adjust_camera(self, entities):
+    def _adjust_camera(self, entities: list[Entity]):
         entity = entities[self.focused_entity]
         avg_x = sum(p.position.x for p in entity.points) / len(entity.points)
         avg_y = sum(p.position.y for p in entity.points) / len(entity.points)
@@ -163,7 +163,7 @@ class TrackSimulator:
             self.LINE_DRAW_WIDTH, c_p1, c_p2, round_cap=True, color=line_color
         )
 
-    def _draw_text(self, entities):
+    def _draw_text(self, entities: list[Entity]):
         minutes = int(self.frame / (60 * FRAMES_PER_SECOND))
         seconds = str(100 + int((self.frame / FRAMES_PER_SECOND) % 60))[1:]
         frames = str(100 + self.frame % FRAMES_PER_SECOND)[1:]
@@ -223,4 +223,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/bolted_to_the_wall.track.json")
+    TrackSimulator("fixtures/grid_60_test.track.json")

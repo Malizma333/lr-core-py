@@ -132,7 +132,7 @@ class Grid:
                 next_pos = Vector(curr_pos.x + delta_x, curr_pos.y + delta_y)
             else:
                 next_pos = Vector(next_x, curr_pos.y + delta_y)
-        elif self.version == GridVersion.V6_2 or self.version == GridVersion.V6_7:
+        else:
             # Uses a different slope algorithm for getting next position
             y_based_delta_x = delta_y * line.vector.x / line.vector.y
             x_based_delta_y = delta_x * line.vector.y / line.vector.x
@@ -144,9 +144,6 @@ class Grid:
                 next_pos = Vector(curr_pos.x + delta_x, curr_pos.y + delta_y)
             else:
                 next_pos = Vector(next_x, curr_pos.y + delta_y)
-        else:
-            # Technically unreachable
-            next_pos = Vector(curr_pos.x + delta_x, curr_pos.y + delta_y)
 
         return next_pos
 
