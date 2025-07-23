@@ -17,7 +17,7 @@ DEFAULT_LINE_HITBOX_HEIGHT = 10
 MAX_EXTENSION_RATIO = 0.25
 
 # The linerider.com scarf uses trig operations, causing unusable tests
-# (comparing different Math.sin and math.sin implementations)
+# (comparing different sin implementations)
 # However, the flash version does not, making it much more testable
 # Turn this on to get approximately the effect of the linerider.com scarf
 # (with failing tests)
