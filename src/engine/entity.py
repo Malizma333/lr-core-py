@@ -3,13 +3,12 @@ from engine.vector import Vector
 from engine.point import BasePoint, ContactPoint, FlutterPoint
 from engine.bone import BaseBone, NormalBone, RepelBone, FlutterBone, FragileBone
 from engine.binding import Binding, BindJoint, BindTrigger
+from engine.constants import USE_COM_SCARF
 
 from typing import TypedDict, Union
 import math
 
-FRAGILE_BONE_ENDURANCE = 0.057
-REPEL_BONE_LENGTH_FACTOR = 0.5
-# TODO .com remounting v1 vs v2?
+# TODO .com remounting v1, v2, lra remount
 
 
 class InitialEntityParams(TypedDict):
@@ -209,6 +208,13 @@ class Entity:
 
 def create_default_rider(init_state: InitialEntityParams) -> Entity:
     entity = Entity()
+    FRAGILE_BONE_ENDURANCE = 0.057
+    REPEL_BONE_LENGTH_FACTOR = 0.5
+
+    if USE_COM_SCARF:
+        SCARF_FRICTION = 0.2
+    else:
+        SCARF_FRICTION = 0.1
 
     # Create the contact points first, at their initial positions
     # Order doesn't really matter, added in this order to match linerider.com
@@ -223,13 +229,13 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
     LEFT_HAND = entity.add_contact_point(Vector(11.5, -5.0), 0.1)
     LEFT_FOOT = entity.add_contact_point(Vector(10.0, 5.0), 0.0)
     RIGHT_FOOT = entity.add_contact_point(Vector(10.0, 5.0), 0.0)
-    SCARF_0 = entity.add_flutter_point(Vector(3, -5.5), 0.2)
-    SCARF_1 = entity.add_flutter_point(Vector(1, -5.5), 0.2)
-    SCARF_2 = entity.add_flutter_point(Vector(-1, -5.5), 0.2)
-    SCARF_3 = entity.add_flutter_point(Vector(-3, -5.5), 0.2)
-    SCARF_4 = entity.add_flutter_point(Vector(-5, -5.5), 0.2)
-    SCARF_5 = entity.add_flutter_point(Vector(-7, -5.5), 0.2)
-    SCARF_6 = entity.add_flutter_point(Vector(-9, -5.5), 0.2)
+    SCARF_0 = entity.add_flutter_point(Vector(3, -5.5), SCARF_FRICTION)
+    SCARF_1 = entity.add_flutter_point(Vector(1, -5.5), SCARF_FRICTION)
+    SCARF_2 = entity.add_flutter_point(Vector(-1, -5.5), SCARF_FRICTION)
+    SCARF_3 = entity.add_flutter_point(Vector(-3, -5.5), SCARF_FRICTION)
+    SCARF_4 = entity.add_flutter_point(Vector(-5, -5.5), SCARF_FRICTION)
+    SCARF_5 = entity.add_flutter_point(Vector(-7, -5.5), SCARF_FRICTION)
+    SCARF_6 = entity.add_flutter_point(Vector(-9, -5.5), SCARF_FRICTION)
 
     # Create joints that can cause breakages
     SHOULDER_BUTT_JOINT = BindJoint(SHOULDER, BUTT)

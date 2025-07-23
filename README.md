@@ -17,9 +17,9 @@ Current features:
 - rider bones, points, and bindings
 - line extensions, flipped lines, acceleration multipliers
 - multiple riders
+- scarf physics (flash, linerider.com approximation)
 
 Planned TODOs:
-- Scarf implementation (.com only, not worried about compatibility)
-- Remount implementation (.com and LRO)
+- Remount implementation (linerider.com and LRO)
 - Better API for adding, removing, and moving lines inside the grid + refreshing engine cache
 - Even more tests

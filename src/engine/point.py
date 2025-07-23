@@ -1,4 +1,5 @@
 from engine.vector import Vector
+from engine.constants import USE_COM_SCARF
 
 import math
 
@@ -43,10 +44,6 @@ class ContactPoint:
 
 # Non-colliding point of an entity, used for the scarf
 class FlutterPoint:
-    INTENSITY = 2
-    # Smaller value means more flutter as speed increases
-    SPEED_THRESHOLD = 40
-
     def __init__(
         self,
         base: BasePoint,
@@ -61,12 +58,15 @@ class FlutterPoint:
         return next - math.trunc(next)
 
     def get_flutter(self, velocity: Vector, seed_value: Vector):
+        # Smaller value means more flutter as speed increases
+        SPEED_THRESHOLD = 40
+        # Intensity of length change
+        INTENSITY = 2
+
         speed = velocity.length_sq() ** 0.25
         random_length = self.rand(velocity)
         random_angle = self.rand(seed_value)
-        random_length *= (
-            self.INTENSITY * speed * -math.expm1(-speed / self.SPEED_THRESHOLD)
-        )
+        random_length *= INTENSITY * speed * -math.expm1(-speed / SPEED_THRESHOLD)
         random_angle *= 2 * math.pi
         return random_length * Vector(math.cos(random_angle), math.sin(random_angle))
 
@@ -74,9 +74,9 @@ class FlutterPoint:
         computed_velocity = self.base.position - self.base.previous_position
         new_velocity = (computed_velocity * (1 - self.air_friction)) + gravity
         current_position = self.base.position
-        new_position = (
-            current_position
-            + new_velocity
-            + self.get_flutter(new_velocity, current_position)
-        )
+        new_position = current_position + new_velocity
+
+        if USE_COM_SCARF:
+            new_position = self.get_flutter(new_velocity, current_position)
+
         self.base.update_state(new_position, new_velocity, current_position)

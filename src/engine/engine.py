@@ -4,15 +4,14 @@ from engine.vector import Vector
 from engine.entity import Entity
 from engine.grid import Grid, GridVersion
 from engine.line import PhysicsLine
+from engine.constants import (
+    DEFAULT_CELL_SIZE,
+    GRAVITY_SCALAR,
+    GRAVITY_SCALAR_V67,
+    ITERATIONS,
+)
 
 # TODO: Review files for python-specific features
-
-GRID_CELL_SIZE = 14
-FRAMES_PER_SECOND = 40
-NUM_ITERATIONS = 6
-GRAVITY = Vector(0, 1)
-GRAVITY_SCALE = 0.175
-GRAVITY_SCALE_V6_7 = 0.17500000000000002  # Just one bit off :(
 
 
 # Not specific implementation, just used for caching
@@ -23,15 +22,15 @@ class Engine:
         entities: list[Entity],
         lines: list[PhysicsLine],
     ):
-        self.grid = Grid(grid_version, GRID_CELL_SIZE)
-        self.gravity_scale = GRAVITY_SCALE
-        self.gravity_vector = GRAVITY
+        self.grid = Grid(grid_version, DEFAULT_CELL_SIZE)
+        self.gravity_vector = Vector(0, 1)
         self.state_cache: list[list[Entity]] = [
             [entity.deep_copy() for entity in entities]
         ]
 
+        self.gravity_scale = GRAVITY_SCALAR
         if grid_version == GridVersion.V6_7:
-            self.gravity_scale = GRAVITY_SCALE_V6_7
+            self.gravity_scale = GRAVITY_SCALAR_V67
 
         for line in lines:
             self.grid.add_line(line)
@@ -53,7 +52,7 @@ class Engine:
             for entity in new_entities:
                 entity.initial_step(self.gravity_scale * self.gravity_vector)
 
-            for i in range(NUM_ITERATIONS):
+            for i in range(ITERATIONS):
                 for entity in new_entities:
                     # entity bones
                     entity.process_structural_bones()

@@ -2,10 +2,10 @@ import tkinter as tk
 import json
 from enum import Enum
 
-from engine.engine import Engine, FRAMES_PER_SECOND
+from engine.engine import Engine
 from engine.vector import Vector
-from engine.entity import Entity, NormalBone, FragileBone, RepelBone, FlutterBone
-from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
+from engine.entity import Entity, NormalBone, FragileBone, RepelBone
+from engine.line import PhysicsLine
 from utils.convert import convert_lines, convert_entities, convert_version
 
 
@@ -39,6 +39,7 @@ class TrackSimulator:
     REPEL_BONE_COLOR = "magenta"
     FLUTTER_BONE_COLOR = "purple"
     HITBOX_COLOR = "lightgray"
+    FPS = 40
 
     def __init__(self, track_path: str):
         self.track_path = track_path
@@ -110,7 +111,7 @@ class TrackSimulator:
     def _tick(self):
         if self.playing:
             self._next_frame()
-        self.root.after(25, self._tick)
+        self.root.after(int(1000 / self.FPS), self._tick)
 
     def _update(self):
         frame_entities = self.engine.get_frame(self.frame)
@@ -182,7 +183,7 @@ class TrackSimulator:
             p1, p2 = p2, p1
 
         ext_amount = line.length * line.ext_ratio
-        hitbox_vec = line.normal_unit * (LINE_HITBOX_HEIGHT / 2)
+        hitbox_vec = line.normal_unit * (line.HITBOX_HEIGHT / 2)
 
         c_p1 = self._physics_to_canvas(p1)
         c_p2 = self._physics_to_canvas(p2)
@@ -212,7 +213,7 @@ class TrackSimulator:
 
         self._generate_line(
             DrawTag.Hitbox,
-            LINE_HITBOX_HEIGHT,
+            line.HITBOX_HEIGHT,
             gwell_p1,
             gwell_p2,
             color=self.HITBOX_COLOR,
@@ -226,9 +227,9 @@ class TrackSimulator:
         )
 
     def _draw_text(self, entities: list[Entity]):
-        minutes = int(self.frame / (60 * FRAMES_PER_SECOND))
-        seconds = str(100 + int((self.frame / FRAMES_PER_SECOND) % 60))[1:]
-        frames = str(100 + self.frame % FRAMES_PER_SECOND)[1:]
+        minutes = int(self.frame / (60 * self.FPS))
+        seconds = str(100 + int((self.frame / self.FPS) % 60))[1:]
+        frames = str(100 + self.frame % self.FPS)[1:]
         timestamp = f"{minutes}:{seconds}:{frames}"
 
         self._generate_text(
@@ -307,4 +308,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/accel_flags.track.json")
+    TrackSimulator("fixtures/grid_61.track.json")

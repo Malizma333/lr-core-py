@@ -7,7 +7,7 @@ import json
 from typing import Union
 import sys
 
-LOAD_FRAME_THRESHOLD = 100
+LOAD_FRAME_THRESHOLD = None
 tests = json.load(open("tests.json", "r"))
 pass_count = 0
 fail_count = 0
@@ -21,8 +21,15 @@ def compare(f: float, s: str):
     x = format(f, ".17g")
     if "e" in x:
         ind = x.index("e")
+        ind2 = x.index(".")
         offset = int(x[ind + 2 :])
-        x = "0." + "0" * (offset - 1) + x[0] + x[2:ind]
+        if offset < 7:
+            start = ""
+            num = x[:ind2] + x[ind2 + 1 : ind]
+            if x[0] == "-":
+                start = "-"
+                num = x[1:ind2] + x[ind2 + 1 : ind]
+            x = start + "0." + "0" * (offset - 1) + num
     if x != s:
         print(x, "!=", s)
     return x == s

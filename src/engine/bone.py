@@ -24,8 +24,7 @@ class BaseBone:
         if current_length == 0:
             return 0
 
-        adjustment = (current_length - self.rest_length) / current_length
-        return adjustment
+        return (current_length - self.rest_length) / current_length
 
     def update_points(self, adjustment):
         bone_vector = self.get_vector()
@@ -92,7 +91,6 @@ class FlutterBone:
         adjustment = self.base.get_adjustment()
         point2 = self.base.point2
         next_position = self.base.get_vector() * adjustment + point2.base.position
-        # print(next_position)
         self.base.point2.base.update_state(
             next_position, point2.base.velocity, point2.base.previous_position
         )
