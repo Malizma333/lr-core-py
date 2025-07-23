@@ -58,34 +58,37 @@ def compare(f: float, s: str):
 
 
 def equal(
-    result_state: Union[list[Entity], None],
-    expected_state: Union[list[list[list[str]]], None],
+    result_entities: Union[list[Entity], None],
+    expected_entities: Union[list[list[list[str]]], None],
 ) -> bool:
-    if result_state == None and expected_state == None:
+    if result_entities == None and expected_entities == None:
         return True
 
-    if not (result_state != None and expected_state != None):
+    if not (result_entities != None and expected_entities != None):
         print("one state was null")
         return False
 
-    if len(result_state) != len(expected_state):
+    if len(result_entities) != len(expected_entities):
         print("states did not match in length")
         return False
 
-    for i, entity_data in enumerate(expected_state):
-        for j, point in enumerate(entity_data):
-            if len(result_state[i].points) < len(entity_data):
+    for i, expected_points in enumerate(expected_entities):
+        for j, expected_point_data in enumerate(expected_points):
+            result_points = result_entities[i].get_all_points()
+            if len(result_points) < len(expected_points):
                 print("entity points did not match in length")
                 return False
 
-            result_data = (
-                (result_state[i].points[j].base.position.x),
-                (result_state[i].points[j].base.position.y),
-                (result_state[i].points[j].base.velocity.x),
-                (result_state[i].points[j].base.velocity.y),
+            result_point_data = (
+                result_points[j].position.x,
+                result_points[j].position.y,
+                result_points[j].velocity.x,
+                result_points[j].velocity.y,
             )
 
-            if not all(compare(result_data[k], point[k]) for k in range(4)):
+            if not all(
+                compare(result_point_data[k], expected_point_data[k]) for k in range(4)
+            ):
                 return False
 
     return True

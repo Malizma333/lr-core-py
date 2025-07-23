@@ -2,7 +2,7 @@ from engine.grid import Grid
 from engine.vector import Vector
 from engine.point import BasePoint, ContactPoint, FlutterPoint
 from engine.bone import BaseBone, NormalBone, RepelBone, FlutterBone, FragileBone
-from engine.binding import Binding, BindJoint, BindTrigger
+from engine.binding import Binding, BindingTrigger
 from engine.constants import USE_COM_SCARF
 
 from typing import TypedDict, Union
@@ -20,13 +20,27 @@ class InitialEntityParams(TypedDict):
 
 class Entity:
     def __init__(self):
+        # List of colliding physics points (contact points)
+        self.structural_points: list[ContactPoint] = []
+        # List of non-colliding physics points (scarf, etc.)
+        self.flutter_points: list[FlutterPoint] = []
+        # Connect structural points
         self.structural_bones: list[Union[NormalBone, RepelBone, FragileBone]] = []
+        # Connect flutter points
         self.flutter_bones: list[FlutterBone] = []
-        self.points: list[Union[ContactPoint, FlutterPoint]] = []
-        self.bind_triggers: list[BindTrigger] = []
-        # TODO set to false if sled breaks
+        self.binding_triggers: list[BindingTrigger] = []
+        # Whether this entity is attached to another entity
+        self.mounted = True
+        # Whether this entity is able to rejoin with another entity (regardless of mounted state)
+        # This is shared between the sled broken state and whether the rider can remount initially
         self.can_remount = False
         # TODO remount state booleans/ints here
+
+    def set_can_remount(self, can_remount: bool):
+        self.can_remount = can_remount
+
+    def set_mounted(self, mounted: bool):
+        self.mounted = mounted
 
     # This updates the contact points with initial position, velocity, and a rotation
     # about the tail, as well as setting the remount property
@@ -42,44 +56,46 @@ class Entity:
         # but this may not give the same output for every input
         cos_theta = math.cos(init_state["ROTATION"] * math.pi / 180)
         sin_theta = math.sin(init_state["ROTATION"] * math.pi / 180)
+        all_points = self.structural_points + self.flutter_points
 
-        for i, point in enumerate(self.points):
+        for point in all_points:
             offset = point.base.position - origin
-            self.points[i].base.update_state(
+            point.base.update_state(
                 Vector(
                     origin.x + offset.x * cos_theta - offset.y * sin_theta,
                     origin.y + offset.x * sin_theta + offset.y * cos_theta,
                 ),
-                self.points[i].base.velocity,
-                self.points[i].base.previous_position,
+                point.base.velocity,
+                point.base.previous_position,
             )
 
-        for i, point in enumerate(self.points):
+        for point in all_points:
             start_position = point.base.position + init_state["POSITION"]
             start_velocity = point.base.velocity + init_state["VELOCITY"]
-            self.points[i].base.update_state(
+            point.base.update_state(
                 start_position, start_velocity, start_position - start_velocity
             )
 
     def add_contact_point(self, position: Vector, friction: float) -> ContactPoint:
-        next_index = len(self.points)
-        base_point = BasePoint(position, Vector(0, 0), position, next_index)
+        base_point = BasePoint(position, Vector(0, 0), position)
         point = ContactPoint(base_point, friction)
-        self.points.append(point)
+        self.structural_points.append(point)
         return point
 
     def add_flutter_point(self, position: Vector, air_friction: float) -> FlutterPoint:
-        next_index = len(self.points)
-        base_point = BasePoint(position, Vector(0, 0), position, next_index)
+        base_point = BasePoint(position, Vector(0, 0), position)
         point = FlutterPoint(base_point, air_friction)
-        self.points.append(point)
+        self.flutter_points.append(point)
         return point
 
     def add_bind_trigger(
-        self, binding: Binding, joint1: BindJoint, joint2: BindJoint
-    ) -> BindTrigger:
-        bind_trigger = BindTrigger(binding, bind_joints=(joint1, joint2))
-        self.bind_triggers.append(bind_trigger)
+        self,
+        binding: Binding,
+        joint1: tuple[ContactPoint, ContactPoint],
+        joint2: tuple[ContactPoint, ContactPoint],
+    ) -> BindingTrigger:
+        bind_trigger = BindingTrigger(binding, joint1, joint2)
+        self.binding_triggers.append(bind_trigger)
         return bind_trigger
 
     def add_normal_bone(
@@ -122,72 +138,14 @@ class Entity:
         return bone
 
     def deep_copy(self):
-        new_entity = Entity()
-        new_entity.can_remount = self.can_remount
+        # TODO
+        return Entity()
 
-        # Point and binding maps used to reconstruct point and binding references
-        point_map: dict[int, Union[ContactPoint, FlutterPoint]] = {}
-        binding_map: dict[int, Binding] = {}
+    def process_initial_step(self, gravity: Vector):
+        for point in self.structural_points:
+            point.initial_step(gravity)
 
-        # Copy each contact point and add points to map
-        for point in self.points:
-            if isinstance(point, ContactPoint):
-                new_point = new_entity.add_contact_point(
-                    point.base.position, point.friction
-                )
-            else:
-                new_point = new_entity.add_flutter_point(
-                    point.base.position, point.air_friction
-                )
-
-            new_point.base.update_state(
-                new_point.base.position,
-                point.base.velocity,
-                point.base.previous_position,
-            )
-            point_map[point.base.index] = new_point
-
-        # Copy each bind trigger structure and add bindings to map
-        for bind_trigger in self.bind_triggers:
-            point1 = point_map[bind_trigger.bind_joints[0].point1.base.index]
-            point2 = point_map[bind_trigger.bind_joints[0].point2.base.index]
-            point3 = point_map[bind_trigger.bind_joints[1].point1.base.index]
-            point4 = point_map[bind_trigger.bind_joints[1].point2.base.index]
-            bind_joint1 = BindJoint(point1, point2)
-            bind_joint2 = BindJoint(point3, point4)
-            new_binding = Binding(bind_trigger.binding.index)
-            new_binding.broken = bind_trigger.binding.broken
-            binding_map[bind_trigger.binding.index] = new_binding
-            new_entity.add_bind_trigger(new_binding, bind_joint1, bind_joint2)
-
-        # Copy structural bones
-        for bone in self.structural_bones:
-            new_bone_p1 = point_map[bone.base.point1.base.index]
-            new_bone_p2 = point_map[bone.base.point2.base.index]
-            if isinstance(bone, NormalBone):
-                new_bone = new_entity.add_normal_bone(new_bone_p1, new_bone_p2)
-            elif isinstance(bone, FragileBone):
-                new_bone = new_entity.add_fragile_bone(
-                    new_bone_p1,
-                    new_bone_p2,
-                    bone.endurance,
-                    binding_map[bone.binding.index],
-                )
-            else:
-                new_bone = new_entity.add_repel_bone(new_bone_p1, new_bone_p2, 1)
-            new_bone.base.rest_length = bone.base.rest_length
-
-        # Copy flutter bones
-        for bone in self.flutter_bones:
-            new_bone_p1 = point_map[bone.base.point1.base.index]
-            new_bone_p2 = point_map[bone.base.point2.base.index]
-            new_flutter_bone = new_entity.add_flutter_bone(new_bone_p1, new_bone_p2)
-            new_flutter_bone.base.rest_length = bone.base.rest_length
-
-        return new_entity
-
-    def initial_step(self, gravity: Vector):
-        for point in self.points:
+        for point in self.flutter_points:
             point.initial_step(gravity)
 
     def process_structural_bones(self):
@@ -195,20 +153,45 @@ class Entity:
             bone.process()
 
     def process_collisions(self, grid: Grid):
-        for point_index, point in enumerate(self.points):
-            if isinstance(point, ContactPoint):
-                interacting_lines = grid.get_interacting_lines(point)
-                for line in interacting_lines:
-                    new_pos, new_prev_pos = line.interact(point)
-                    point.base.update_state(new_pos, point.base.velocity, new_prev_pos)
+        for point in self.structural_points:
+            interacting_lines = grid.get_interacting_lines(point)
+            for line in interacting_lines:
+                new_pos, new_prev_pos = line.interact(point)
+                point.base.update_state(new_pos, point.base.velocity, new_prev_pos)
 
     def process_bind_triggers(self):
-        for bind in self.bind_triggers:
+        for bind in self.binding_triggers:
             bind.process()
 
     def process_flutter_bones(self):
         for bone in self.flutter_bones:
             bone.process()
+
+    def get_all_points(self) -> list[BasePoint]:
+        all_points = []
+
+        for structural_point in self.structural_points:
+            all_points.append(structural_point.base)
+
+        for flutter_point in self.flutter_points:
+            all_points.append(flutter_point.base)
+
+        return all_points
+
+    def get_average_position(self) -> Vector:
+        all_points = self.get_all_points()
+        total_x = 0
+        total_y = 0
+        num_points = len(all_points)
+
+        if num_points == 0:
+            return Vector(0, 0)
+
+        for point in all_points:
+            total_x += point.position.x
+            total_y += point.position.y
+
+        return Vector(total_x / num_points, total_y / num_points)
 
 
 def create_default_rider(init_state: InitialEntityParams) -> Entity:
@@ -242,19 +225,20 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
     SCARF_5 = entity.add_flutter_point(Vector(-7, -5.5), SCARF_FRICTION)
     SCARF_6 = entity.add_flutter_point(Vector(-9, -5.5), SCARF_FRICTION)
 
-    # Create joints that can cause breakages
-    SHOULDER_BUTT_JOINT = BindJoint(SHOULDER, BUTT)
-    STRING_PEG_JOINT = BindJoint(STRING, PEG)
-    PEG_TAIL_JOINT = BindJoint(PEG, TAIL)
-
     # Create bindings that get triggered by joint crossings
-    MOUNTED_BINDING = Binding(0)
-    SLED_BROKEN_BINDING = Binding(1)  # TODO: Should this be generalized for entities?
+    MOUNTED_BINDING = Binding(
+        lambda: entity.mounted,
+        lambda x: entity.set_mounted(x),
+    )
+    SLED_BROKEN_BINDING = Binding(
+        lambda: entity.can_remount,
+        lambda x: entity.set_can_remount(x),
+    )
 
     # Add the bindings with their joints
-    entity.add_bind_trigger(MOUNTED_BINDING, SHOULDER_BUTT_JOINT, STRING_PEG_JOINT)
-    entity.add_bind_trigger(MOUNTED_BINDING, PEG_TAIL_JOINT, STRING_PEG_JOINT)
-    entity.add_bind_trigger(SLED_BROKEN_BINDING, PEG_TAIL_JOINT, STRING_PEG_JOINT)
+    entity.add_bind_trigger(MOUNTED_BINDING, (SHOULDER, BUTT), (STRING, PEG))
+    entity.add_bind_trigger(MOUNTED_BINDING, (PEG, TAIL), (STRING, PEG))
+    entity.add_bind_trigger(SLED_BROKEN_BINDING, (PEG, TAIL), (STRING, PEG))
 
     # Create bones now that joints and bindings are initialized
     entity.add_normal_bone(PEG, TAIL)

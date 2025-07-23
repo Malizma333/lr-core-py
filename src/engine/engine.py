@@ -50,7 +50,7 @@ class Engine:
 
             # track gravity + entity momentum
             for entity in new_entities:
-                entity.initial_step(self.gravity_scale * self.gravity_vector)
+                entity.process_initial_step(self.gravity_scale * self.gravity_vector)
 
             for i in range(ITERATIONS):
                 for entity in new_entities:

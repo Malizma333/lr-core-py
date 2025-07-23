@@ -1,40 +1,33 @@
-from engine.vector import Vector
-from engine.point import ContactPoint, FlutterPoint
-
-from typing import Union
+from engine.point import ContactPoint
+from typing import Callable
 
 
-# Joints that cause breakages if they cross other joints
-class BindJoint:
+# Bindings used to provide accessors to entity state
+class Binding:
+    def __init__(
+        self, get_intact: Callable[[], bool], set_intact: Callable[[bool], None]
+    ):
+        self.get_intact = get_intact
+        self.set_intact = set_intact
+
+
+# Structure containing a binding and the bind joints that trigger it to break
+class BindingTrigger:
     def __init__(
         self,
-        point1: Union[ContactPoint, FlutterPoint],
-        point2: Union[ContactPoint, FlutterPoint],
+        binding: Binding,
+        bind_joint1: tuple[ContactPoint, ContactPoint],
+        bind_joint2: tuple[ContactPoint, ContactPoint],
     ):
-        self.point1 = point1
-        self.point2 = point2
-
-    def get_vector(self) -> Vector:
-        return self.point2.base.position - self.point1.base.position
-
-
-# TODO refactor bindings into internal entity dictionary with [str, bool] state
-# Bindings used to mark bones that get broken by joints crossing
-class Binding:
-    def __init__(self, index: int):
-        # Index within entity list of bindings
-        self.index = index
-        self.broken = False
-
-
-# Structure containing a binding and the bind joints that trigger it
-class BindTrigger:
-    def __init__(self, binding: Binding, bind_joints: tuple[BindJoint, BindJoint]):
         self.binding = binding
-        self.bind_joints = bind_joints
+        self.bind_joints = (bind_joint1, bind_joint2)
 
     def process(self):
-        delta1 = self.bind_joints[0].get_vector()
-        delta2 = self.bind_joints[1].get_vector()
+        delta1 = (
+            self.bind_joints[0][1].base.position - self.bind_joints[0][0].base.position
+        )
+        delta2 = (
+            self.bind_joints[1][0].base.position - self.bind_joints[1][1].base.position
+        )
         if delta1.cross(delta2) < 0:
-            self.binding.broken = True
+            self.binding.set_intact(False)

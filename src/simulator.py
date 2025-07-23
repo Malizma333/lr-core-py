@@ -122,19 +122,13 @@ class TrackSimulator:
 
     def _redraw(self, entities: list[Entity]):
         self.current_draw_index = 0
-        self._adjust_camera(entities)
+        self.origin = entities[self.focused_entity].get_average_position()
         for line in self.lines:
             if self.DRAW_LINES:
                 self._draw_line(line)
         for entity in entities:
             self._draw_entity(entity)
         self._draw_text(entities)
-
-    def _adjust_camera(self, entities: list[Entity]):
-        entity = entities[self.focused_entity]
-        avg_x = sum(p.base.position.x for p in entity.points) / len(entity.points)
-        avg_y = sum(p.base.position.y for p in entity.points) / len(entity.points)
-        self.origin = Vector(avg_x, avg_y)
 
     def _physics_to_canvas(self, v: Vector) -> Vector:
         return self.canvas_center + self.ZOOM * (v - self.origin)
@@ -163,12 +157,12 @@ class TrackSimulator:
             p2 = self._physics_to_canvas(bone.base.point2.base.position)
             self._generate_line(DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=color)
 
-        for point in entity.points:
-            pos = self._physics_to_canvas(point.base.position)
-            vel_length = point.base.velocity.length()
+        for point in entity.get_all_points():
+            pos = self._physics_to_canvas(point.position)
+            vel_length = point.velocity.length()
             vel_unit = Vector(0, 1)
             if vel_length != 0:
-                vel_unit = point.base.velocity / vel_length
+                vel_unit = point.velocity / vel_length
             tail = pos + mv_len_zoom * vel_unit
             self._generate_line(
                 DrawTag.Vec, self.MV_WIDTH, pos, tail, color=self.MV_COLOR
@@ -242,7 +236,7 @@ class TrackSimulator:
         )
 
         pos_strings = []
-        for point in entities[self.focused_entity].points:
+        for point in entities[self.focused_entity].structural_points:
             pos_strings.append(f"{point.base.position}")
 
         # Match LRO order

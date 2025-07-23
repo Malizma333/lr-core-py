@@ -60,8 +60,11 @@ class FragileBone:
     def process(self):
         adjustment = self.base.get_adjustment()
 
-        if self.binding.broken or adjustment > self.endurance * self.base.rest_length:
-            self.binding.broken = True
+        if (
+            not self.binding.get_intact()
+            or adjustment > self.endurance * self.base.rest_length
+        ):
+            self.binding.set_intact(False)
             return
 
         self.base.update_points(adjustment)
