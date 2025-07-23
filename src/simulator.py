@@ -4,7 +4,7 @@ from enum import Enum
 
 from engine.engine import Engine, FRAMES_PER_SECOND
 from engine.vector import Vector
-from engine.entity import Entity, NormalBone, FragileBone, RepelBone
+from engine.entity import Entity, NormalBone, FragileBone, RepelBone, FlutterBone
 from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
 from utils.convert import convert_lines, convert_entities, convert_version
 
@@ -37,6 +37,7 @@ class TrackSimulator:
     NORMAL_BONE_COLOR = "blue"
     FRAGILE_BONE_COLOR = "red"
     REPEL_BONE_COLOR = "magenta"
+    FLUTTER_BONE_COLOR = "purple"
     HITBOX_COLOR = "lightgray"
 
     def __init__(self, track_path: str):
@@ -130,8 +131,8 @@ class TrackSimulator:
 
     def _adjust_camera(self, entities: list[Entity]):
         entity = entities[self.focused_entity]
-        avg_x = sum(p.position.x for p in entity.points) / len(entity.points)
-        avg_y = sum(p.position.y for p in entity.points) / len(entity.points)
+        avg_x = sum(p.base.position.x for p in entity.points) / len(entity.points)
+        avg_y = sum(p.base.position.y for p in entity.points) / len(entity.points)
         self.origin = Vector(avg_x, avg_y)
 
     def _physics_to_canvas(self, v: Vector) -> Vector:
@@ -140,7 +141,14 @@ class TrackSimulator:
     def _draw_entity(self, entity: Entity):
         mv_len_zoom = self.MV_LENGTH * self.ZOOM
 
-        for bone in entity.bones:
+        for bone in entity.flutter_bones:
+            p1 = self._physics_to_canvas(bone.base.point1.base.position)
+            p2 = self._physics_to_canvas(bone.base.point2.base.position)
+            self._generate_line(
+                DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.FLUTTER_BONE_COLOR
+            )
+
+        for bone in entity.structural_bones:
             if isinstance(bone, NormalBone):
                 color = self.NORMAL_BONE_COLOR
             elif isinstance(bone, FragileBone):
@@ -150,16 +158,16 @@ class TrackSimulator:
             else:
                 color = "white"
 
-            p1 = self._physics_to_canvas(bone.base.point1.position)
-            p2 = self._physics_to_canvas(bone.base.point2.position)
+            p1 = self._physics_to_canvas(bone.base.point1.base.position)
+            p2 = self._physics_to_canvas(bone.base.point2.base.position)
             self._generate_line(DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=color)
 
         for point in entity.points:
-            pos = self._physics_to_canvas(point.position)
-            vel_length = point.velocity.length()
+            pos = self._physics_to_canvas(point.base.position)
+            vel_length = point.base.velocity.length()
             vel_unit = Vector(0, 1)
             if vel_length != 0:
-                vel_unit = point.velocity / vel_length
+                vel_unit = point.base.velocity / vel_length
             tail = pos + mv_len_zoom * vel_unit
             self._generate_line(
                 DrawTag.Vec, self.MV_WIDTH, pos, tail, color=self.MV_COLOR
@@ -234,7 +242,7 @@ class TrackSimulator:
 
         pos_strings = []
         for point in entities[self.focused_entity].points:
-            pos_strings.append(f"{point.position}")
+            pos_strings.append(f"{point.base.position}")
 
         # Match LRO order
         pos_strings[6], pos_strings[7] = pos_strings[7], pos_strings[6]
@@ -299,4 +307,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/grid_61.track.json")
+    TrackSimulator("fixtures/accel_flags.track.json")

@@ -6,7 +6,17 @@ function captureState(testName, includeScarf = false) {
   state.push(testName);
   state.push(index);
   state.push(store.getState().trackData.label);
-  const formatNumber = (n) => n.toPrecision(17).replace(/\.?0+$/, "");
+  const formatNumber = (n) => { // compatible float precision formatter
+    let number = n.toPrecision(17);
+    const ind = number.indexOf("e")
+
+    if (ind != -1) {
+        const offset = parseInt(number.slice(ind + 2))
+        number = "0." + Array(offset - 1).fill("0").join("") + number.charAt(0) + number.slice(2, ind)
+    }
+
+    return number.replace(/\.?0+$/, "");
+  }
   // peg, tail, nose, string, butt, shoulder, rhand, lhand, lfoot, rfoot, scarf0...6
   state.push(
     store.getState().simulator.engine.getFrame(index).snapshot.entities[0].entities.map(entity =>

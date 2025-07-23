@@ -1,5 +1,5 @@
 from engine.vector import Vector
-from engine.contact_point import ContactPoint
+from engine.point import ContactPoint
 
 ACCELERATION_MULT = 0.1
 MAX_LINE_EXTENSION_RATIO = 0.25
@@ -68,8 +68,8 @@ class PhysicsLine:
         self.update_computed()
 
     def interact(self, point: ContactPoint):
-        offset_from_point = point.position - self.endpoints[0]
-        moving_into_line = (self.normal_unit @ point.velocity) > 0
+        offset_from_point = point.base.position - self.endpoints[0]
+        moving_into_line = (self.normal_unit @ point.base.velocity) > 0
         dist_from_line_top = self.normal_unit @ offset_from_point
         pos_between_ends = (self.vector @ offset_from_point) * self.inv_length_squared
 
@@ -83,21 +83,23 @@ class PhysicsLine:
         ):
             # collide
             new_position = (
-                (self.normal_unit * dist_from_line_top) - point.position
+                (self.normal_unit * dist_from_line_top) - point.base.position
             ) * -1
             friction_vector = (
                 self.normal_unit.rot_cw() * point.friction
             ) * dist_from_line_top
 
-            if point.previous_position.x >= new_position.x:
+            if point.base.previous_position.x >= new_position.x:
                 friction_vector.x *= -1
-            if point.previous_position.y < new_position.y:
+            if point.base.previous_position.y < new_position.y:
                 friction_vector.y *= -1
 
             new_previous_position = (
-                point.previous_position + friction_vector - self.acceleration_vector
+                point.base.previous_position
+                + friction_vector
+                - self.acceleration_vector
             )
 
             return (new_position, new_previous_position)
         else:
-            return (point.position, point.previous_position)
+            return (point.base.position, point.base.previous_position)

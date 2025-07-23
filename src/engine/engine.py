@@ -56,11 +56,14 @@ class Engine:
             for i in range(NUM_ITERATIONS):
                 for entity in new_entities:
                     # entity bones
-                    entity.process_bones()
+                    entity.process_structural_bones()
 
                 for entity in new_entities:
                     # entity-line collisions
                     entity.process_collisions(self.grid)
+
+            for entity in new_entities:
+                entity.process_flutter_bones()
 
             for entity in new_entities:
                 entity.process_bind_triggers()

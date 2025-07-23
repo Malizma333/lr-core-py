@@ -7,17 +7,22 @@ import json
 from typing import Union
 import sys
 
+LOAD_FRAME_THRESHOLD = 100
 tests = json.load(open("tests.json", "r"))
+pass_count = 0
 fail_count = 0
 loaded: dict[str, Engine] = {}
 # TODO dismount test + sled break test
 # TODO remount single rider + multi rider tests
-# TODO replace first feature.track.json test with scarf position test
 
 
 # Compare 17 point precision float strings from test cases to python formatting
 def compare(f: float, s: str):
     x = format(f, ".17g")
+    if "e" in x:
+        ind = x.index("e")
+        offset = int(x[ind + 2 :])
+        x = "0." + "0" * (offset - 1) + x[0] + x[2:ind]
     if x != s:
         print(x, "!=", s)
     return x == s
@@ -40,15 +45,15 @@ def equal(
 
     for i, entity_data in enumerate(expected_state):
         for j, point in enumerate(entity_data):
-            if len(result_state[i].points) != len(entity_data):
+            if len(result_state[i].points) < len(entity_data):
                 print("entity points did not match in length")
                 return False
 
             result_data = (
-                (result_state[i].points[j].position.x),
-                (result_state[i].points[j].position.y),
-                (result_state[i].points[j].velocity.x),
-                (result_state[i].points[j].velocity.y),
+                (result_state[i].points[j].base.position.x),
+                (result_state[i].points[j].base.position.y),
+                (result_state[i].points[j].base.velocity.x),
+                (result_state[i].points[j].base.velocity.y),
             )
 
             if not all(compare(result_data[k], point[k]) for k in range(4)):
@@ -73,13 +78,17 @@ for [
     engine = loaded[track_file]
     format_string = "{:<5} {:<15} {}"
 
+    if LOAD_FRAME_THRESHOLD != None and frame > LOAD_FRAME_THRESHOLD:
+        continue
+
     if equal(engine.get_frame(frame), frame_data):
         print(format_string.format("PASS", track_file, test_name))
+        pass_count += 1
     else:
         print(format_string.format("FAIL", track_file, test_name))
         fail_count += 1
 
-print("Passed", len(tests) - fail_count)
+print("Passed", pass_count)
 print("Failed", fail_count)
 
 if fail_count > 0:

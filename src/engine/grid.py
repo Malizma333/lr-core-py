@@ -1,6 +1,6 @@
 from engine.vector import Vector
 from engine.line import PhysicsLine, LINE_HITBOX_HEIGHT
-from engine.contact_point import ContactPoint
+from engine.point import ContactPoint
 from enum import Enum
 import math
 
@@ -219,7 +219,7 @@ class Grid:
         for x_offset in range(-bounds_size, bounds_size + 1):
             for y_offset in range(-bounds_size, bounds_size + 1):
                 cell = self.get_cell(
-                    point.position + self.cell_size * Vector(x_offset, y_offset)
+                    point.base.position + self.cell_size * Vector(x_offset, y_offset)
                 )
 
                 if cell != None:
