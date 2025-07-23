@@ -1,5 +1,26 @@
 # Reads test case data from tests.json and run tests
 
+# Layout of tests.json
+"""
+[
+  string,  (name of the test)
+  uint,  (physics frame being tested)
+  string,  (file name substituted into fixtures/*.track.json)
+  [
+    [ (first entity data)
+      [ (entity's first point data)
+        string,  (x position, float formatted as 17 point precision string representation)
+        string,  (y position, ...)
+        string,  (x velocity, ...)
+        string  (y velocity, ...)
+      ],
+      ..., (some tests have extra points to check scarf positions)
+    ],
+    ...,
+  ]
+]
+"""
+
 from engine.engine import Engine
 from engine.entity import Entity
 from utils.convert import convert_lines, convert_entities, convert_version
@@ -14,6 +35,7 @@ fail_count = 0
 loaded: dict[str, Engine] = {}
 # TODO dismount test + sled break test
 # TODO remount single rider + multi rider tests
+# Add new states for these?
 
 
 # Compare 17 point precision float strings from test cases to python formatting

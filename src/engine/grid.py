@@ -201,7 +201,7 @@ class Grid:
                 curr_pos = self.get_next_position(curr_pos, curr_cell_pos, line)
                 next_cell_pos = self.get_cell_position(curr_pos)
 
-                # This causes a crash in 6.1, so we break early
+                # This causes a crash in 6.1, so just break early
                 if (
                     next_cell_pos.x == curr_cell_pos.x
                     and next_cell_pos.y == curr_cell_pos.y

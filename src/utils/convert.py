@@ -1,6 +1,5 @@
 # Converts .track.json file portions for usage in test cases
 
-import math
 from engine.vector import Vector
 from engine.entity import create_default_rider, Entity, InitialEntityParams
 from engine.grid import GridVersion
@@ -38,7 +37,8 @@ def convert_entities(riders: list) -> list[Entity]:
                 rider["startVelocity"]["x"],
                 rider["startVelocity"]["y"],
             ),
-            "ROTATION": rider.get("startAngle", 0) * math.pi / 180,
+            # Convert to radians
+            "ROTATION": rider.get("startAngle", 0),
             "REMOUNT": bool(rider.get("remountable", False)),
         }
         converted_entities.append(create_default_rider(initial_state))

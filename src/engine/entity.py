@@ -14,7 +14,7 @@ import math
 class InitialEntityParams(TypedDict):
     POSITION: Vector
     VELOCITY: Vector
-    ROTATION: float
+    ROTATION: float  # In degrees
     REMOUNT: bool
 
 
@@ -24,21 +24,24 @@ class Entity:
         self.flutter_bones: list[FlutterBone] = []
         self.points: list[Union[ContactPoint, FlutterPoint]] = []
         self.bind_triggers: list[BindTrigger] = []
-        # TODO
-        #  Boolean for remount enabled, which sets for both sled and rider entities whether they can join other entities
-        #  Gets set to false if sled breaks
-        #  Boolean for remountable state, which is what gets set by remount enabled
+        # TODO set to false if sled breaks
+        self.can_remount = False
+        # TODO remount state booleans/ints here
 
     # This updates the contact points with initial position, velocity, and a rotation
     # about the tail, as well as setting the remount property
     def apply_initial_state(
         self, init_state: InitialEntityParams, rotation_origin: Vector
     ):
-        # TODO: Set remount boolean
+        self.can_remount = init_state["REMOUNT"]
 
         origin = rotation_origin
-        cos_theta = math.cos(init_state["ROTATION"])
-        sin_theta = math.sin(init_state["ROTATION"])
+        # Note that the use of cos and sin here is not exactly the same as javascript
+        # engines might implement it
+        # This gets tested with 50 degrees so it happens to pass the test case,
+        # but this may not give the same output for every input
+        cos_theta = math.cos(init_state["ROTATION"] * math.pi / 180)
+        sin_theta = math.sin(init_state["ROTATION"] * math.pi / 180)
 
         for i, point in enumerate(self.points):
             offset = point.base.position - origin
@@ -120,6 +123,8 @@ class Entity:
 
     def deep_copy(self):
         new_entity = Entity()
+        new_entity.can_remount = self.can_remount
+
         # Point and binding maps used to reconstruct point and binding references
         point_map: dict[int, Union[ContactPoint, FlutterPoint]] = {}
         binding_map: dict[int, Binding] = {}
@@ -284,6 +289,7 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
 
     # Apply initial state once everything is initialized
     # Note that this must be applied after bone constraints are calculated
+    # (because it does not affect bone length)
     entity.apply_initial_state(init_state, TAIL.base.position)
 
     return entity

@@ -1,15 +1,5 @@
-# The linerider.com scarf uses trig operations, causing unusable tests
-# (comparing different Math.sin and math.sin implementations)
-# However, the flash version does not, making it much more testable
-# Turn this on to get approximately the effect of the linerider.com scarf
-# (with failing tests)
-USE_COM_SCARF = False
-
 # Default size of cells within the physics simulation grid
 DEFAULT_CELL_SIZE = 14
-
-# Default size of line hitboxes
-DEFAULT_LINE_HITBOX = 10
 
 # Scalar applied to gravity values
 GRAVITY_SCALAR = 0.175
@@ -25,3 +15,10 @@ DEFAULT_LINE_HITBOX_HEIGHT = 10
 
 # Max ratio of the length of the line extension to the length of its line
 MAX_EXTENSION_RATIO = 0.25
+
+# The linerider.com scarf uses trig operations, causing unusable tests
+# (comparing different Math.sin and math.sin implementations)
+# However, the flash version does not, making it much more testable
+# Turn this on to get approximately the effect of the linerider.com scarf
+# (with failing tests)
+USE_COM_SCARF = False
