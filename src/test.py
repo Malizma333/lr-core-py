@@ -1,5 +1,6 @@
 # Reads test case data from tests.json and run tests
 
+from engine.entity import EntityState
 from engine.engine import Engine, CachedFrame
 from utils.convert import convert_lines, convert_entities, convert_version
 
@@ -7,32 +8,33 @@ from typing import Union, TypedDict, List, Optional
 import json
 import sys
 
-# TODO dismount test + sled break test
 # TODO remount single rider + multi rider tests
 
 
 # This is not enforced at runtime, but useful for documentation
-class PointData(tuple[str, str, str, str]):
+class JsonPointData(tuple[str, str, str, str]):
     """A list of 4 stringified floats: x, y, vx, vy"""
 
 
-class EntityState(TypedDict):
+class JsonEntityState(TypedDict):
     points: List[List[str]]
+    rider_state: Optional[str]
+    sled_state: Optional[str]
 
 
-class TestState(TypedDict):
-    entities: List[EntityState]
+class JsonTestState(TypedDict):
+    entities: List[JsonEntityState]
 
 
-class TestFile(TypedDict):
+class JsonTestFile(TypedDict):
     file: str  # substituted into fixtures/*.track.json
     test: str  # name/description
     frame: int  # frame number
-    state: Optional[TestState]  # optional state block
+    state: Optional[JsonTestState]  # optional state block
 
 
 class Tests:
-    LOAD_FRAME_THRESHOLD: Union[None, int] = None
+    LOAD_FRAME_THRESHOLD: Union[None, int] = 80
 
     def __init__(self):
         self.tests = json.load(open("tests.json", "r"))
@@ -56,13 +58,13 @@ class Tests:
                     num = x[1:ind2] + x[ind2 + 1 : ind]
                 x = start + "0." + "0" * (offset - 1) + num
         if x != s:
-            self.fail_message = x, "!=", s
+            self.fail_message = f"{x} != {s}"
         return x == s
 
     def states_equal(
         self,
         result_state: Union[CachedFrame, None],
-        expected_state: Union[TestState, None],
+        expected_state: Union[JsonTestState, None],
     ) -> bool:
         if result_state is None:
             if expected_state is None:
@@ -83,6 +85,20 @@ class Tests:
             return False
 
         for i, expected_entity_state in enumerate(expected_entities):
+            if "rider_state" in expected_entity_state:
+                if result_entities[i].binded_states[EntityState.MOUNTED.name] != (
+                    expected_entity_state["rider_state"] == "MOUNTED"
+                ):
+                    self.fail_message = "mounted state did not match"
+                    return False
+
+            if "sled_state" in expected_entity_state:
+                if result_entities[i].binded_states[EntityState.SLED_INTACT.name] != (
+                    expected_entity_state["sled_state"] == "INTACT"
+                ):
+                    self.fail_message = "sled state did not match"
+                    return False
+
             for j, expected_point_data in enumerate(expected_entity_state["points"]):
                 result_points = result_entities[i].get_all_points()
                 if len(result_points) < len(expected_entity_state):

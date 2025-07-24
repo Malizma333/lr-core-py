@@ -43,6 +43,7 @@ class Entity:
         self.structural_bones: list[Union[NormalBone, RepelBone, FragileBone]] = []
         # Connect flutter points
         self.flutter_bones: list[Union[FlutterBone, FlutterConnectorBone]] = []
+        # Dictionary of states that get altered by binding triggers
         self.binded_states = {
             EntityState.SLED_INTACT.name: True,
             EntityState.MOUNTED.name: True,
@@ -192,7 +193,7 @@ class Entity:
 
         for bind in self.binding_triggers:
             new_binding = BindingTrigger(
-                bind.binding,
+                Binding(new_entity, bind.binding.attribute),
                 (
                     new_entity.structural_points[bind.bind_joints[0][0].base.index],
                     new_entity.structural_points[bind.bind_joints[0][1].base.index],

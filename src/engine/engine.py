@@ -11,8 +11,6 @@ from engine.constants import (
     ITERATIONS,
 )
 
-# TODO: Review files for python-specific features
-
 
 class CachedFrame:
     def __init__(self, entities: list[Entity]):
