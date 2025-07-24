@@ -13,9 +13,15 @@ from engine.binding import Binding, BindingTrigger
 from engine.constants import USE_COM_SCARF
 
 from typing import TypedDict, Union
+from enum import Enum
 import math
 
 # TODO .com remounting v1, v2, lra remount
+
+
+class EntityState(Enum):
+    SLED_INTACT = "sled_broken"
+    MOUNTED = "mounted"
 
 
 class InitialEntityParams(TypedDict):
@@ -37,12 +43,10 @@ class Entity:
         self.structural_bones: list[Union[NormalBone, RepelBone, FragileBone]] = []
         # Connect flutter points
         self.flutter_bones: list[Union[FlutterBone, FlutterConnectorBone]] = []
-        # Whether this entity is attached to another entity
-        self.mounted = True
-        # Whether this entity is able to rejoin with another entity (regardless of mounted state)
-        # This is shared between the sled broken state and whether the rider can remount initially
-        self.can_remount = False
-        # TODO remount state booleans/ints here
+        self.binded_states = {
+            EntityState.SLED_INTACT.name: True,
+            EntityState.MOUNTED.name: True,
+        }
 
     def set_can_remount(self, can_remount: bool):
         self.can_remount = can_remount
@@ -100,6 +104,9 @@ class Entity:
         self.flutter_points.append(point)
         return point
 
+    def add_binding(self, attribute: EntityState) -> Binding:
+        return Binding(self, attribute)
+
     def add_bind_trigger(
         self,
         binding: Binding,
@@ -156,7 +163,6 @@ class Entity:
         self.flutter_bones.append(bone)
         return bone
 
-    # TODO bindings get copied incorrectly because they hang on to an old self reference
     def deep_copy(self):
         new_entity = Entity()
 
@@ -233,8 +239,8 @@ class Entity:
             new_bone.base.rest_length = bone.base.rest_length
             new_entity.flutter_bones.append(new_bone)
 
-        new_entity.mounted = self.mounted
-        new_entity.can_remount = self.can_remount
+        for key in self.binded_states.keys():
+            new_entity.binded_states[key] = self.binded_states[key]
 
         return new_entity
 
@@ -322,20 +328,14 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
     SCARF_5 = entity.add_flutter_point(Vector(-7, -5.5), SCARF_FRICTION)
     SCARF_6 = entity.add_flutter_point(Vector(-9, -5.5), SCARF_FRICTION)
 
-    # Create bindings that get triggered by joint crossings
-    MOUNTED_BINDING = Binding(
-        lambda: entity.mounted,
-        lambda x: entity.set_mounted(x),
-    )
-    SLED_BROKEN_BINDING = Binding(
-        lambda: entity.can_remount,
-        lambda x: entity.set_can_remount(x),
-    )
+    # Create bindings to entity state
+    MOUNTED_BINDING = entity.add_binding(EntityState.MOUNTED)
+    SLED_INTACT_BINDING = entity.add_binding(EntityState.SLED_INTACT)
 
     # Add the bindings with their joints
     entity.add_bind_trigger(MOUNTED_BINDING, (SHOULDER, BUTT), (STRING, PEG))
     entity.add_bind_trigger(MOUNTED_BINDING, (PEG, TAIL), (STRING, PEG))
-    entity.add_bind_trigger(SLED_BROKEN_BINDING, (PEG, TAIL), (STRING, PEG))
+    entity.add_bind_trigger(SLED_INTACT_BINDING, (PEG, TAIL), (STRING, PEG))
 
     # Create bones now that joints and bindings are initialized
     entity.add_normal_bone(PEG, TAIL)

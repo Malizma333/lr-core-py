@@ -61,10 +61,10 @@ class FragileBone:
         adjustment = self.base.get_adjustment()
 
         if (
-            not self.binding.get_intact()
+            not self.binding.get()
             or adjustment > self.endurance * self.base.rest_length
         ):
-            self.binding.set_intact(False)
+            self.binding.set(False)
             return
 
         self.base.update_points(adjustment)

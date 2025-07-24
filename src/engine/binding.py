@@ -1,14 +1,22 @@
 from engine.point import ContactPoint
-from typing import Callable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Avoid circular importing of types
+    from engine.entity import Entity, EntityState
 
 
 # Bindings used to provide accessors to entity state
 class Binding:
-    def __init__(
-        self, get_intact: Callable[[], bool], set_intact: Callable[[bool], None]
-    ):
-        self.get_intact = get_intact
-        self.set_intact = set_intact
+    def __init__(self, entity: "Entity", attribute: "EntityState"):
+        self.entity = entity
+        self.attribute = attribute
+
+    def get(self):
+        return self.entity.binded_states[self.attribute.name]
+
+    def set(self, value: bool):
+        self.entity.binded_states[self.attribute.name] = value
 
 
 # Structure containing a binding and the bind joints that trigger it to break
@@ -30,4 +38,4 @@ class BindingTrigger:
             self.bind_joints[1][1].base.position - self.bind_joints[1][0].base.position
         )
         if delta1.cross(delta2) < 0:
-            self.binding.set_intact(False)
+            self.binding.set(False)
