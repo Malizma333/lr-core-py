@@ -1,7 +1,14 @@
 from engine.grid import Grid
 from engine.vector import Vector
 from engine.point import BasePoint, ContactPoint, FlutterPoint
-from engine.bone import BaseBone, NormalBone, RepelBone, FlutterBone, FragileBone
+from engine.bone import (
+    BaseBone,
+    NormalBone,
+    RepelBone,
+    FlutterBone,
+    FragileBone,
+    FlutterConnectorBone,
+)
 from engine.binding import Binding, BindingTrigger
 from engine.constants import USE_COM_SCARF
 
@@ -24,11 +31,12 @@ class Entity:
         self.structural_points: list[ContactPoint] = []
         # List of non-colliding physics points (scarf, etc.)
         self.flutter_points: list[FlutterPoint] = []
+        # List of bindings that get triggered by joint crossings
+        self.binding_triggers: list[BindingTrigger] = []
         # Connect structural points
         self.structural_bones: list[Union[NormalBone, RepelBone, FragileBone]] = []
         # Connect flutter points
-        self.flutter_bones: list[FlutterBone] = []
-        self.binding_triggers: list[BindingTrigger] = []
+        self.flutter_bones: list[Union[FlutterBone, FlutterConnectorBone]] = []
         # Whether this entity is attached to another entity
         self.mounted = True
         # Whether this entity is able to rejoin with another entity (regardless of mounted state)
@@ -37,6 +45,7 @@ class Entity:
         # TODO remount state booleans/ints here
 
     def set_can_remount(self, can_remount: bool):
+        print("set_can_remount")
         self.can_remount = can_remount
 
     def set_mounted(self, mounted: bool):
@@ -77,13 +86,17 @@ class Entity:
             )
 
     def add_contact_point(self, position: Vector, friction: float) -> ContactPoint:
-        base_point = BasePoint(position, Vector(0, 0), position)
+        base_point = BasePoint(
+            position, Vector(0, 0), position, len(self.structural_points)
+        )
         point = ContactPoint(base_point, friction)
         self.structural_points.append(point)
         return point
 
     def add_flutter_point(self, position: Vector, air_friction: float) -> FlutterPoint:
-        base_point = BasePoint(position, Vector(0, 0), position)
+        base_point = BasePoint(
+            position, Vector(0, 0), position, len(self.flutter_points)
+        )
         point = FlutterPoint(base_point, air_friction)
         self.flutter_points.append(point)
         return point
@@ -128,18 +141,102 @@ class Entity:
         self.structural_bones.append(bone)
         return bone
 
+    def add_flutter_connector_bone(
+        self, point1: ContactPoint, point2: FlutterPoint
+    ) -> FlutterConnectorBone:
+        bone = FlutterConnectorBone(BaseBone(point1, point2))
+        self.flutter_bones.append(bone)
+        return bone
+
     def add_flutter_bone(
         self,
-        point1: Union[ContactPoint, FlutterPoint],
-        point2: Union[ContactPoint, FlutterPoint],
+        point1: FlutterPoint,
+        point2: FlutterPoint,
     ) -> FlutterBone:
         bone = FlutterBone(BaseBone(point1, point2))
         self.flutter_bones.append(bone)
         return bone
 
     def deep_copy(self):
-        # TODO
-        return Entity()
+        new_entity = Entity()
+
+        for point in self.structural_points:
+            new_point = ContactPoint(
+                BasePoint(
+                    point.base.position,
+                    point.base.velocity,
+                    point.base.previous_position,
+                    point.base.index,
+                ),
+                point.friction,
+            )
+            new_entity.structural_points.append(new_point)
+
+        for point in self.flutter_points:
+            new_point = FlutterPoint(
+                BasePoint(
+                    point.base.position,
+                    point.base.velocity,
+                    point.base.previous_position,
+                    point.base.index,
+                ),
+                point.air_friction,
+            )
+            new_entity.flutter_points.append(new_point)
+
+        for bind in self.binding_triggers:
+            new_binding = BindingTrigger(
+                bind.binding,
+                (
+                    new_entity.structural_points[bind.bind_joints[0][0].base.index],
+                    new_entity.structural_points[bind.bind_joints[0][1].base.index],
+                ),
+                (
+                    new_entity.structural_points[bind.bind_joints[1][0].base.index],
+                    new_entity.structural_points[bind.bind_joints[1][1].base.index],
+                ),
+            )
+            new_entity.binding_triggers.append(new_binding)
+
+        for bone in self.structural_bones:
+            base_bone = BaseBone(
+                new_entity.structural_points[bone.base.point1.base.index],
+                new_entity.structural_points[bone.base.point2.base.index],
+            )
+
+            if isinstance(bone, NormalBone):
+                new_bone = NormalBone(base_bone)
+            elif isinstance(bone, RepelBone):
+                new_bone = RepelBone(base_bone, 1)
+            else:
+                new_bone = FragileBone(base_bone, bone.endurance, bone.binding)
+
+            new_bone.base.rest_length = bone.base.rest_length
+            new_entity.structural_bones.append(new_bone)
+
+        for bone in self.flutter_bones:
+            if isinstance(bone, FlutterConnectorBone):
+                new_bone = FlutterConnectorBone(
+                    BaseBone(
+                        new_entity.structural_points[bone.base.point1.base.index],
+                        new_entity.flutter_points[bone.base.point2.base.index],
+                    )
+                )
+            else:
+                new_bone = FlutterBone(
+                    BaseBone(
+                        new_entity.flutter_points[bone.base.point1.base.index],
+                        new_entity.flutter_points[bone.base.point2.base.index],
+                    )
+                )
+
+            new_bone.base.rest_length = bone.base.rest_length
+            new_entity.flutter_bones.append(new_bone)
+
+        new_entity.mounted = self.mounted
+        new_entity.can_remount = self.can_remount
+
+        return new_entity
 
     def process_initial_step(self, gravity: Vector):
         for point in self.structural_points:
@@ -263,7 +360,7 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
     entity.add_fragile_bone(RIGHT_FOOT, NOSE, FRAGILE_BONE_ENDURANCE, MOUNTED_BINDING)
     entity.add_repel_bone(SHOULDER, LEFT_FOOT, REPEL_BONE_LENGTH_FACTOR)
     entity.add_repel_bone(SHOULDER, RIGHT_FOOT, REPEL_BONE_LENGTH_FACTOR)
-    entity.add_flutter_bone(SHOULDER, SCARF_0)
+    entity.add_flutter_connector_bone(SHOULDER, SCARF_0)
     entity.add_flutter_bone(SCARF_0, SCARF_1)
     entity.add_flutter_bone(SCARF_1, SCARF_2)
     entity.add_flutter_bone(SCARF_2, SCARF_3)

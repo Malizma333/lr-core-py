@@ -97,3 +97,17 @@ class FlutterBone:
         self.base.point2.base.update_state(
             next_position, point2.base.velocity, point2.base.previous_position
         )
+
+
+# Connects a contact point to a flutter point
+class FlutterConnectorBone:
+    def __init__(self, base: BaseBone) -> None:
+        self.base = base
+
+    def process(self):
+        adjustment = self.base.get_adjustment()
+        point2 = self.base.point2
+        next_position = self.base.get_vector() * adjustment + point2.base.position
+        self.base.point2.base.update_state(
+            next_position, point2.base.velocity, point2.base.previous_position
+        )

@@ -6,12 +6,16 @@ import math
 
 # Common point properties and methods
 class BasePoint:
-    def __init__(self, position: Vector, velocity: Vector, previous_position: Vector):
+    def __init__(
+        self, position: Vector, velocity: Vector, previous_position: Vector, id: int
+    ):
         self.position = position.copy()
         self.velocity = velocity.copy()
         # Previous position is not necessarily (position - velocity), as it's
         # used to track effects of friction and acceleration
         self.previous_position = previous_position.copy()
+        # Index used to identify points within the entity during a deep copy
+        self.index = id
 
     # Function used to update contact points, as multiple properties often get updated at once
     def update_state(self, new_pos: Vector, new_vel: Vector, new_prev_pos: Vector):

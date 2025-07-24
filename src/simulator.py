@@ -114,11 +114,11 @@ class TrackSimulator:
         self.root.after(int(1000 / self.FPS), self._tick)
 
     def _update(self):
-        frame_entities = self.engine.get_frame(self.frame)
-        if frame_entities is None:
+        frame_state = self.engine.get_frame(self.frame)
+        if frame_state is None:
             self.root.quit()
         else:
-            self._redraw(frame_entities)
+            self._redraw(frame_state.entities)
 
     def _redraw(self, entities: list[Entity]):
         self.current_draw_index = 0
@@ -302,4 +302,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/grid_61.track.json")
+    TrackSimulator("fixtures/initial_state.track.json")

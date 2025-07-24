@@ -20,6 +20,10 @@ class CellPosition:
         self.y = math.floor(world_position.y / cell_size)
         self.remainder = self.world_position - cell_size * Vector(self.x, self.y)
 
+    # No specific implementation, just needs to be deterministic
+    def get_key(self) -> int:
+        return (self.x * 73856093) ^ (self.y * 19349663)
+
 
 # A container for lines that serves as an ordered list (descending line id order)
 class GridCell:
@@ -62,7 +66,7 @@ class Grid:
             self.unregister(line, position)
 
     def register(self, line: PhysicsLine, position: CellPosition):
-        cell_key = self.hash_int_pair(position.x, position.y)
+        cell_key = position.get_key()
         if cell_key not in self.cells:
             self.cells[cell_key] = GridCell(
                 self.get_cell_position(position.world_position)
@@ -70,17 +74,13 @@ class Grid:
         self.cells[cell_key].add_line(line)
 
     def unregister(self, line: PhysicsLine, position: CellPosition):
-        cell_key = self.hash_int_pair(position.x, position.y)
+        cell_key = position.get_key()
         if cell_key in self.cells:
             self.cells[cell_key].remove_line(line.id)
 
-    # No specific implementation, just needs to be deterministic
-    def hash_int_pair(self, x: int, y: int) -> int:
-        return (x * 73856093) ^ (y * 19349663)
-
     def get_cell(self, position: Vector):
         cell_position = self.get_cell_position(position)
-        cell_key = self.hash_int_pair(cell_position.x, cell_position.y)
+        cell_key = cell_position.get_key()
         if cell_key in self.cells:
             return self.cells[cell_key]
         return None
@@ -213,7 +213,7 @@ class Grid:
         return cells
 
     def get_interacting_lines(self, point: ContactPoint):
-        involved_lines: list[PhysicsLine] = []
+        interacting_lines: list[PhysicsLine] = []
         # Get cells in a 3 x 3
         # May need update if line hitbox size is modified
         for x_offset in (-1, 0, 1):
@@ -225,6 +225,6 @@ class Grid:
                 if cell != None:
                     for line in cell.lines:
                         # Intentionally contains duplicates, ordered by id
-                        involved_lines.append(line)
+                        interacting_lines.append(line)
 
-        return involved_lines
+        return interacting_lines

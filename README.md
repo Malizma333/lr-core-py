@@ -21,5 +21,4 @@ Current features:
 
 Planned TODOs:
 - Remount implementation (linerider.com and LRO)
-- Better API for adding, removing, and moving lines inside the grid + refreshing engine cache
 - Even more tests

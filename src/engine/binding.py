@@ -27,7 +27,7 @@ class BindingTrigger:
             self.bind_joints[0][1].base.position - self.bind_joints[0][0].base.position
         )
         delta2 = (
-            self.bind_joints[1][0].base.position - self.bind_joints[1][1].base.position
+            self.bind_joints[1][1].base.position - self.bind_joints[1][0].base.position
         )
         if delta1.cross(delta2) < 0:
             self.binding.set_intact(False)
