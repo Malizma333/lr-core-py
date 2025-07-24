@@ -9,15 +9,17 @@ function captureState(testName, includeScarf = false) {
   const formatNumber = (n) => n.toPrecision(17).replace(/\.?0+$/, "");
   // peg, tail, nose, string, butt, shoulder, rhand, lhand, lfoot, rfoot, scarf0...6
   state["state"] = {
-    "entity": store.getState().simulator.engine.getFrame(index).snapshot.entities[0].entities.map(entity =>
-      entity.points.map(
-        point => [
-          formatNumber(point.pos.x),
-          formatNumber(point.pos.y),
-          formatNumber(point.vel.x),
-          formatNumber(point.vel.y),
-        ],
-      )
+    "entities": store.getState().simulator.engine.getFrame(index).snapshot.entities[0].entities.map(
+      entity => ({
+        "points": entity.points.map(
+          point => [
+            formatNumber(point.pos.x),
+            formatNumber(point.pos.y),
+            formatNumber(point.vel.x),
+            formatNumber(point.vel.y),
+          ],
+        ),
+      }),
     ),
   };
 

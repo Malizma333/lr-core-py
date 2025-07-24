@@ -1,39 +1,34 @@
 # Reads test case data from tests.json and run tests
 
-# Layout of tests.json
-"""
-[
-  "file": string,  (file name substituted into fixtures/*.track.json)
-  "test": string,
-  "frame": uint,
-  "state": {
-    "entities": [
-      { (first entity data)
-        "points": [
-          [ (entity's first point data)
-            string,  (x position, float formatted as 17 point precision string representation)
-            string,  (y position, ...)
-            string,  (x velocity, ...)
-            string  (y velocity, ...)
-          ],
-          ..., (some tests have extra points to check scarf positions)
-        ],
-      },
-      ...,
-    ]
-  }
-]
-"""
-
 from engine.engine import Engine, CachedFrame
 from utils.convert import convert_lines, convert_entities, convert_version
 
-from typing import Union, Any
+from typing import Union, TypedDict, List, Optional
 import json
 import sys
 
 # TODO dismount test + sled break test
 # TODO remount single rider + multi rider tests
+
+
+# This is not enforced at runtime, but useful for documentation
+class PointData(tuple[str, str, str, str]):
+    """A list of 4 stringified floats: x, y, vx, vy"""
+
+
+class EntityState(TypedDict):
+    points: List[List[str]]
+
+
+class TestState(TypedDict):
+    entities: List[EntityState]
+
+
+class TestFile(TypedDict):
+    file: str  # substituted into fixtures/*.track.json
+    test: str  # name/description
+    frame: int  # frame number
+    state: Optional[TestState]  # optional state block
 
 
 class Tests:
@@ -67,16 +62,16 @@ class Tests:
     def states_equal(
         self,
         result_state: Union[CachedFrame, None],
-        expected_state: Any,  # Don't feel like typing this properly, see above
+        expected_state: Union[TestState, None],
     ) -> bool:
-        if result_state == None:
-            if expected_state == None:
+        if result_state is None:
+            if expected_state is None:
                 return True
             else:
                 self.fail_message = "expected state to not be None"
                 return False
 
-        if result_state != None and expected_state == None:
+        if expected_state is None:
             self.fail_message = "expected state to be None"
             return False
 
@@ -87,10 +82,10 @@ class Tests:
             self.fail_message = "states did not match in length"
             return False
 
-        for i, expected_points in enumerate(expected_entities):
-            for j, expected_point_data in enumerate(expected_points):
+        for i, expected_entity_state in enumerate(expected_entities):
+            for j, expected_point_data in enumerate(expected_entity_state["points"]):
                 result_points = result_entities[i].get_all_points()
-                if len(result_points) < len(expected_points):
+                if len(result_points) < len(expected_entity_state):
                     self.fail_message = "entity points did not match in length"
                     return False
 
