@@ -29,6 +29,10 @@ class Vector:
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
+    # v1 != v2
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     # v1 @ v2 = dot product
     def __matmul__(self, other: Self):
         return self.x * other.x + self.y * other.y

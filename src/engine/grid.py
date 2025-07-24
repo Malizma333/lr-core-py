@@ -2,6 +2,7 @@ from engine.vector import Vector
 from engine.line import PhysicsLine
 from engine.point import ContactPoint
 from enum import Enum
+from typing import Union
 import math
 
 
@@ -56,6 +57,24 @@ class Grid:
         self.version = version
         self.cells: dict[int, GridCell] = {}
         self.cell_size = cell_size
+
+    def get_max_line_id(self) -> int:
+        max_found = -1
+        if self.cells:
+            for cell in self.cells.values():
+                if cell.lines:
+                    for line in cell.lines:
+                        if line.id > max_found:
+                            max_found = line.id
+        return max_found
+
+    def get_line_by_id(self, line_id: int) -> Union[PhysicsLine, None]:
+        for cell in self.cells.values():
+            if line_id in cell.ids:
+                for line in cell.lines:
+                    if line.id == line_id:
+                        return line
+        return None
 
     def add_line(self, line: PhysicsLine):
         for position in self.get_cell_positions_for(line):
@@ -161,17 +180,16 @@ class Grid:
             return [initial_cell]
 
         if self.version == GridVersion.V6_0:
+            line_halfway = 0.5 * Vector(abs(line.vector.x), abs(line.vector.y))
+            line_midpoint = line.endpoints[0] + line.vector * 0.5
+            absolute_normal = Vector(abs(line.normal_unit.x), abs(line.normal_unit.y))
             # Finds axis-aligned bounding box and filters it
             for cell_x in range(lower_bound_x, upper_bound_x + 1):
                 for cell_y in range(lower_bound_y, upper_bound_y + 1):
+                    # Note: The sign of line.normal_unit is not important here (cancelled out)
                     curr_pos = self.cell_size * Vector(cell_x + 0.5, cell_y + 0.5)
                     next_cell_pos = self.get_cell_position(curr_pos)
-                    line_halfway = 0.5 * Vector(abs(line.vector.x), abs(line.vector.y))
-                    line_midpoint = line.endpoints[0] + line.vector * 0.5
-                    dist_between_centers = line_midpoint - next_cell_pos.world_position
-                    absolute_normal = Vector(
-                        abs(line.normal_unit.x), abs(line.normal_unit.y)
-                    )
+                    dist_between_centers = line_midpoint - curr_pos
                     dist_from_cell_center = absolute_normal @ next_cell_pos.remainder
                     cell_overlap_into_hitbox = (
                         Vector(dist_from_cell_center, dist_from_cell_center)

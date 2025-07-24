@@ -53,7 +53,10 @@ class TrackSimulator:
         self.root.title("Line Rider Python Engine")
         self.canvas = tk.Canvas(self.root, width=1280, height=720, bg="white")
         self.canvas.pack(fill=tk.BOTH, expand=True)
-        self.canvas_cache = []
+
+        self.canvas_cache = {tag: [] for tag in DrawTag}
+        self.draw_indices = {tag: 0 for tag in DrawTag}
+
         self.canvas_center = 0.5 * Vector(
             int(self.canvas["width"]), int(self.canvas["height"])
         )
@@ -62,28 +65,71 @@ class TrackSimulator:
         self.frame = self.START_FRAME
         self.focused_entity = 0
         self.playing = False
-        self.current_draw_index = 0
+        self.drawing_line_start = None
+        self.temp_line_id = None
 
         self._bind_keys()
         self.root.bind("<Configure>", self._on_resize)
+
         self._update()
         self._tick()
+
         self.canvas.focus_set()
-        self.canvas.tag_raise(DrawTag.Hitbox.name)
-        self.canvas.tag_raise(DrawTag.Ext.name)
-        self.canvas.tag_raise(DrawTag.Line.name)
-        self.canvas.tag_raise(DrawTag.Bone.name)
-        self.canvas.tag_raise(DrawTag.Vec.name)
-        self.canvas.tag_raise(DrawTag.Point.name)
-        self.canvas.tag_raise(DrawTag.Text.name)
         self.root.mainloop()
 
     def _bind_keys(self):
+        self.canvas.bind("<ButtonPress-1>", self._on_mouse_down)
+        self.canvas.bind("<B1-Motion>", self._on_mouse_drag)
+        self.canvas.bind("<ButtonRelease-1>", self._on_mouse_up)
+        self.canvas.bind("<BackSpace>", self._remove_last_line)
         self.canvas.bind("<Left>", self._prev_frame)
         self.canvas.bind("<Right>", self._next_frame)
         self.canvas.bind("<Down>", self._prev_entity)
         self.canvas.bind("<Up>", self._next_entity)
         self.canvas.bind("<space>", self._toggle_play)
+
+    def _on_mouse_down(self, event):
+        self.drawing_line_start = Vector(event.x, event.y)
+
+    def _on_mouse_drag(self, event):
+        if self.drawing_line_start is not None:
+            if self.temp_line_id is not None:
+                self.canvas.delete(self.temp_line_id)
+            self.temp_line_id = self.canvas.create_line(
+                self.drawing_line_start.x,
+                self.drawing_line_start.y,
+                event.x,
+                event.y,
+                fill="black",
+                width=self.LINE_WIDTH,
+                dash=(4, 2),
+            )
+
+    def _on_mouse_up(self, event):
+        if self.drawing_line_start is not None:
+            start_canvas_point = self.drawing_line_start
+            end_canvas_point = Vector(event.x, event.y)
+            start_physics_point = self._canvas_to_physics(start_canvas_point)
+            end_physics_point = self._canvas_to_physics(end_canvas_point)
+
+            if start_physics_point != end_physics_point:
+                new_line = PhysicsLine(
+                    -1, start_physics_point, end_physics_point, False, False, False, 0
+                )
+                self.engine.add_line(new_line)
+                self.lines.append(new_line)
+                self._update()
+
+            self.drawing_line_start = None
+            if self.temp_line_id is not None:
+                self.canvas.delete(self.temp_line_id)
+                self.temp_line_id = None
+
+    def _remove_last_line(self, event=None):
+        if len(self.lines) > 0:
+            last_line = self.lines.pop()
+            self.engine.remove_line(last_line.id)
+            self._update()
 
     def _on_resize(self, event):
         self.canvas_center = Vector(event.width / 2, event.height / 2)
@@ -118,10 +164,20 @@ class TrackSimulator:
         if frame_state is None:
             self.root.quit()
         else:
+            for tag in DrawTag:
+                self.draw_indices[tag] = 0
             self._redraw(frame_state.entities)
+            self._cleanup_canvas_cache()
+
+    def _cleanup_canvas_cache(self):
+        for tag in DrawTag:
+            cache = self.canvas_cache[tag]
+            active = self.draw_indices[tag]
+            for i in range(active, len(cache)):
+                self.canvas.delete(cache[i])
+            del cache[active:]
 
     def _redraw(self, entities: list[Entity]):
-        self.current_draw_index = 0
         self.origin = entities[self.focused_entity].get_average_position()
         for line in self.lines:
             if self.DRAW_LINES:
@@ -129,9 +185,19 @@ class TrackSimulator:
         for entity in entities:
             self._draw_entity(entity)
         self._draw_text(entities)
+        self.canvas.tag_raise(DrawTag.Hitbox.name)
+        self.canvas.tag_raise(DrawTag.Ext.name)
+        self.canvas.tag_raise(DrawTag.Line.name)
+        self.canvas.tag_raise(DrawTag.Bone.name)
+        self.canvas.tag_raise(DrawTag.Vec.name)
+        self.canvas.tag_raise(DrawTag.Point.name)
+        self.canvas.tag_raise(DrawTag.Text.name)
 
     def _physics_to_canvas(self, v: Vector) -> Vector:
         return self.canvas_center + self.ZOOM * (v - self.origin)
+
+    def _canvas_to_physics(self, v: Vector) -> Vector:
+        return (v - self.canvas_center) / self.ZOOM + self.origin
 
     def _draw_entity(self, entity: Entity):
         mv_len_zoom = self.MV_LENGTH * self.ZOOM
@@ -235,11 +301,10 @@ class TrackSimulator:
             self.canvas_center.y * 2 - 25,
         )
 
-        pos_strings = []
-        for point in entities[self.focused_entity].structural_points:
-            pos_strings.append(f"{point.base.position}")
-
-        # Match LRO order
+        pos_strings = [
+            f"{p.base.position}"
+            for p in entities[self.focused_entity].structural_points
+        ]
         pos_strings[6], pos_strings[7] = pos_strings[7], pos_strings[6]
 
         for i, pos_str in enumerate(pos_strings):
@@ -254,7 +319,10 @@ class TrackSimulator:
         color: str,
         round_cap=False,
     ):
-        if self.current_draw_index == len(self.canvas_cache):
+        cache = self.canvas_cache[tag]
+        index = self.draw_indices[tag]
+
+        if index == len(cache):
             line_obj = self.canvas.create_line(0, 0, 0, 0)
             self.canvas.itemconfig(
                 line_obj,
@@ -263,42 +331,44 @@ class TrackSimulator:
                 fill=color,
                 tags=tag.name,
             )
-            self.canvas_cache.append(line_obj)
+            cache.append(line_obj)
         else:
-            line_obj = self.canvas_cache[self.current_draw_index]
+            line_obj = cache[index]
 
         self.canvas.coords(line_obj, p1.x, p1.y, p2.x, p2.y)
-        self.current_draw_index += 1
+        self.draw_indices[tag] += 1
 
     def _generate_circle(
         self, tag: DrawTag, x: float, y: float, radius: float, color: str
     ):
-        if self.current_draw_index == len(self.canvas_cache):
+        cache = self.canvas_cache[tag]
+        index = self.draw_indices[tag]
+
+        if index == len(cache):
             circle = self.canvas.create_oval(0, 0, 0, 0, fill=color, tags=tag.name)
-            self.canvas_cache.append(circle)
+            cache.append(circle)
         else:
-            circle = self.canvas_cache[self.current_draw_index]
+            circle = cache[index]
 
         self.canvas.coords(circle, x - radius, y - radius, x + radius, y + radius)
-        self.current_draw_index += 1
+        self.draw_indices[tag] += 1
 
     def _generate_text(self, text: str, x: float, y: float):
-        if self.current_draw_index == len(self.canvas_cache):
+        tag = DrawTag.Text
+        cache = self.canvas_cache[tag]
+        index = self.draw_indices[tag]
+
+        if index == len(cache):
             text_obj = self.canvas.create_text(
-                x,
-                y,
-                font=("Helvetica", 12),
-                fill="black",
-                anchor="w",
-                tags=DrawTag.Text.name,
+                x, y, font=("Helvetica", 12), fill="black", anchor="w", tags=tag.name
             )
-            self.canvas_cache.append(text_obj)
+            cache.append(text_obj)
         else:
-            text_obj = self.canvas_cache[self.current_draw_index]
+            text_obj = cache[index]
 
         self.canvas.itemconfig(text_obj, text=text)
         self.canvas.coords(text_obj, x, y)
-        self.current_draw_index += 1
+        self.draw_indices[tag] += 1
 
 
 if __name__ == "__main__":

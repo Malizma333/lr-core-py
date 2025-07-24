@@ -15,9 +15,8 @@ from engine.constants import (
 
 
 class CachedFrame:
-    def __init__(self, entities: list[Entity], hit_lines: set[int] = set()):
+    def __init__(self, entities: list[Entity]):
         self.entities: list[Entity] = entities
-        self.involved_cells: set[int] = hit_lines
 
 
 # Not specific implementation, just used for caching
@@ -50,7 +49,6 @@ class Engine:
 
         for frame in range(len(self.state_cache) - 1, target_frame):
             new_entities: list[Entity] = []
-            involved_cells: set[int] = set()
 
             for entity in self.state_cache[frame].entities:
                 new_entities.append(entity.deep_copy())
@@ -59,7 +57,7 @@ class Engine:
             for entity in new_entities:
                 entity.process_initial_step(self.gravity_scale * self.gravity_vector)
 
-            for i in range(ITERATIONS):
+            for _ in range(ITERATIONS):
                 for entity in new_entities:
                     # entity bones
                     entity.process_structural_bones()
@@ -67,7 +65,6 @@ class Engine:
                 for entity in new_entities:
                     # entity-line collisions
                     entity.process_collisions(self.grid)
-                    # TODO add involved cells to the cache
 
             # scarf bones
             for entity in new_entities:
@@ -77,23 +74,19 @@ class Engine:
             for entity in new_entities:
                 entity.process_bind_triggers()
 
-            self.state_cache.append(CachedFrame(new_entities, involved_cells))
+            self.state_cache.append(CachedFrame(new_entities))
 
         return self.state_cache[target_frame]
 
-    def invalidate_cache(self, line: PhysicsLine):
-        cell_positions = self.grid.get_cell_positions_for(line)
-        for i in range(len(self.state_cache)):
-            frame = self.state_cache[i]
-            for position in cell_positions:
-                if position.get_key() in frame.involved_cells:
-                    self.state_cache = self.state_cache[i:]
-                    return
-
+    # Primitive add and remove line methods
+    # A proper implementation would look through the grid to optimize cache clears
     def add_line(self, line: PhysicsLine):
-        self.invalidate_cache(line)
+        line.id = self.grid.get_max_line_id() + 1
+        self.state_cache = [self.state_cache[0]]
         self.grid.add_line(line)
 
-    def remove_line(self, line: PhysicsLine):
-        self.invalidate_cache(line)
-        self.grid.remove_line(line)
+    def remove_line(self, id: int):
+        line = self.grid.get_line_by_id(id)
+        if line != None:
+            self.state_cache = [self.state_cache[0]]
+            self.grid.remove_line(line)

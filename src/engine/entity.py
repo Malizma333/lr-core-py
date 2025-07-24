@@ -45,7 +45,6 @@ class Entity:
         # TODO remount state booleans/ints here
 
     def set_can_remount(self, can_remount: bool):
-        print("set_can_remount")
         self.can_remount = can_remount
 
     def set_mounted(self, mounted: bool):
@@ -157,6 +156,7 @@ class Entity:
         self.flutter_bones.append(bone)
         return bone
 
+    # TODO bindings get copied incorrectly because they hang on to an old self reference
     def deep_copy(self):
         new_entity = Entity()
 
