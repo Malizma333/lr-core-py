@@ -16,7 +16,14 @@ from typing import TypedDict, Union
 from enum import Enum
 import math
 
-# TODO .com remounting v1, v2, lra remount
+# TODO remounting .com v1, .com v2, lra
+#   pre-remount (indicated with "remountable": undefined) the tail fakie breaks the sled after dismount
+#   remount-v1 (indicated with "remountable": true) the tail fakie does not break the sled after dismount (bug)
+#   remount-v2 (indicated with "remountable": 1) the tail fakie breaks the sled after dismount (fixed)
+#   lra ???
+# TODO lra fakie bug
+#   sled breaks for shoulder fakie (which it shouldn't, according to flash)
+#   sled doesn't ever break if bosh is dismounted (which it should still do for tail fakies, according to current .com)
 
 
 class EntityState(Enum):
