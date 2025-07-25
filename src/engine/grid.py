@@ -10,7 +10,8 @@ class GridVersion(Enum):
     V6_2 = 0
     V6_1 = 1
     V6_0 = 2
-    V6_7 = 3
+    V6_3 = 3
+    V6_7 = 4
 
 
 class CellPosition:
@@ -179,7 +180,11 @@ class Grid:
         ):
             return [initial_cell]
 
-        if self.version == GridVersion.V6_0:
+        if (
+            self.version == GridVersion.V6_0
+            or self.version == GridVersion.V6_3
+            or self.version == GridVersion.V6_7
+        ):
             line_halfway = 0.5 * Vector(abs(line.vector.x), abs(line.vector.y))
             line_midpoint = line.endpoints[0] + line.vector * 0.5
             absolute_normal = Vector(abs(line.normal_unit.x), abs(line.normal_unit.y))
