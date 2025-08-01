@@ -17,8 +17,13 @@ Current features:
 - rider bones, points, and bindings
 - line extensions, flipped lines, acceleration multipliers
 - multiple riders
-- scarf physics (flash, linerider.com approximation)
+- flash scarf physics
+- linerider.com scarf physics (approximation)
 
 Planned TODOs:
 - Remount implementation (linerider.com and LRO)
 - Beta 2 mod features? (Brown Lines, Purple Lines, Wind Boxes)
+
+# License
+
+This project is licensed with GPL to remain compliant with LRA's GPL license, since it was used as a reference. Any modification or reference of this project must also be GPL-licensed and remain open source. See the [licenses directory](LICENSES/) for the full list of included licenses.

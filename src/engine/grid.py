@@ -164,6 +164,7 @@ class Grid:
 
         return next_pos
 
+    # TODO take endpoints instead of line
     def get_cell_positions_for(self, line: PhysicsLine) -> list[CellPosition]:
         cells = []
         initial_cell = self.get_cell_position(line.endpoints[0])
@@ -185,6 +186,7 @@ class Grid:
             or self.version == GridVersion.V6_3
             or self.version == GridVersion.V6_7
         ):
+            # Reference: https://github.com/kevansevans/OpenLR/blob/542bb76e85aff820ae720cfc0d5af1bb4eb50969/src/hxlr/engine/Grid.hx#L251
             line_halfway = 0.5 * Vector(abs(line.vector.x), abs(line.vector.y))
             line_midpoint = line.endpoints[0] + line.vector * 0.5
             absolute_normal = Vector(abs(line.normal_unit.x), abs(line.normal_unit.y))

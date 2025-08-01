@@ -1,0 +1,19 @@
+This program references code from the following code repositories. Licenses for each have been copied into this directory.
+
+OpenLR (https://github.com/kevansevans/OpenLR)
+MIT License
+
+bosh-rs (https://codeberg.org/lipfang/bosh-rs)
+LGPL 3
+
+LROverhaul (https://github.com/LunaKampling/LROverhaul)
+GPL 3
+
+lr-core (https://github.com/conundrumer/lr-core)
+Permission of Author
+
+lr-mvp-webapp (https://www.linerider.com/)
+Permission of Author
+
+Line-Rider-Flash-Builds-Decompiled (https://github.com/kevansevans/Line-Rider-Flash-Builds-Decompiled-)
+Permission of Author
