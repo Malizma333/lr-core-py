@@ -16,6 +16,9 @@ DEFAULT_LINE_HITBOX_HEIGHT = 10
 # Max ratio of the length of the line extension to the length of its line
 MAX_EXTENSION_RATIO = 0.25
 
+# Scalar applied to acceleration line vectors
+ACCELERATION_SCALAR = 0.1
+
 # The linerider.com scarf uses trig operations, causing unusable tests
 # (comparing different sin implementations)
 # However, the flash version does not, making it much more testable

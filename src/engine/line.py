@@ -1,6 +1,10 @@
 from engine.vector import Vector
 from engine.point import ContactPoint
-from engine.constants import DEFAULT_LINE_HITBOX_HEIGHT, MAX_EXTENSION_RATIO
+from engine.constants import (
+    DEFAULT_LINE_HITBOX_HEIGHT,
+    MAX_EXTENSION_RATIO,
+    ACCELERATION_SCALAR,
+)
 
 
 class PhysicsLine:
@@ -42,7 +46,7 @@ class PhysicsLine:
         # Left and right limits with extension applied
         self.limit_left = 0.0
         self.limit_right = 1.0
-        self.acceleration_vector = self.unit * 0.1 * self.acceleration
+        self.acceleration_vector = self.unit * ACCELERATION_SCALAR * self.acceleration
 
         if self.flipped:
             self.normal_unit *= -1
