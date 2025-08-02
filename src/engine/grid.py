@@ -1,5 +1,5 @@
 from engine.vector import Vector
-from engine.line import PhysicsLine
+from engine.line import Line
 from engine.point import ContactPoint
 from enum import Enum
 from typing import Union
@@ -30,23 +30,23 @@ class CellPosition:
 # A container for lines that serves as an ordered list (descending line id order)
 class GridCell:
     def __init__(self, position: CellPosition):
-        self.lines: list[PhysicsLine] = []
+        self.lines: list[Line] = []
         self.ids = set()
         self.position = position
 
-    def add_line(self, new_line: PhysicsLine):
+    def add_line(self, new_line: Line):
         for i, line in enumerate(self.lines):
-            if line.id < new_line.id:
+            if line.base.id < new_line.base.id:
                 self.lines.insert(i, new_line)
-                self.ids.add(new_line.id)
+                self.ids.add(new_line.base.id)
                 return
 
         self.lines.append(new_line)
-        self.ids.add(new_line.id)
+        self.ids.add(new_line.base.id)
 
     def remove_line(self, line_id: int):
         for i, line in enumerate(self.lines):
-            if line.id == line_id:
+            if line.base.id == line_id:
                 del self.lines[i]
                 self.ids.remove(line_id)
                 return
@@ -65,40 +65,40 @@ class Grid:
             for cell in self.cells.values():
                 if cell.lines:
                     for line in cell.lines:
-                        if line.id > max_found:
-                            max_found = line.id
+                        if line.base.id > max_found:
+                            max_found = line.base.id
         return max_found
 
-    def get_line_by_id(self, line_id: int) -> Union[PhysicsLine, None]:
+    def get_line_by_id(self, line_id: int) -> Union[Line, None]:
         for cell in self.cells.values():
             if line_id in cell.ids:
                 for line in cell.lines:
-                    if line.id == line_id:
+                    if line.base.id == line_id:
                         return line
         return None
 
-    def add_line(self, line: PhysicsLine):
+    def add_line(self, line: Line):
         for position in self.get_cell_positions_between(
-            line.endpoints[0], line.endpoints[1]
+            line.base.endpoints[0], line.base.endpoints[1]
         ):
             self.register(line, position)
 
-    def remove_line(self, line: PhysicsLine):
+    def remove_line(self, line: Line):
         for position in self.get_cell_positions_between(
-            line.endpoints[0], line.endpoints[1]
+            line.base.endpoints[0], line.base.endpoints[1]
         ):
             self.unregister(line, position)
 
-    def move_line(self, old_point1: Vector, old_point2: Vector, line: PhysicsLine):
+    def move_line(self, old_point1: Vector, old_point2: Vector, line: Line):
         for position in self.get_cell_positions_between(old_point1, old_point2):
             self.unregister(line, position)
 
         for position in self.get_cell_positions_between(
-            line.endpoints[0], line.endpoints[1]
+            line.base.endpoints[0], line.base.endpoints[1]
         ):
             self.register(line, position)
 
-    def register(self, line: PhysicsLine, position: CellPosition):
+    def register(self, line: Line, position: CellPosition):
         cell_key = position.get_key()
         if cell_key not in self.cells:
             self.cells[cell_key] = GridCell(
@@ -106,10 +106,10 @@ class Grid:
             )
         self.cells[cell_key].add_line(line)
 
-    def unregister(self, line: PhysicsLine, position: CellPosition):
+    def unregister(self, line: Line, position: CellPosition):
         cell_key = position.get_key()
         if cell_key in self.cells:
-            self.cells[cell_key].remove_line(line.id)
+            self.cells[cell_key].remove_line(line.base.id)
 
     def get_cell(self, position: Vector):
         cell_position = self.get_cell_position(position)
@@ -263,7 +263,7 @@ class Grid:
         return cells
 
     def get_interacting_lines(self, point: ContactPoint):
-        interacting_lines: list[PhysicsLine] = []
+        interacting_lines: list[Line] = []
         # Get cells in a 3 x 3
         # May need update if line hitbox size is modified
         for x_offset in (-1, 0, 1):

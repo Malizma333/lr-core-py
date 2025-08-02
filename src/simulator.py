@@ -5,7 +5,7 @@ from enum import Enum
 from engine.engine import Engine
 from engine.vector import Vector
 from engine.entity import Entity, NormalBone, FragileBone, RepelBone
-from engine.line import PhysicsLine
+from engine.line import NormalLine, PhysicsLine, AccelerationLine, Line
 from utils.convert import convert_lines, convert_entities, convert_version
 
 
@@ -114,10 +114,11 @@ class TrackSimulator:
 
             if start_physics_point != end_physics_point:
                 new_line = PhysicsLine(
-                    -1, start_physics_point, end_physics_point, False, False, False, 0
+                    -1, start_physics_point, end_physics_point, False, False, False
                 )
-                self.engine.add_line(new_line)
-                self.lines.append(new_line)
+                new_normal_line = NormalLine(new_line)
+                self.engine.add_line(new_normal_line)
+                self.lines.append(new_normal_line)
                 self._update()
 
             self.drawing_line_start = None
@@ -128,7 +129,7 @@ class TrackSimulator:
     def _remove_last_line(self, event=None):
         if len(self.lines) > 0:
             last_line = self.lines.pop()
-            self.engine.remove_line(last_line.id)
+            self.engine.remove_line(last_line.base.id)
             self._update()
 
     def _on_resize(self, event):
@@ -237,22 +238,22 @@ class TrackSimulator:
                 DrawTag.Point, pos.x, pos.y, self.CP_RADIUS, color=self.CP_COLOR
             )
 
-    def _draw_line(self, line: PhysicsLine):
-        p1, p2 = line.endpoints
-        if line.flipped:
+    def _draw_line(self, line: Line):
+        p1, p2 = line.base.endpoints
+        if line.base.flipped:
             p1, p2 = p2, p1
 
-        ext_amount = line.length * line.ext_ratio
-        hitbox_vec = line.normal_unit * (line.HITBOX_HEIGHT / 2)
+        ext_amount = line.base.length * line.base.ext_ratio
+        hitbox_vec = line.base.normal_unit * (line.base.HITBOX_HEIGHT / 2)
 
         c_p1 = self._physics_to_canvas(p1)
         c_p2 = self._physics_to_canvas(p2)
-        left_ext = self._physics_to_canvas(p1 - ext_amount * line.unit)
-        right_ext = self._physics_to_canvas(p2 + ext_amount * line.unit)
+        left_ext = self._physics_to_canvas(p1 - ext_amount * line.base.unit)
+        right_ext = self._physics_to_canvas(p2 + ext_amount * line.base.unit)
         gwell_p1 = self._physics_to_canvas(p1 + hitbox_vec)
         gwell_p2 = self._physics_to_canvas(p2 + hitbox_vec)
 
-        if line.left_ext:
+        if line.base.left_ext:
             self._generate_line(
                 DrawTag.Ext,
                 self.EXTENSION_WIDTH,
@@ -261,7 +262,7 @@ class TrackSimulator:
                 color=self.EXTENSION_COLOR,
                 round_cap=True,
             )
-        if line.right_ext:
+        if line.base.right_ext:
             self._generate_line(
                 DrawTag.Ext,
                 self.EXTENSION_WIDTH,
@@ -273,17 +274,20 @@ class TrackSimulator:
 
         self._generate_line(
             DrawTag.Hitbox,
-            line.HITBOX_HEIGHT,
+            line.base.HITBOX_HEIGHT,
             gwell_p1,
             gwell_p2,
             color=self.HITBOX_COLOR,
         )
 
-        line_color = (
-            self.LINE_RED_COLOR if line.acceleration != 0 else self.LINE_BLUE_COLOR
-        )
+        if isinstance(line, NormalLine):
+            color = self.LINE_BLUE_COLOR
+        elif isinstance(line, AccelerationLine):
+            color = self.LINE_RED_COLOR
+        else:
+            color = "black"
         self._generate_line(
-            DrawTag.Line, self.LINE_WIDTH, c_p1, c_p2, round_cap=True, color=line_color
+            DrawTag.Line, self.LINE_WIDTH, c_p1, c_p2, round_cap=True, color=color
         )
 
     def _draw_text(self, entities: list[Entity]):

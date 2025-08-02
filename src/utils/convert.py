@@ -3,26 +3,29 @@
 from engine.vector import Vector
 from engine.entity import create_default_rider, Entity, InitialEntityParams
 from engine.grid import GridVersion
-from engine.line import PhysicsLine
+from engine.line import Line, NormalLine, AccelerationLine, PhysicsLine
 
 
-def convert_lines(lines: list) -> list[PhysicsLine]:
-    converted_lines: list[PhysicsLine] = []
+def convert_lines(lines: list) -> list[Line]:
+    converted_lines: list[Line] = []
     for line in lines:
         if line["type"] != 2 and not (
             line["x1"] == line["x2"] and line["y1"] == line["y2"]
         ):
-            converted_lines.append(
-                PhysicsLine(
-                    line["id"],
-                    Vector(line["x1"], line["y1"]),
-                    Vector(line["x2"], line["y2"]),
-                    line["flipped"],
-                    line["leftExtended"],
-                    line["rightExtended"],
-                    line.get("multiplier", 1 if line["type"] == 1 else 0),
-                )
+            new_line = PhysicsLine(
+                line["id"],
+                Vector(line["x1"], line["y1"]),
+                Vector(line["x2"], line["y2"]),
+                line["flipped"],
+                line["leftExtended"],
+                line["rightExtended"],
             )
+            if line["type"] == 1:
+                converted_lines.append(
+                    AccelerationLine(new_line, line.get("multiplier", 1))
+                )
+            else:
+                converted_lines.append(NormalLine(new_line))
     return converted_lines
 
 

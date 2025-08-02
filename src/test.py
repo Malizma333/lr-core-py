@@ -34,7 +34,7 @@ class JsonTestFile(TypedDict):
 
 
 class Tests:
-    LOAD_FRAME_THRESHOLD: Union[None, int] = None
+    LOAD_FRAME_THRESHOLD: Union[int, None] = None
 
     def __init__(self):
         self.tests = json.load(open("tests.json", "r"))

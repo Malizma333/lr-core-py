@@ -3,7 +3,7 @@ from typing import Union
 from engine.vector import Vector
 from engine.entity import Entity
 from engine.grid import Grid, GridVersion
-from engine.line import PhysicsLine
+from engine.line import Line
 from engine.constants import (
     DEFAULT_CELL_SIZE,
     GRAVITY_SCALAR,
@@ -23,7 +23,7 @@ class Engine:
         self,
         grid_version: GridVersion,
         entities: list[Entity],
-        lines: list[PhysicsLine],
+        lines: list[Line],
     ):
         self.grid = Grid(grid_version, DEFAULT_CELL_SIZE)
         self.gravity_vector = Vector(0, 1)
@@ -78,8 +78,8 @@ class Engine:
 
     # Primitive add and remove line methods
     # A proper implementation would look through the grid to optimize cache clears
-    def add_line(self, line: PhysicsLine):
-        line.id = self.grid.get_max_line_id() + 1
+    def add_line(self, line: Line):
+        line.base.id = self.grid.get_max_line_id() + 1
         self.state_cache = [self.state_cache[0]]
         self.grid.add_line(line)
 

@@ -127,8 +127,8 @@ class Entity:
 
     def add_normal_bone(
         self,
-        point1: Union[ContactPoint, FlutterPoint],
-        point2: Union[ContactPoint, FlutterPoint],
+        point1: ContactPoint,
+        point2: ContactPoint,
     ) -> NormalBone:
         bone = NormalBone(BaseBone(point1, point2))
         self.structural_bones.append(bone)
@@ -136,8 +136,8 @@ class Entity:
 
     def add_fragile_bone(
         self,
-        point1: Union[ContactPoint, FlutterPoint],
-        point2: Union[ContactPoint, FlutterPoint],
+        point1: ContactPoint,
+        point2: ContactPoint,
         endurance: float,
         binding: Binding,
     ) -> FragileBone:
@@ -147,8 +147,8 @@ class Entity:
 
     def add_repel_bone(
         self,
-        point1: Union[ContactPoint, FlutterPoint],
-        point2: Union[ContactPoint, FlutterPoint],
+        point1: ContactPoint,
+        point2: ContactPoint,
         length_factor: float,
     ) -> RepelBone:
         bone = RepelBone(BaseBone(point1, point2), length_factor)
