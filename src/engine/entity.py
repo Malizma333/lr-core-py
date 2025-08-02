@@ -27,8 +27,8 @@ import math
 
 
 class EntityState(Enum):
-    SLED_INTACT = "sled_broken"
-    MOUNTED = "mounted"
+    VEHICLE_INTACT = 0
+    RIDER_MOUNTED = 1
 
 
 class InitialEntityParams(TypedDict):
@@ -52,8 +52,8 @@ class Entity:
         self.flutter_bones: list[Union[FlutterBone, FlutterConnectorBone]] = []
         # Dictionary of states that get altered by binding triggers
         self.binded_states = {
-            EntityState.SLED_INTACT.name: True,
-            EntityState.MOUNTED.name: True,
+            EntityState.VEHICLE_INTACT.name: True,
+            EntityState.RIDER_MOUNTED.name: True,
         }
 
     def set_can_remount(self, can_remount: bool):
@@ -337,8 +337,8 @@ def create_default_rider(init_state: InitialEntityParams) -> Entity:
     SCARF_6 = entity.add_flutter_point(Vector(-9, -5.5), SCARF_FRICTION)
 
     # Create bindings to entity state
-    MOUNTED_BINDING = entity.add_binding(EntityState.MOUNTED)
-    SLED_INTACT_BINDING = entity.add_binding(EntityState.SLED_INTACT)
+    MOUNTED_BINDING = entity.add_binding(EntityState.RIDER_MOUNTED)
+    SLED_INTACT_BINDING = entity.add_binding(EntityState.VEHICLE_INTACT)
 
     # Add the bindings with their joints
     entity.add_bind_trigger(MOUNTED_BINDING, (SHOULDER, BUTT), (STRING, PEG))

@@ -86,16 +86,16 @@ class Tests:
 
         for i, expected_entity_state in enumerate(expected_entities):
             if "rider_state" in expected_entity_state:
-                if result_entities[i].binded_states[EntityState.MOUNTED.name] != (
+                if result_entities[i].binded_states[EntityState.RIDER_MOUNTED.name] != (
                     expected_entity_state["rider_state"] == "MOUNTED"
                 ):
                     self.fail_message = "mounted state did not match"
                     return False
 
             if "sled_state" in expected_entity_state:
-                if result_entities[i].binded_states[EntityState.SLED_INTACT.name] != (
-                    expected_entity_state["sled_state"] == "INTACT"
-                ):
+                if result_entities[i].binded_states[
+                    EntityState.VEHICLE_INTACT.name
+                ] != (expected_entity_state["sled_state"] == "INTACT"):
                     self.fail_message = "sled state did not match"
                     return False
 
