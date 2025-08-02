@@ -77,6 +77,6 @@ class FlutterPoint:
         new_position = current_position + new_velocity
 
         if USE_COM_SCARF:
-            new_position = self.get_flutter(new_velocity, current_position)
+            new_position += self.get_flutter(new_velocity, current_position)
 
         self.base.update_state(new_position, new_velocity, current_position)

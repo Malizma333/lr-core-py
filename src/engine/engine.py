@@ -4,12 +4,6 @@ from engine.vector import Vector
 from engine.entity import RiderVehiclePair
 from engine.grid import Grid, GridVersion
 from engine.line import Line
-from engine.constants import (
-    DEFAULT_CELL_SIZE,
-    GRAVITY_SCALAR,
-    GRAVITY_SCALAR_V67,
-    ITERATIONS,
-)
 
 
 class CachedFrame:
@@ -25,15 +19,16 @@ class Engine:
         entities: list[RiderVehiclePair],
         lines: list[Line],
     ):
+        DEFAULT_CELL_SIZE = 14
         self.grid = Grid(grid_version, DEFAULT_CELL_SIZE)
         self.gravity_vector = Vector(0, 1)
         self.state_cache: list[CachedFrame] = [
             CachedFrame([entity.copy() for entity in entities])
         ]
 
-        self.gravity_scale = GRAVITY_SCALAR
+        self.gravity_scale = 0.175
         if grid_version == GridVersion.V6_7:
-            self.gravity_scale = GRAVITY_SCALAR_V67
+            self.gravity_scale = 0.17500000000000002
 
         for line in lines:
             self.grid.add_line(line)
@@ -52,7 +47,7 @@ class Engine:
                 # gravity + momentum
                 entity.process_initial_step(self.gravity_scale * self.gravity_vector)
 
-                for _ in range(ITERATIONS):
+                for _ in range(6):
                     # bones
                     entity.process_bones()
                     # line collisions

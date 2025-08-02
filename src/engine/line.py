@@ -1,11 +1,6 @@
 from typing import Union
 from engine.vector import Vector
 from engine.point import ContactPoint
-from engine.constants import (
-    DEFAULT_LINE_HITBOX_HEIGHT,
-    MAX_EXTENSION_RATIO,
-    ACCELERATION_SCALAR,
-)
 
 # TODO
 #   - Deceleration Lines
@@ -14,7 +9,7 @@ from engine.constants import (
 
 
 class PhysicsLine:
-    HITBOX_HEIGHT = DEFAULT_LINE_HITBOX_HEIGHT
+    HITBOX_HEIGHT = 10
 
     def __init__(
         self,
@@ -46,6 +41,7 @@ class PhysicsLine:
         # Unit vector pointing up from the line
         self.normal_unit = self.unit.rot_ccw()
         # Size of extension relative to line length
+        MAX_EXTENSION_RATIO = 0.25
         self.ext_ratio = min(MAX_EXTENSION_RATIO, self.HITBOX_HEIGHT / self.length)
         # Left and right limits with extension applied
         self.limit_left = 0.0
@@ -135,6 +131,7 @@ class AccelerationLine:
 
     def update_computed(self):
         self.base.update_computed()
+        ACCELERATION_SCALAR = 0.1
         self.acceleration_vector = self.base.unit * (
             self.acceleration * ACCELERATION_SCALAR
         )
