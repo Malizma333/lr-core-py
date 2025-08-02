@@ -21,6 +21,10 @@ class Vector:
     def __mul__(self, scalar: Union[float, int]):
         return Vector(self.x * scalar, self.y * scalar)
 
+    # scalar * v1
+    def __rmul__(self, scalar: Union[float, int]):
+        return self * scalar
+
     # v1 / scalar
     def __truediv__(self, scalar: Union[float, int]):
         return Vector(self.x / scalar, self.y / scalar)
@@ -36,10 +40,6 @@ class Vector:
     # v1 @ v2 = dot product
     def __matmul__(self, other: Self):
         return self.x * other.x + self.y * other.y
-
-    # scalar * v1
-    def __rmul__(self, scalar: Union[float, int]):
-        return self * scalar
 
     # str(v1), etc
     def __repr__(self):

@@ -4,7 +4,7 @@ from enum import Enum
 
 from engine.engine import Engine
 from engine.vector import Vector
-from engine.entity import Entity, NormalBone, FragileBone, RepelBone
+from engine.entity import RiderVehiclePair, NormalBone, MountBone, RepelBone
 from engine.line import NormalLine, PhysicsLine, AccelerationLine, Line
 from utils.convert import convert_lines, convert_entities, convert_version
 
@@ -35,7 +35,7 @@ class TrackSimulator:
     LINE_RED_COLOR = "#fd4f38"
     LINE_BLUE_COLOR = "#3995fd"
     NORMAL_BONE_COLOR = "blue"
-    FRAGILE_BONE_COLOR = "red"
+    MOUNT_BONE_COLOR = "red"
     REPEL_BONE_COLOR = "magenta"
     FLUTTER_BONE_COLOR = "purple"
     HITBOX_COLOR = "lightgray"
@@ -178,8 +178,9 @@ class TrackSimulator:
                 self.canvas.delete(cache[i])
             del cache[active:]
 
-    def _redraw(self, entities: list[Entity]):
-        self.origin = entities[self.focused_entity].get_average_position()
+    def _redraw(self, entities: list[RiderVehiclePair]):
+        self.origin = self._get_origin(entities[self.focused_entity])
+
         for line in self.lines:
             if self.DRAW_LINES:
                 self._draw_line(line)
@@ -194,35 +195,60 @@ class TrackSimulator:
         self.canvas.tag_raise(DrawTag.Point.name)
         self.canvas.tag_raise(DrawTag.Text.name)
 
+    def _get_origin(self, current_entity: RiderVehiclePair):
+        all_points = current_entity.get_all_points()
+        total_x = 0
+        total_y = 0
+        num_points = len(all_points)
+
+        if num_points == 0:
+            return Vector(0, 0)
+
+        for point in all_points:
+            total_x += point.position.x
+            total_y += point.position.y
+
+        return Vector(total_x / num_points, total_y / num_points)
+
     def _physics_to_canvas(self, v: Vector) -> Vector:
         return self.canvas_center + self.ZOOM * (v - self.origin)
 
     def _canvas_to_physics(self, v: Vector) -> Vector:
         return (v - self.canvas_center) / self.ZOOM + self.origin
 
-    def _draw_entity(self, entity: Entity):
+    def _draw_entity(self, entity: RiderVehiclePair):
         mv_len_zoom = self.MV_LENGTH * self.ZOOM
 
-        for bone in entity.flutter_bones:
+        for chain in (
+            entity.vehicle.base.flutter_chains + entity.rider.base.flutter_chains
+        ):
+            for bone in chain.bone_chain:
+                p1 = self._physics_to_canvas(bone.point1.base.position)
+                p2 = self._physics_to_canvas(bone.point2.base.position)
+                self._generate_line(
+                    DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.FLUTTER_BONE_COLOR
+                )
+
+        for bone in entity.vehicle.base.normal_bones + entity.rider.base.normal_bones:
             p1 = self._physics_to_canvas(bone.base.point1.base.position)
             p2 = self._physics_to_canvas(bone.base.point2.base.position)
             self._generate_line(
-                DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.FLUTTER_BONE_COLOR
+                DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.NORMAL_BONE_COLOR
             )
 
-        for bone in entity.structural_bones:
-            if isinstance(bone, NormalBone):
-                color = self.NORMAL_BONE_COLOR
-            elif isinstance(bone, FragileBone):
-                color = self.FRAGILE_BONE_COLOR
-            elif isinstance(bone, RepelBone):
-                color = self.REPEL_BONE_COLOR
-            else:
-                color = "white"
-
+        for bone in entity.vehicle_mount_bones + entity.rider_mount_bones:
             p1 = self._physics_to_canvas(bone.base.point1.base.position)
             p2 = self._physics_to_canvas(bone.base.point2.base.position)
-            self._generate_line(DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=color)
+            self._generate_line(
+                DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.MOUNT_BONE_COLOR
+            )
+
+        for bone in entity.vehicle.base.repel_bones + entity.rider.base.repel_bones:
+            p1 = self._physics_to_canvas(bone.base.point1.base.position)
+            p2 = self._physics_to_canvas(bone.base.point2.base.position)
+            self._generate_line(
+                DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.REPEL_BONE_COLOR
+            )
 
         for point in entity.get_all_points():
             pos = self._physics_to_canvas(point.position)
@@ -290,7 +316,7 @@ class TrackSimulator:
             DrawTag.Line, self.LINE_WIDTH, c_p1, c_p2, round_cap=True, color=color
         )
 
-    def _draw_text(self, entities: list[Entity]):
+    def _draw_text(self, entities: list[RiderVehiclePair]):
         minutes = int(self.frame / (60 * self.FPS))
         seconds = str(100 + int((self.frame / self.FPS) % 60))[1:]
         frames = str(100 + self.frame % self.FPS)[1:]
@@ -306,8 +332,7 @@ class TrackSimulator:
         )
 
         pos_strings = [
-            f"{p.base.position}"
-            for p in entities[self.focused_entity].structural_points
+            f"{p.position}" for p in entities[self.focused_entity].get_all_points()
         ]
         pos_strings[6], pos_strings[7] = pos_strings[7], pos_strings[6]
 

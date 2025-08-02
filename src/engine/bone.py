@@ -1,6 +1,5 @@
 from typing import Union
 from engine.point import ContactPoint, FlutterPoint
-from engine.binding import Binding
 
 
 # Common bone properties and methods
@@ -50,24 +49,22 @@ class NormalBone:
         self.base.update_points(adjustment)
 
 
-# Bones that can also break after a certain threshold
-class FragileBone:
-    def __init__(self, base: BaseBone, endurance: float, binding: Binding):
+# Bones that can break after a certain stretch threshold
+# These bones are connected between rider and vehicle points
+class MountBone:
+    def __init__(self, base: BaseBone, endurance: float):
         self.base = base
         self.endurance = endurance
-        self.binding = binding
 
-    def process(self):
+    # Returns whether the bone is still intact
+    def process(self) -> bool:
         adjustment = self.base.get_adjustment()
+        intact = adjustment <= self.endurance * self.base.rest_length
 
-        if (
-            not self.binding.get()
-            or adjustment > self.endurance * self.base.rest_length
-        ):
-            self.binding.set(False)
-            return
+        if intact:
+            self.base.update_points(adjustment)
 
-        self.base.update_points(adjustment)
+        return intact
 
 
 # Bones designed to only repel points after a certain fraction of their rest length is reached
@@ -79,35 +76,24 @@ class RepelBone:
     def process(self):
         adjustment = self.base.get_adjustment()
 
-        if self.base.get_vector().length() >= self.base.rest_length:
-            return
-
-        self.base.update_points(adjustment)
+        if self.base.get_vector().length() < self.base.rest_length:
+            self.base.update_points(adjustment)
 
 
-# Non-colliding bones connecting flutter points
-class FlutterBone:
-    def __init__(self, base: BaseBone):
-        self.base = base
-
-    def process(self):
-        adjustment = self.base.get_adjustment()
-        point2 = self.base.point2
-        next_position = self.base.get_vector() * adjustment + point2.base.position
-        self.base.point2.base.update_state(
-            next_position, point2.base.velocity, point2.base.previous_position
-        )
-
-
-# Connects a contact point to a flutter point
-class FlutterConnectorBone:
-    def __init__(self, base: BaseBone) -> None:
-        self.base = base
+# Non-colliding chain of bones connecting flutter points to a contact point
+class FlutterChain:
+    def __init__(self, points: list[FlutterPoint], attachment: ContactPoint):
+        self.bone_chain: list[BaseBone] = []
+        self.bone_chain.append(BaseBone(attachment, points[0]))
+        for i in range(len(points) - 1):
+            self.bone_chain.append(BaseBone(points[i], points[i + 1]))
 
     def process(self):
-        adjustment = self.base.get_adjustment()
-        point2 = self.base.point2
-        next_position = self.base.get_vector() * adjustment + point2.base.position
-        self.base.point2.base.update_state(
-            next_position, point2.base.velocity, point2.base.previous_position
-        )
+        for bone in self.bone_chain:
+            adjustment = bone.get_adjustment()
+            next_position = bone.get_vector() * adjustment + bone.point2.base.position
+            bone.point2.base.update_state(
+                next_position,
+                bone.point2.base.velocity,
+                bone.point2.base.previous_position,
+            )

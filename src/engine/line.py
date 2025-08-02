@@ -7,6 +7,11 @@ from engine.constants import (
     ACCELERATION_SCALAR,
 )
 
+# TODO
+#   - Deceleration Lines
+#   - Trapdoor Lines
+#   - Wind boxes
+
 
 class PhysicsLine:
     HITBOX_HEIGHT = DEFAULT_LINE_HITBOX_HEIGHT

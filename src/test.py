@@ -1,6 +1,5 @@
 # Reads test case data from tests.json and run tests
 
-from engine.entity import EntityState
 from engine.engine import Engine, CachedFrame
 from utils.convert import convert_lines, convert_entities, convert_version
 
@@ -86,16 +85,16 @@ class Tests:
 
         for i, expected_entity_state in enumerate(expected_entities):
             if "rider_state" in expected_entity_state:
-                if result_entities[i].binded_states[EntityState.RIDER_MOUNTED.name] != (
+                if result_entities[i].mounted != (
                     expected_entity_state["rider_state"] == "MOUNTED"
                 ):
                     self.fail_message = "mounted state did not match"
                     return False
 
             if "sled_state" in expected_entity_state:
-                if result_entities[i].binded_states[
-                    EntityState.VEHICLE_INTACT.name
-                ] != (expected_entity_state["sled_state"] == "INTACT"):
+                if result_entities[i].vehicle.intact != (
+                    expected_entity_state["sled_state"] == "INTACT"
+                ):
                     self.fail_message = "sled state did not match"
                     return False
 

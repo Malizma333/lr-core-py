@@ -1,7 +1,11 @@
 # Converts .track.json file portions for usage in test cases
 
 from engine.vector import Vector
-from engine.entity import create_default_rider, Entity, InitialEntityParams
+from engine.entity import (
+    create_default_rider,
+    RiderVehiclePair,
+    InitialEntityParams,
+)
 from engine.grid import GridVersion
 from engine.line import Line, NormalLine, AccelerationLine, PhysicsLine
 
@@ -20,17 +24,17 @@ def convert_lines(lines: list) -> list[Line]:
                 line["leftExtended"],
                 line["rightExtended"],
             )
-            if line["type"] == 1:
+            if line["type"] == 0:
+                converted_lines.append(NormalLine(new_line))
+            elif line["type"] == 1:
                 converted_lines.append(
                     AccelerationLine(new_line, line.get("multiplier", 1))
                 )
-            else:
-                converted_lines.append(NormalLine(new_line))
     return converted_lines
 
 
-def convert_entities(riders: list) -> list[Entity]:
-    converted_entities: list[Entity] = []
+def convert_entities(riders: list) -> list[RiderVehiclePair]:
+    converted_entities: list[RiderVehiclePair] = []
     for rider in riders:
         initial_state: InitialEntityParams = {
             "POSITION": Vector(
