@@ -5,7 +5,7 @@ from engine.entity import (
     create_default_rider,
     RiderVehiclePair,
     InitialEntityParams,
-    MountJointVersion,
+    RemountVersion,
 )
 from engine.grid import GridVersion
 from engine.line import Line, NormalLine, AccelerationLine, PhysicsLine
@@ -37,13 +37,13 @@ def convert_lines(lines: list) -> list[Line]:
 def convert_entities(riders: list) -> list[RiderVehiclePair]:
     converted_entities: list[RiderVehiclePair] = []
     for rider in riders:
-        remount_version = MountJointVersion.NONE
+        remount_version = RemountVersion.NONE
 
         remountable = rider.get("remountable", None)
-        if remountable is True:
-            remount_version = MountJointVersion.COM_V1
-        elif remountable is 1:
-            remount_version = MountJointVersion.COM_V2
+        if remountable == True:
+            remount_version = RemountVersion.COM_V1
+        elif remountable == 1:
+            remount_version = RemountVersion.COM_V2
 
         initial_state: InitialEntityParams = {
             "POSITION": Vector(

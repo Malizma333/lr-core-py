@@ -1,6 +1,7 @@
 # Reads test case data from tests.json and run tests
 
 from engine.engine import Engine, CachedFrame
+from engine.entity import MountState
 from utils.convert import convert_lines, convert_entities, convert_version
 
 from typing import Union, TypedDict, List, Optional
@@ -85,10 +86,16 @@ class Tests:
 
         for i, expected_entity_state in enumerate(expected_entities):
             if "rider_state" in expected_entity_state:
-                if result_entities[i].mounted != (
-                    expected_entity_state["rider_state"] == "MOUNTED"
+                rider_state_map = {
+                    "MOUNTED": MountState.MOUNTED,
+                    "DISMOUNTING": MountState.DISMOUNTING,
+                    "DISMOUNTED": MountState.DISMOUNTED,
+                    "REMOUNTING": MountState.REMOUNTING,
+                }
+                if result_entities[i].mount_state != rider_state_map.get(
+                    expected_entity_state["rider_state"] or "", MountState.MOUNTED
                 ):
-                    self.fail_message = "mounted state did not match"
+                    self.fail_message = f"mounted state did not match, expected {expected_entity_state['rider_state']}"
                     return False
 
             if "sled_state" in expected_entity_state:

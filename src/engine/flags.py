@@ -1,3 +1,5 @@
+# Compile-time booleans that enable features not represented by track files
+
 # The linerider.com scarf uses trig operations, causing unusable tests
 # (comparing different sin implementations)
 # However, the flash version does not, making it much more testable

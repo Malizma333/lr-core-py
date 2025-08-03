@@ -19,7 +19,7 @@ class InitialEntityParams(TypedDict):
     REMOUNT: bool
 
 
-class MountJointVersion(Enum):
+class RemountVersion(Enum):
     # pre-remount (indicated with "remountable": undefined) the tail fakie breaks the sled after dismount
     NONE = 0
     # remount-v1 (indicated with "remountable": true) the tail fakie does not break the sled after dismount (bug)
@@ -36,6 +36,13 @@ class VehicleJointVersion(Enum):
     # - sled breaks for shoulder fakie (which it shouldn't, according to flash)
     # - sled doesn't ever break if bosh is dismounted (which it should still do for tail fakies, according to current .com)
     LRA = 1
+
+
+class MountState(Enum):
+    MOUNTED = 0
+    DISMOUNTING = 1
+    DISMOUNTED = 2
+    REMOUNTING = 3
 
 
 # A base entity that holds the skeleton
@@ -114,19 +121,22 @@ class RiderVehiclePair:
         self,
         rider: RiderEntity,
         vehicle: VehicleEntity,
-        mount_joint_version: MountJointVersion,
+        mount_joint_version: RemountVersion,
     ):
         self.rider = rider
         self.vehicle = vehicle
         self.rider_mount_bones: list[MountBone] = []
         self.vehicle_mount_bones: list[MountBone] = []
         self.joints: list[Joint] = []
-        self.mounted = True
-        self.mount_joint_version = mount_joint_version
+        self.mount_state = MountState.MOUNTED
+        self.frames_until_dismounted = 0
+        self.frames_until_remounting = 0
+        self.frames_until_mounted = 0
+        self.remount_version = mount_joint_version
         self.vehicle_joint_version = VehicleJointVersion.FLASH
 
         if LRA_REMOUNT:
-            self.mount_joint_version = MountJointVersion.LRA
+            self.remount_version = RemountVersion.LRA
 
         if LRA_LEGACY_FAKIE_CHECK:
             self.vehicle_joint_version = VehicleJointVersion.LRA
@@ -193,6 +203,28 @@ class RiderVehiclePair:
                 start_position, start_velocity, start_position - start_velocity
             )
 
+    def transition_to_mount_state(self, new_mount_state: MountState, reset_timer: bool):
+        # Sets the new state while safely resetting timers
+        if new_mount_state == MountState.DISMOUNTING and reset_timer:
+            self.frames_until_dismounted = 30
+        elif new_mount_state == MountState.DISMOUNTED and reset_timer:
+            self.frames_until_remounting = 3
+        elif new_mount_state == MountState.REMOUNTING and reset_timer:
+            self.frames_until_mounted = 3
+
+        self.mount_state = new_mount_state
+
+    def cause_dismount(self):
+        if self.remount_version == RemountVersion.NONE:
+            # Just dismount, ignore timers
+            self.transition_to_mount_state(MountState.DISMOUNTED, False)
+        else:
+            # Dismount with different timer states
+            if self.mount_state == MountState.MOUNTED:
+                self.transition_to_mount_state(MountState.DISMOUNTING, True)
+            elif self.mount_state == MountState.REMOUNTING:
+                self.transition_to_mount_state(MountState.DISMOUNTED, False)
+
     def process_initial_step(self, gravity: Vector):
         for point in self.vehicle.base.contact_points:
             point.initial_step(gravity)
@@ -211,10 +243,10 @@ class RiderVehiclePair:
             bone.process()
 
         for bone in self.vehicle_mount_bones:
-            if self.mounted:
+            if self.mount_state == MountState.MOUNTED:
                 intact = bone.process()
                 if not intact:
-                    self.mounted = False
+                    self.cause_dismount()
 
         for bone in self.vehicle.base.repel_bones:
             bone.process()
@@ -223,10 +255,10 @@ class RiderVehiclePair:
             bone.process()
 
         for bone in self.rider_mount_bones:
-            if self.mounted:
+            if self.mount_state == MountState.MOUNTED:
                 intact = bone.process()
                 if not intact:
-                    self.mounted = False
+                    self.cause_dismount()
 
         for bone in self.rider.base.repel_bones:
             bone.process()
@@ -242,13 +274,6 @@ class RiderVehiclePair:
                 new_pos, new_prev_pos = line.interact(point)
                 point.base.update_state(new_pos, point.base.velocity, new_prev_pos)
 
-    def process_joints(self):
-        for joint in self.joints:
-            if self.mounted and joint.should_break():
-                self.mounted = False
-
-        self.vehicle.process_joints()
-
     def process_flutter(self):
         for chain in self.vehicle.base.flutter_chains:
             chain.process()
@@ -256,17 +281,54 @@ class RiderVehiclePair:
         for chain in self.rider.base.flutter_chains:
             chain.process()
 
+    def process_joints(self):
+        for joint in self.joints:
+            if joint.should_break():
+                self.cause_dismount()
+
+        if self.remount_version == RemountVersion.COM_V1:
+            # Don't process sled joints if dismounted
+            if not (
+                self.mount_state == MountState.DISMOUNTING
+                or self.mount_state == MountState.DISMOUNTED
+            ):
+                self.vehicle.process_joints()
+        else:
+            # Process sled joints as normal
+            self.vehicle.process_joints()
+
+    def process_remount(self):
+        if self.remount_version == RemountVersion.NONE:
+            return
+
+        if self.mount_state == MountState.MOUNTED:
+            pass
+        elif self.mount_state == MountState.DISMOUNTING:
+            self.frames_until_dismounted = max(self.frames_until_dismounted - 1, 0)
+            if self.frames_until_dismounted == 0:
+                self.transition_to_mount_state(MountState.DISMOUNTED, True)
+        elif self.mount_state == MountState.DISMOUNTED:
+            self.frames_until_remounting = max(self.frames_until_remounting - 1, 0)
+            if self.frames_until_remounting == 0:
+                self.transition_to_mount_state(MountState.REMOUNTING, True)
+        else:
+            self.frames_until_mounted = max(self.frames_until_mounted - 1, 0)
+            if self.frames_until_mounted == 0:
+                self.transition_to_mount_state(MountState.MOUNTED, True)
+
     def get_all_points(self) -> list[BasePoint]:
         all_points = []
 
-        for contact_point in (
-            self.vehicle.base.contact_points + self.rider.base.contact_points
-        ):
+        for contact_point in self.vehicle.base.contact_points:
             all_points.append(contact_point.base)
 
-        for flutter_point in (
-            self.vehicle.base.flutter_points + self.rider.base.flutter_points
-        ):
+        for contact_point in self.rider.base.contact_points:
+            all_points.append(contact_point.base)
+
+        for flutter_point in self.vehicle.base.flutter_points:
+            all_points.append(flutter_point.base)
+
+        for flutter_point in self.rider.base.flutter_points:
             all_points.append(flutter_point.base)
 
         return all_points
@@ -274,7 +336,7 @@ class RiderVehiclePair:
 
 def create_default_rider(
     init_state: InitialEntityParams,
-    mount_joint_version: MountJointVersion,
+    mount_joint_version: RemountVersion,
 ) -> RiderVehiclePair:
     rider = RiderEntity(BaseEntity())
     sled = VehicleEntity(BaseEntity())

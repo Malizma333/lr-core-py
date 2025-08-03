@@ -60,6 +60,10 @@ class Engine:
                 # dismount or break sled
                 entity.process_joints()
 
+            for entity in new_entities:
+                # remount states
+                entity.process_remount()
+
             self.state_cache.append(CachedFrame(new_entities))
 
         return self.state_cache[target_frame]
