@@ -35,17 +35,13 @@ class BaseEntity:
         self.flutter_chains: list[FlutterChain] = []
 
     def add_contact_point(self, position: Vector, friction: float) -> ContactPoint:
-        base_point = BasePoint(
-            position, Vector(0, 0), position, len(self.contact_points)
-        )
+        base_point = BasePoint(position, Vector(0, 0), position)
         point = ContactPoint(base_point, friction)
         self.contact_points.append(point)
         return point
 
     def add_flutter_point(self, position: Vector, air_friction: float) -> FlutterPoint:
-        base_point = BasePoint(
-            position, Vector(0, 0), position, len(self.flutter_points)
-        )
+        base_point = BasePoint(position, Vector(0, 0), position)
         point = FlutterPoint(base_point, air_friction)
         self.flutter_points.append(point)
         return point
@@ -115,7 +111,7 @@ class RiderVehiclePair:
 
     # Copy is used for deep copying entity states after each frame
     def copy(self):
-        # TODO
+        # TODO clean way to deep copy
         return self
 
     def add_rider_mount_bone(
@@ -151,10 +147,9 @@ class RiderVehiclePair:
 
         origin = rotation_origin
         # Note that the use of cos and sin here is not exactly the same as javascript
-        # engines might implement it
+        # engines might implement it (which usually use system calls anyway)
         # This gets tested with 50 degrees so it happens to pass the test case,
         # but this may not give the same output for every input
-        # TODO standard sin/cos implementation?
         cos_theta = math.cos(init_state["ROTATION"] * math.pi / 180)
         sin_theta = math.sin(init_state["ROTATION"] * math.pi / 180)
 

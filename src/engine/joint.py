@@ -14,5 +14,4 @@ class Joint:
     def should_break(self):
         delta1 = self.bone1.get_vector()
         delta2 = self.bone2.get_vector()
-        # TODO: This may need to be >= 0 (-delta1 and -delta2)
         return delta1.cross(delta2) < 0
