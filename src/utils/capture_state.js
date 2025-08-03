@@ -9,27 +9,38 @@ function captureState(testName, includeScarf = false, includeState = false) {
   const formatNumber = (n) => n.toPrecision(17).replace(/\.?0+$/, "");
   // peg, tail, nose, string, butt, shoulder, rhand, lhand, lfoot, rfoot, scarf0...6
   testData["state"] = {
-    "entities": store.getState().simulator.engine.getFrame(index).snapshot.entities[0].entities.map(
-      entity => {
+    entities: store
+      .getState()
+      .simulator.engine.getFrame(index)
+      .snapshot.entities[0].entities.map((entity) => {
         const entityState = {
-          "points": entity.points.map(
-            point => [
-              formatNumber(point.pos.x),
-              formatNumber(point.pos.y),
-              formatNumber(point.vel.x),
-              formatNumber(point.vel.y),
-            ],
-          ),
+          points: entity.points.map((point) => [
+            formatNumber(point.pos.x),
+            formatNumber(point.pos.y),
+            formatNumber(point.vel.x),
+            formatNumber(point.vel.y),
+          ]),
         };
 
         if (includeState) {
-          entityState["rider_state"] = entity.riderState;
-          entityState["sled_state"] = entity.sledState;
+          if (entity.riderMounted === true) {
+            entityState["rider_state"] = "MOUNTED";
+          } else if (entity.riderMounted === false) {
+            entityState["rider_state"] = "DISMOUNTED";
+          } else {
+            entityState["rider_state"] = entity.riderState;
+          }
+          if (entity.sledIntact === true) {
+            entityState["sled_state"] = "INTACT";
+          } else if (entity.sledIntact === true) {
+            entityState["sled_state"] = "BROKEN";
+          } else {
+            entityState["sled_state"] = entity.sledState;
+          }
         }
 
         return entityState;
-      },
-    ),
+      }),
   };
 
   if (!includeScarf) {

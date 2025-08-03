@@ -1,14 +1,13 @@
 # Reads test case data from tests.json and run tests
 
 from engine.engine import Engine, CachedFrame
-from engine.entity import MountState
+from engine.entity import MountState, VehicleState
 from utils.convert import convert_lines, convert_entities, convert_version
 
-from typing import Union, TypedDict, List, Optional
+from typing import TypedDict, List, Optional
+from enum import Enum
 import json
 import sys
-
-# TODO remount single rider + multi rider tests
 
 
 # This is not enforced at runtime, but useful for documentation
@@ -33,8 +32,19 @@ class JsonTestFile(TypedDict):
     state: Optional[JsonTestState]  # optional state block
 
 
+class PRINT_STYLE(Enum):
+    BOLD = "\033[1m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+
+
+def print_styled(message: str, style: PRINT_STYLE):
+    print(f"{style.value}{message}\033[0m")
+
+
 class Tests:
-    LOAD_FRAME_THRESHOLD: Union[int, None] = 80
+    LOAD_FRAME_THRESHOLD: Optional[int] = 80
 
     def __init__(self):
         self.tests = json.load(open("tests.json", "r"))
@@ -58,33 +68,35 @@ class Tests:
                     num = x[1:ind2] + x[ind2 + 1 : ind]
                 x = start + "0." + "0" * (offset - 1) + num
         if x != s:
-            self.fail_message = f"{x} != {s}"
+            self.fail_message += f"{x} != {s}"
         return x == s
 
     def states_equal(
         self,
-        result_state: Union[CachedFrame, None],
-        expected_state: Union[JsonTestState, None],
+        result_state: Optional[CachedFrame],
+        expected_state: Optional[JsonTestState],
     ) -> bool:
         if result_state is None:
             if expected_state is None:
                 return True
             else:
-                self.fail_message = "expected state to not be None"
+                self.fail_message += "expected state to not be None"
                 return False
 
         if expected_state is None:
-            self.fail_message = "expected state to be None"
+            self.fail_message += "expected state to be None"
             return False
 
         result_entities = result_state.entities
         expected_entities = expected_state["entities"]
 
         if len(result_entities) != len(expected_entities):
-            self.fail_message = "states did not match in length"
+            self.fail_message += "states did not match in length"
             return False
 
         for i, expected_entity_state in enumerate(expected_entities):
+            self.fail_message = f"rider {i}: "
+
             if "rider_state" in expected_entity_state:
                 rider_state_map = {
                     "MOUNTED": MountState.MOUNTED,
@@ -95,20 +107,30 @@ class Tests:
                 if result_entities[i].mount_state != rider_state_map.get(
                     expected_entity_state["rider_state"] or "", MountState.MOUNTED
                 ):
-                    self.fail_message = f"mounted state did not match, expected {expected_entity_state['rider_state']}"
+                    self.fail_message += (
+                        "mounted state did not match: "
+                        + f"expected {expected_entity_state['rider_state']} got {result_entities[i].mount_state}"
+                    )
                     return False
 
             if "sled_state" in expected_entity_state:
-                if result_entities[i].vehicle.intact != (
-                    expected_entity_state["sled_state"] == "INTACT"
+                sled_state_map = {
+                    "INTACT": VehicleState.INTACT,
+                    "BROKEN": VehicleState.BROKEN,
+                }
+                if result_entities[i].vehicle.state != sled_state_map.get(
+                    expected_entity_state["sled_state"] or "", VehicleState.INTACT
                 ):
-                    self.fail_message = "sled state did not match"
+                    self.fail_message += (
+                        "sled state did not match: "
+                        + f"expected {expected_entity_state['sled_state']} got {result_entities[i].vehicle.state}"
+                    )
                     return False
 
             for j, expected_point_data in enumerate(expected_entity_state["points"]):
                 result_points = result_entities[i].get_all_points()
                 if len(result_points) < len(expected_entity_state):
-                    self.fail_message = "entity points did not match in length"
+                    self.fail_message += "entity points did not match in length"
                     return False
 
                 result_point_data = (
@@ -147,16 +169,22 @@ class Tests:
                 continue
 
             if self.states_equal(engine.get_frame(frame), frame_state):
-                print(format_string.format("PASS", track_file, test_name))
+                print_styled(
+                    format_string.format("PASS", track_file, test_name),
+                    PRINT_STYLE.GREEN,
+                )
                 self.pass_count += 1
             else:
-                print(format_string.format("FAIL", track_file, test_name))
-                print(self.fail_message)
-                self.fail_message = ""
+                print_styled(
+                    format_string.format("FAIL", track_file, test_name),
+                    PRINT_STYLE.RED,
+                )
+                print_styled(self.fail_message, PRINT_STYLE.YELLOW)
                 self.fail_count += 1
+            self.fail_message = ""
 
-        print("Passed", self.pass_count)
-        print("Failed", self.fail_count)
+        print_styled(f"Passed: {self.pass_count}", PRINT_STYLE.BOLD)
+        print_styled(f"Failed: {self.fail_count}", PRINT_STYLE.BOLD)
 
         if self.fail_count > 0:
             sys.exit(1)

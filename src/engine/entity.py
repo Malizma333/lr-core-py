@@ -45,6 +45,11 @@ class MountState(Enum):
     REMOUNTING = 3
 
 
+class VehicleState(Enum):
+    INTACT = 0
+    BROKEN = 1
+
+
 # A base entity that holds the skeleton
 class BaseEntity:
     def __init__(self):
@@ -103,7 +108,7 @@ class VehicleEntity:
     def __init__(self, base: BaseEntity):
         self.base = base
         self.can_remount = False
-        self.intact = True
+        self.state: VehicleState = VehicleState.INTACT
         self.joints: list[Joint] = []
 
     def add_joint(self, bone1: BaseBone, bone2: BaseBone):
@@ -111,8 +116,8 @@ class VehicleEntity:
 
     def process_joints(self):
         for joint in self.joints:
-            if self.intact and joint.should_break():
-                self.intact = False
+            if self.state == VehicleState.INTACT and joint.should_break():
+                self.state = VehicleState.BROKEN
 
 
 # A rider and vehicle pair with mounted context between them

@@ -2,7 +2,7 @@ from engine.vector import Vector
 from engine.line import Line
 from engine.point import ContactPoint
 from enum import Enum
-from typing import Union
+from typing import Optional
 import math
 
 
@@ -67,7 +67,7 @@ class Grid:
                             max_found = line.base.id
         return max_found
 
-    def get_line_by_id(self, line_id: int) -> Union[Line, None]:
+    def get_line_by_id(self, line_id: int) -> Optional[Line]:
         for cell in self.cells.values():
             if line_id in cell.ids:
                 for line in cell.lines:

@@ -2,13 +2,13 @@
   {
     "test": "track start with nothing",
     "frame": 0,
-    "file": "",
+    "file": "empty",
     "state": { "entities": [] }
   },
   {
     "test": "negative frame error",
     "frame": -1,
-    "file": ""
+    "file": "empty"
   },
   {
     "file": "line_flags",
@@ -554,7 +554,7 @@
             ["44.495276498305223", "50.740701156772268", "0.85467863084076612", "3.8536701696645421"],
             ["47.031921561655786", "50.448557301107577", "1.1527075323382618", "3.9358210683845156"]
           ],
-          "rider_state": "DISMOUNTING",
+          "rider_state": "DISMOUNTED",
           "sled_state": "INTACT"
         }
       ]

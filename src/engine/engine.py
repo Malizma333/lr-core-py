@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Union
+from typing import Optional
 from engine.vector import Vector
 from engine.entity import RiderVehiclePair
 from engine.grid import Grid, GridVersion
@@ -34,7 +34,7 @@ class Engine:
         for line in lines:
             self.grid.add_line(line)
 
-    def get_frame(self, target_frame: int) -> Union[CachedFrame, None]:
+    def get_frame(self, target_frame: int) -> Optional[CachedFrame]:
         if target_frame < 0:
             return None
 
