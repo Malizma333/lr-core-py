@@ -21,8 +21,14 @@ Current features:
 - linerider.com scarf physics (approximation)
 
 Planned TODOs:
-- Remount implementation (linerider.com and LRO)
-- Beta 2 mod features? (Brown Lines, Purple Lines, Wind Boxes)
+- Remount implementation
+  - Linerider.com
+  - LRA:CE
+- Beta 2 mod features
+  - Windboxes
+  - Deceleration Lines
+  - Trapdoor Lines
+  - Double Hitbox Lines
 
 # License
 

@@ -3,19 +3,13 @@ from engine.vector import Vector
 from engine.point import BasePoint, ContactPoint, FlutterPoint
 from engine.bone import BaseBone, NormalBone, RepelBone, MountBone, FlutterChain
 from engine.joint import Joint
-from engine.constants import USE_COM_SCARF
+from engine.flags import LR_COM_SCARF, LRA_LEGACY_FAKIE_CHECK, LRA_REMOUNT
 
-from typing import TypedDict, Union
+from enum import Enum
+from typing import TypedDict
 import math
 
 # TODO remounting .com v1, .com v2, lra
-#   pre-remount (indicated with "remountable": undefined) the tail fakie breaks the sled after dismount
-#   remount-v1 (indicated with "remountable": true) the tail fakie does not break the sled after dismount (bug)
-#   remount-v2 (indicated with "remountable": 1) the tail fakie breaks the sled after dismount (fixed)
-#   lra ???
-# TODO lra fakie bug
-#   sled breaks for shoulder fakie (which it shouldn't, according to flash)
-#   sled doesn't ever break if bosh is dismounted (which it should still do for tail fakies, according to current .com)
 
 
 class InitialEntityParams(TypedDict):
@@ -23,6 +17,25 @@ class InitialEntityParams(TypedDict):
     VELOCITY: Vector
     ROTATION: float  # In degrees
     REMOUNT: bool
+
+
+class MountJointVersion(Enum):
+    # pre-remount (indicated with "remountable": undefined) the tail fakie breaks the sled after dismount
+    NONE = 0
+    # remount-v1 (indicated with "remountable": true) the tail fakie does not break the sled after dismount (bug)
+    COM_V1 = 1
+    # remount-v2 (indicated with "remountable": 1) the tail fakie breaks the sled after dismount (fixed)
+    COM_V2 = 2
+    # lra implements its own version of remounting
+    LRA = 3
+
+
+class VehicleJointVersion(Enum):
+    FLASH = 0
+    # lra fakie bug:
+    # - sled breaks for shoulder fakie (which it shouldn't, according to flash)
+    # - sled doesn't ever break if bosh is dismounted (which it should still do for tail fakies, according to current .com)
+    LRA = 1
 
 
 # A base entity that holds the skeleton
@@ -101,6 +114,7 @@ class RiderVehiclePair:
         self,
         rider: RiderEntity,
         vehicle: VehicleEntity,
+        mount_joint_version: MountJointVersion,
     ):
         self.rider = rider
         self.vehicle = vehicle
@@ -108,6 +122,14 @@ class RiderVehiclePair:
         self.vehicle_mount_bones: list[MountBone] = []
         self.joints: list[Joint] = []
         self.mounted = True
+        self.mount_joint_version = mount_joint_version
+        self.vehicle_joint_version = VehicleJointVersion.FLASH
+
+        if LRA_REMOUNT:
+            self.mount_joint_version = MountJointVersion.LRA
+
+        if LRA_LEGACY_FAKIE_CHECK:
+            self.vehicle_joint_version = VehicleJointVersion.LRA
 
     # Copy is used for deep copying entity states after each frame
     def copy(self):
@@ -250,15 +272,18 @@ class RiderVehiclePair:
         return all_points
 
 
-def create_default_rider(init_state: InitialEntityParams) -> RiderVehiclePair:
+def create_default_rider(
+    init_state: InitialEntityParams,
+    mount_joint_version: MountJointVersion,
+) -> RiderVehiclePair:
     rider = RiderEntity(BaseEntity())
     sled = VehicleEntity(BaseEntity())
-    rider_sled_pair = RiderVehiclePair(rider, sled)
+    rider_sled_pair = RiderVehiclePair(rider, sled, mount_joint_version)
 
     DEFAULT_MOUNT_ENDURANCE = 0.057
     DEFAULT_REPEL_LENGTH_FACTOR = 0.5
 
-    if USE_COM_SCARF:
+    if LR_COM_SCARF:
         SCARF_FRICTION = 0.2
     else:
         SCARF_FRICTION = 0.1

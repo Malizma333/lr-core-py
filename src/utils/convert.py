@@ -5,6 +5,7 @@ from engine.entity import (
     create_default_rider,
     RiderVehiclePair,
     InitialEntityParams,
+    MountJointVersion,
 )
 from engine.grid import GridVersion
 from engine.line import Line, NormalLine, AccelerationLine, PhysicsLine
@@ -36,6 +37,14 @@ def convert_lines(lines: list) -> list[Line]:
 def convert_entities(riders: list) -> list[RiderVehiclePair]:
     converted_entities: list[RiderVehiclePair] = []
     for rider in riders:
+        remount_version = MountJointVersion.NONE
+
+        remountable = rider.get("remountable", None)
+        if remountable is True:
+            remount_version = MountJointVersion.COM_V1
+        elif remountable is 1:
+            remount_version = MountJointVersion.COM_V2
+
         initial_state: InitialEntityParams = {
             "POSITION": Vector(
                 rider["startPosition"]["x"], rider["startPosition"]["y"]
@@ -48,7 +57,7 @@ def convert_entities(riders: list) -> list[RiderVehiclePair]:
             "ROTATION": rider.get("startAngle", 0),
             "REMOUNT": bool(rider.get("remountable", False)),
         }
-        converted_entities.append(create_default_rider(initial_state))
+        converted_entities.append(create_default_rider(initial_state, remount_version))
 
     return converted_entities
 
@@ -58,7 +67,6 @@ def convert_version(grid_version_string: str) -> GridVersion:
         "6.0": GridVersion.V6_0,
         "6.1": GridVersion.V6_1,
         "6.2": GridVersion.V6_2,
-        "6.7": GridVersion.V6_7,
     }
 
     return grid_version_mapping.get(grid_version_string, GridVersion.V6_2)

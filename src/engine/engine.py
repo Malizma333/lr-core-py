@@ -4,6 +4,7 @@ from engine.vector import Vector
 from engine.entity import RiderVehiclePair
 from engine.grid import Grid, GridVersion
 from engine.line import Line
+from engine.flags import GRAVITY_FIX
 
 
 class CachedFrame:
@@ -27,7 +28,7 @@ class Engine:
         ]
 
         self.gravity_scale = 0.175
-        if grid_version == GridVersion.V6_7:
+        if GRAVITY_FIX:
             self.gravity_scale = 0.17500000000000002
 
         for line in lines:

@@ -10,8 +10,6 @@ class GridVersion(Enum):
     V6_2 = 0
     V6_1 = 1
     V6_0 = 2
-    V6_3 = 3
-    V6_7 = 4
 
 
 class CellPosition:
@@ -140,7 +138,7 @@ class Grid:
         else:
             delta_y = -1 - curr_cell_pos.remainder.y
 
-        if self.version == GridVersion.V6_2 or self.version == GridVersion.V6_7:
+        if self.version == GridVersion.V6_2:
             # Add correction for negative cell positions
             if curr_cell_pos.x < 0:
                 if line_vector.x > 0:
@@ -204,11 +202,7 @@ class Grid:
         ):
             return [initial_cell]
 
-        if (
-            self.version == GridVersion.V6_0
-            or self.version == GridVersion.V6_3
-            or self.version == GridVersion.V6_7
-        ):
+        if self.version == GridVersion.V6_0:
             # Reference: https://github.com/kevansevans/OpenLR/blob/542bb76e85aff820ae720cfc0d5af1bb4eb50969/src/hxlr/engine/Grid.hx#L251
             line_halfway = 0.5 * Vector(abs(line_vector.x), abs(line_vector.y))
             line_midpoint = point1 + line_vector * 0.5

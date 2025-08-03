@@ -1,5 +1,5 @@
 from engine.vector import Vector
-from engine.constants import USE_COM_SCARF
+from engine.flags import LR_COM_SCARF
 
 import math
 
@@ -77,7 +77,7 @@ class FlutterPoint:
         current_position = self.base.position
         new_position = current_position + new_velocity
 
-        if USE_COM_SCARF:
+        if LR_COM_SCARF:
             new_position += self.get_flutter(new_velocity, current_position)
 
         self.base.update_state(new_position, new_velocity, current_position)
