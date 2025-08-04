@@ -40,9 +40,9 @@ def convert_entities(riders: list) -> list[RiderVehiclePair]:
         remount_version = RemountVersion.NONE
 
         remountable = rider.get("remountable", None)
-        if remountable == True:
+        if type(remountable) == bool:
             remount_version = RemountVersion.COM_V1
-        elif remountable == 1:
+        elif type(remountable) == int:
             remount_version = RemountVersion.COM_V2
 
         initial_state: InitialEntityParams = {

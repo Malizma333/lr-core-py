@@ -99,13 +99,13 @@ class BaseEntity:
 class RiderEntity:
     def __init__(self, base: BaseEntity):
         self.base = base
-        self.can_remount = False
+        self.remount_enabled = False
 
 
 class VehicleEntity:
     def __init__(self, base: BaseEntity):
         self.base = base
-        self.can_remount = False
+        self.remount_enabled = False
         self.state: VehicleState = VehicleState.INTACT
         self.joints: list[Joint] = []
 
@@ -177,8 +177,8 @@ class RiderVehiclePair:
     def apply_initial_state(
         self, init_state: InitialEntityParams, rotation_origin: Vector
     ):
-        self.vehicle.can_remount = init_state["REMOUNT"]
-        self.rider.can_remount = init_state["REMOUNT"]
+        self.vehicle.remount_enabled = init_state["REMOUNT"]
+        self.rider.remount_enabled = init_state["REMOUNT"]
 
         origin = rotation_origin
         # Note that the use of cos and sin here is not exactly the same as javascript
@@ -301,6 +301,8 @@ class RiderVehiclePair:
             # Process sled joints regardless
             self.vehicle.process_joints()
 
+    # Checks if either remounting or mounted states can be entered by checking
+    # that the bone stays intact with different strength/endurance remount values
     def can_enter_state(self, state: MountState):
         remounting = state == MountState.REMOUNTING
         for bone in self.vehicle_mount_bones:
@@ -311,14 +313,22 @@ class RiderVehiclePair:
                 return False
         return True
 
+    # Checks if this rider-vehicle pair has a vehicle available for swapping
     def vehicle_available(self):
-        return self.vehicle.state == VehicleState.INTACT and (
-            self.mount_state == MountState.DISMOUNTED
-            or self.mount_state == MountState.DISMOUNTING
+        return (
+            self.vehicle.state == VehicleState.INTACT
+            and self.vehicle.remount_enabled
+            and (
+                self.mount_state == MountState.DISMOUNTED
+                or self.mount_state == MountState.DISMOUNTING
+            )
         )
 
     def process_remount(self, available_vehicles: list[VehicleEntity]):
-        if self.remount_version == RemountVersion.NONE:
+        if (
+            self.remount_version == RemountVersion.NONE
+            or self.rider.remount_enabled == False
+        ):
             return
 
         if self.mount_state == MountState.MOUNTED:

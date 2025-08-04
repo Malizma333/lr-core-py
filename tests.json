@@ -588,7 +588,7 @@
   {
     "test": "sled not broken on remount v1",
     "frame": 64,
-    "file": "dismount",
+    "file": "dismount_remountv1",
     "state": {
       "entities": [
         {
@@ -613,7 +613,7 @@
   {
     "test": "sled broken on remount v2",
     "frame": 64,
-    "file": "dismount",
+    "file": "dismount_remountv2",
     "state": {
       "entities": [
         {

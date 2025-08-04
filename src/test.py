@@ -11,7 +11,7 @@ import sys
 
 # Test flags to filter results
 LOAD_FRAME_THRESHOLD: Optional[int] = 80
-TARGET_TEST: Optional[int] = 25
+TARGET_TEST: Optional[int] = None
 
 
 # This is not enforced at runtime, but useful for documentation
