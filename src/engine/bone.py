@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 from engine.point import ContactPoint, FlutterPoint
 
 
@@ -56,15 +56,24 @@ class MountBone:
         self.base = base
         self.endurance = endurance
 
-    # Returns whether the bone is still intact
-    def process(self) -> bool:
+    def get_intact(self, remounting: Optional[bool] = None) -> bool:
         adjustment = self.base.get_adjustment()
-        intact = adjustment <= self.endurance * self.base.rest_length
+        endurance = self.endurance
 
-        if intact:
-            self.base.update_points(adjustment)
+        if remounting:
+            endurance *= 2
 
-        return intact
+        return adjustment <= endurance * self.base.rest_length
+
+    def process(self, remounting: Optional[bool] = None):
+        adjustment = self.base.get_adjustment()
+
+        strength = 1
+        if remounting:
+            strength = 0.1
+
+        if self.get_intact(remounting):
+            self.base.update_points(adjustment * strength)
 
 
 # Bones designed to only repel points after a certain fraction of their rest length is reached

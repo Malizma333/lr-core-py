@@ -9,8 +9,6 @@ from enum import Enum
 from typing import TypedDict
 import math
 
-# TODO remounting .com v1, .com v2, lra
-
 
 class InitialEntityParams(TypedDict):
     POSITION: Vector
@@ -224,10 +222,11 @@ class RiderVehiclePair:
             # Just dismount, ignore timers
             self.transition_to_mount_state(MountState.DISMOUNTED, False)
         else:
-            # Dismount with different timer states
             if self.mount_state == MountState.MOUNTED:
+                # Dismount with timer until next remount
                 self.transition_to_mount_state(MountState.DISMOUNTING, True)
             elif self.mount_state == MountState.REMOUNTING:
+                # Revert from remounting to dismounted without timer
                 self.transition_to_mount_state(MountState.DISMOUNTED, False)
 
     def process_initial_step(self, gravity: Vector):
@@ -249,8 +248,8 @@ class RiderVehiclePair:
 
         for bone in self.vehicle_mount_bones:
             if self.mount_state == MountState.MOUNTED:
-                intact = bone.process()
-                if not intact:
+                bone.process()
+                if not bone.get_intact():
                     self.cause_dismount()
 
         for bone in self.vehicle.base.repel_bones:
@@ -261,8 +260,8 @@ class RiderVehiclePair:
 
         for bone in self.rider_mount_bones:
             if self.mount_state == MountState.MOUNTED:
-                intact = bone.process()
-                if not intact:
+                bone.process()
+                if not bone.get_intact():
                     self.cause_dismount()
 
         for bone in self.rider.base.repel_bones:
@@ -299,10 +298,26 @@ class RiderVehiclePair:
             ):
                 self.vehicle.process_joints()
         else:
-            # Process sled joints as normal
+            # Process sled joints regardless
             self.vehicle.process_joints()
 
-    def process_remount(self):
+    def can_enter_state(self, state: MountState):
+        remounting = state == MountState.REMOUNTING
+        for bone in self.vehicle_mount_bones:
+            if not bone.get_intact(remounting):
+                return False
+        for bone in self.rider_mount_bones:
+            if not bone.get_intact(remounting):
+                return False
+        return True
+
+    def vehicle_available(self):
+        return self.vehicle.state == VehicleState.INTACT and (
+            self.mount_state == MountState.DISMOUNTED
+            or self.mount_state == MountState.DISMOUNTING
+        )
+
+    def process_remount(self, available_vehicles: list[VehicleEntity]):
         if self.remount_version == RemountVersion.NONE:
             return
 
@@ -310,14 +325,24 @@ class RiderVehiclePair:
             pass
         elif self.mount_state == MountState.DISMOUNTING:
             self.frames_until_dismounted = max(self.frames_until_dismounted - 1, 0)
+
             if self.frames_until_dismounted == 0:
                 self.transition_to_mount_state(MountState.DISMOUNTED, True)
         elif self.mount_state == MountState.DISMOUNTED:
-            self.frames_until_remounting = max(self.frames_until_remounting - 1, 0)
+            # TODO check this for each available vehicle, then break on the first one that works
+            if self.can_enter_state(MountState.REMOUNTING):
+                self.frames_until_remounting = max(self.frames_until_remounting - 1, 0)
+            else:
+                self.transition_to_mount_state(MountState.DISMOUNTED, True)
+
             if self.frames_until_remounting == 0:
                 self.transition_to_mount_state(MountState.REMOUNTING, True)
         else:
-            self.frames_until_mounted = max(self.frames_until_mounted - 1, 0)
+            if self.can_enter_state(MountState.MOUNTED):
+                self.frames_until_mounted = max(self.frames_until_mounted - 1, 0)
+            else:
+                self.transition_to_mount_state(MountState.REMOUNTING, True)
+
             if self.frames_until_mounted == 0:
                 self.transition_to_mount_state(MountState.MOUNTED, True)
 
