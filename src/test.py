@@ -10,7 +10,7 @@ import json
 import sys
 
 # Test flags to filter results
-LOAD_FRAME_THRESHOLD: Optional[int] = None
+MAX_FRAME: Optional[int] = None
 TARGET_TEST: Optional[int] = None
 
 
@@ -152,7 +152,9 @@ class Tests:
 
     def run_tests(self):
         for i, test in enumerate(self.tests):
-            if TARGET_TEST != None and TARGET_TEST != i + 1:
+            if (TARGET_TEST != None and TARGET_TEST != i + 1) or (
+                MAX_FRAME != None and test["frame"] > MAX_FRAME
+            ):
                 continue
 
             track_file = test["file"]
@@ -168,10 +170,7 @@ class Tests:
                 self.loaded[track_file] = Engine(version, entities, lines)
 
             engine = self.loaded[track_file]
-            format_string = "{:<2} {:<5} {:<15} {}"
-
-            if LOAD_FRAME_THRESHOLD != None and frame > LOAD_FRAME_THRESHOLD:
-                continue
+            format_string = "{:<2} {:<5} {:<25} {}"
 
             if self.states_equal(engine.get_frame(frame), frame_state):
                 print_styled(

@@ -28,14 +28,6 @@ class RemountVersion(Enum):
     LRA = 3
 
 
-class VehicleJointVersion(Enum):
-    FLASH = 0
-    # lra fakie bug:
-    # - sled breaks for shoulder fakie (which it shouldn't, according to flash)
-    # - sled doesn't ever break if bosh is dismounted (which it should still do for tail fakies, according to current .com)
-    LRA = 1
-
-
 class MountState(Enum):
     MOUNTED = 0
     DISMOUNTING = 1
@@ -137,13 +129,9 @@ class RiderVehiclePair:
         self.frames_until_mounted = 0
         self.dismounted_this_frame = False
         self.remount_version = mount_joint_version
-        self.vehicle_joint_version = VehicleJointVersion.FLASH
 
         if LRA_REMOUNT:
             self.remount_version = RemountVersion.LRA
-
-        if LRA_LEGACY_FAKIE_CHECK:
-            self.vehicle_joint_version = VehicleJointVersion.LRA
 
     # Copy is used for deep copying entity states after each frame
     def copy(self):
@@ -298,6 +286,11 @@ class RiderVehiclePair:
             chain.process()
 
     def process_joints(self):
+        if LRA_LEGACY_FAKIE_CHECK:
+            # Don't process joints if dismounted
+            if not self.is_mounted():
+                return
+
         for joint in self.joints:
             if self.is_mounted() and joint.should_break():
                 self.dismount()
@@ -463,6 +456,9 @@ def create_default_rider(
     rider_sled_pair.add_joint(TORSO.base, SLED_FRONT.base)
     rider_sled_pair.add_joint(SLED_BACK.base, SLED_FRONT.base)
     sled.add_joint(SLED_BACK.base, SLED_FRONT.base)
+
+    if LRA_LEGACY_FAKIE_CHECK:
+        sled.add_joint(TORSO.base, SLED_FRONT.base)
 
     # Apply initial state once everything is initialized
     # Note that this must be applied after bone rest lengths are calculated

@@ -1,12 +1,12 @@
 [
   {
-    "test": "track start with nothing",
+    "test": "track start with nothing returns nothing",
     "frame": 0,
     "file": "empty",
     "state": { "entities": [] }
   },
   {
-    "test": "negative frame error",
+    "test": "negative frame returns error",
     "frame": -1,
     "file": "empty"
   },
@@ -318,7 +318,7 @@
   },
   {
     "file": "feature",
-    "test": "grid usage",
+    "test": "6.2 grid cells",
     "frame": 86,
     "state": {
       "entities": [
@@ -386,8 +386,8 @@
     }
   },
   {
-    "file": "grid_60",
-    "test": "6.0 grid cells",
+    "file": "bolted_to_the_wall",
+    "test": "6.0 grid cells should not dismount here",
     "frame": 1400,
     "state": {
       "entities": [
@@ -403,14 +403,16 @@
             ["695.72291272341977", "578.10046471328621", "-5.7770664746607281", "-5.8212063988402862"],
             ["706.02959458242651", "579.99443952258059", "-5.8759706003470455", "-5.7627706436455357"],
             ["706.03148707622495", "579.99512021479416", "-5.8758907972230645", "-5.7628166889456454"]
-          ]
+          ],
+          "rider_state": "MOUNTED",
+          "sled_state": "INTACT"
         }
       ]
     }
   },
   {
     "file": "initial_state",
-    "test": "frame zero",
+    "test": "frame zero initial state correct",
     "frame": 0,
     "state": {
       "entities": [
@@ -461,7 +463,7 @@
   },
   {
     "file": "initial_state",
-    "test": "frame one",
+    "test": "frame one initial state correct",
     "frame": 1,
     "state": {
       "entities": [
@@ -511,7 +513,7 @@
     }
   },
   {
-    "test": "rider mounted",
+    "test": "rider mounted state",
     "frame": 18,
     "file": "dismount",
     "state": {
@@ -536,7 +538,7 @@
     }
   },
   {
-    "test": "rider dismounted",
+    "test": "rider goes straight to dismounted",
     "frame": 39,
     "file": "dismount",
     "state": {
@@ -561,7 +563,7 @@
     }
   },
   {
-    "test": "sled broken",
+    "test": "sled breaks after dismount",
     "frame": 58,
     "file": "dismount",
     "state": {
@@ -586,7 +588,7 @@
     }
   },
   {
-    "test": "sled not broken on remount v1",
+    "test": "sled not broken after dismount on remount v1",
     "frame": 64,
     "file": "dismount_remountv1",
     "state": {
@@ -611,7 +613,7 @@
     }
   },
   {
-    "test": "sled broken on remount v2",
+    "test": "sled broken after dismount on remount v2",
     "frame": 64,
     "file": "dismount_remountv2",
     "state": {
@@ -636,7 +638,7 @@
     }
   },
   {
-    "test": "mounted",
+    "test": "both riders mounted",
     "frame": 34,
     "file": "remount_two_riders",
     "state": {
@@ -677,7 +679,7 @@
     }
   },
   {
-    "test": "dismounting",
+    "test": "both riders dismounting",
     "frame": 44,
     "file": "remount_two_riders",
     "state": {
@@ -718,7 +720,7 @@
     }
   },
   {
-    "test": "dismounted",
+    "test": "both riders dismounted",
     "frame": 73,
     "file": "remount_two_riders",
     "state": {
@@ -759,7 +761,7 @@
     }
   },
   {
-    "test": "first remounting",
+    "test": "first rider remounting",
     "frame": 76,
     "file": "remount_two_riders",
     "state": {
@@ -800,7 +802,7 @@
     }
   },
   {
-    "test": "second remounting",
+    "test": "second rider remounting",
     "frame": 78,
     "file": "remount_two_riders",
     "state": {
@@ -841,7 +843,7 @@
     }
   },
   {
-    "test": "first remounted",
+    "test": "first rider remounted",
     "frame": 80,
     "file": "remount_two_riders",
     "state": {
@@ -882,7 +884,7 @@
     }
   },
   {
-    "test": "second remounted",
+    "test": "second rider remounted",
     "frame": 83,
     "file": "remount_two_riders",
     "state": {
@@ -923,7 +925,7 @@
     }
   },
   {
-    "test": "mounted",
+    "test": "rider initially mounted",
     "frame": 10,
     "file": "remount_rider",
     "state": {
@@ -948,7 +950,7 @@
     }
   },
   {
-    "test": "dismounting",
+    "test": "rider dismounting state",
     "frame": 13,
     "file": "remount_rider",
     "state": {
@@ -973,7 +975,7 @@
     }
   },
   {
-    "test": "dismounting end",
+    "test": "rider dismounting state end",
     "frame": 42,
     "file": "remount_rider",
     "state": {
@@ -998,7 +1000,7 @@
     }
   },
   {
-    "test": "dismounted",
+    "test": "rider dismounted state start",
     "frame": 43,
     "file": "remount_rider",
     "state": {
@@ -1023,7 +1025,7 @@
     }
   },
   {
-    "test": "dismounted end",
+    "test": "rider dismounted state end",
     "frame": 45,
     "file": "remount_rider",
     "state": {
@@ -1048,7 +1050,7 @@
     }
   },
   {
-    "test": "remounting",
+    "test": "rider remounting state start",
     "frame": 46,
     "file": "remount_rider",
     "state": {
@@ -1073,7 +1075,7 @@
     }
   },
   {
-    "test": "remounting end",
+    "test": "rider remounting state end",
     "frame": 48,
     "file": "remount_rider",
     "state": {
@@ -1098,7 +1100,7 @@
     }
   },
   {
-    "test": "mounted",
+    "test": "rider remounted",
     "frame": 49,
     "file": "remount_rider",
     "state": {
@@ -1123,7 +1125,7 @@
     }
   },
   {
-    "test": "first near sled remount",
+    "test": "first start remount",
     "frame": 127,
     "file": "shuffle_sleds",
     "state": {
@@ -1188,7 +1190,7 @@
     }
   },
   {
-    "test": "first remount",
+    "test": "first end remount",
     "frame": 131,
     "file": "shuffle_sleds",
     "state": {
@@ -1318,7 +1320,7 @@
     }
   },
   {
-    "test": "second remount",
+    "test": "second end remount",
     "frame": 181,
     "file": "shuffle_sleds",
     "state": {
@@ -1383,7 +1385,7 @@
     }
   },
   {
-    "test": "third remount",
+    "test": "third start remount",
     "frame": 216,
     "file": "shuffle_sleds",
     "state": {
@@ -1513,7 +1515,7 @@
     }
   },
   {
-    "test": "should be dismounted",
+    "test": "state should be dismounted",
     "frame": 594,
     "file": "wonky",
     "state": {
@@ -1532,6 +1534,106 @@
             ["611.4920343031423", "333.55952758350253", "3.1505032365280385", "2.5385199407593175"]
           ],
           "rider_state": "DISMOUNTED",
+          "sled_state": "INTACT"
+        }
+      ]
+    }
+  },
+  {
+    "test": "front sled fakie survives",
+    "frame": 7,
+    "file": "sled_fakie",
+    "state": {
+      "entities": [
+        {
+          "points": [
+            ["2.4770486158259981", "5.2201936271335301", "0.64881167859506061", "1.2600015478956201"],
+            ["5.6135681789368332", "9.1637845138114056", "1.0573331066903942", "0.95899640425345667"],
+            ["14.259728490510804", "-5.7960146074232064", "-0.41519734418917054", "-0.20716311843587115"],
+            ["18.498806751982777", "-3.9523172895051002", "-0.16148356439357769", "-0.55169869977504526"],
+            ["6.4992002432220524", "2.7731129911752914", "0.55523408327790147", "0.70670157302931269"],
+            ["4.3734574459085973", "-1.9189168347595851", "-0.13185482824134276", "0.94352706170887513"],
+            ["11.132227490944903", "-1.3574165224531756", "0.035891286727443017", "0.69594715560547415"],
+            ["11.059931185597566", "-2.0881720583669279", "-0.0038027377562031006", "0.28877359762668692"],
+            ["12.343859215367328", "-1.0873519312895823", "0.25911022211973211", "0.34645038621690721"],
+            ["10.013914202683083", "-3.3323338202798047", "-0.30522164269025254", "-0.17374046983358343"]
+          ],
+          "rider_state": "MOUNTED",
+          "sled_state": "INTACT"
+        }
+      ]
+    }
+  },
+  {
+    "test": "back sled fakie breaks sled and dismounts",
+    "frame": 45,
+    "file": "sled_fakie",
+    "state": {
+      "entities": [
+        {
+          "points": [
+            ["6.7513041845832698", "117.618902250415", "0.84637393502273195", "4.5183429043846983"],
+            ["9.3699600188411285", "113.35948391735661", "0.98403746017370963", "4.5942812161168147"],
+            ["22.148214417991444", "121.21544993734626", "0.75622256889636574", "5.0072717667972766"],
+            ["21.659269933951091", "126.78419478241364", "0.58058994090565008", "5.0001652800634018"],
+            ["9.6609528168328964", "135.2051178447069", "0.59236666463902132", "6.7343538967825678"],
+            ["5.1380685118138807", "132.07522104082125", "-0.052878222753008686", "7.3359520311317139"],
+            ["7.5138638842322649", "126.00427087481438", "-1.3016903882629496", "6.1660417528720215"],
+            ["7.6628457266617094", "126.06554486021778", "-1.2696103116838433", "6.1439213060054128"],
+            ["9.4678940763701966", "128.13730967862762", "-0.53907618263886015", "6.5150980162092251"],
+            ["9.4173636972299111", "128.13820024889301", "-0.52316226363484297", "6.5307536423459736"]
+          ],
+          "rider_state": "DISMOUNTING",
+          "sled_state": "BROKEN"
+        }
+      ]
+    }
+  },
+  {
+    "test": "shoulder fakie preserves sled but dismounts",
+    "frame": 42,
+    "file": "shoulder_fakie",
+    "state": {
+      "entities": [
+        {
+          "points": [
+            ["0.5180894450586413", "111.72819128524718", "-0.69646696139071351", "5.3423199920440849"],
+            ["-0.61417767625016328", "106.85807992842007", "-1.0319680740607364", "5.3852440651260762"],
+            ["-15.224506945398764", "110.25487567508162", "-0.90319627787080137", "6.3917471051993457"],
+            ["-16.527303009784077", "115.69111123818239", "-0.54623373087428817", "6.5165741740598575"],
+            ["-1.7959077755420203", "102.11408726178972", "-0.67391647379446573", "4.1740945929678501"],
+            ["-1.3992883435731636", "107.59948612596887", "0.68499393549227028", "4.5984440824755692"],
+            ["-4.1126254978095567", "113.52720081946082", "1.0272124098602893", "4.799426326585265"],
+            ["-1.7114441659132766", "114.11101654873535", "1.5475864865167952", "4.8270303655578486"],
+            ["-8.3677071259506803", "104.72428392825014", "-0.47141956186367917", "5.2569339467711016"],
+            ["-8.1018353311343763", "105.31334931164139", "-0.37165267765677612", "5.3700012457576802"]
+          ],
+          "rider_state": "DISMOUNTING",
+          "sled_state": "INTACT"
+        }
+      ]
+    }
+  },
+  {
+    "test": "gravity bug should dismount here",
+    "frame": 880,
+    "file": "phunner",
+    "state": {
+      "entities": [
+        {
+          "points": [
+            ["811.77871384261755", "-296.77785394202209", "-0.17185842918888738", "-0.3403313867488123"],
+            ["809.49801354848603", "-300.80837739968609", "-0.34848928341307328", "-0.28214796745176046"],
+            ["797.66917203627895", "-289.64197067397595", "-0.00069256772303560865", "0.020146468352027103"],
+            ["793.46561841636174", "-292.18103428260332", "-0.088368848816685386", "0.23365519949338703"],
+            ["786.66273561825665", "-292.21591302387725", "-0.29026967909339874", "0.62416002808400894"],
+            ["791.86915201971817", "-290.87623001611581", "0.094759340834002614", "0.09755246181827032"],
+            ["785.58812951415382", "-289.41728078324337", "-0.30655813531302556", "1.2495654253495332"],
+            ["788.42947376856443", "-285.35336019063266", "0.386416174591659", "1.3702005220457523"],
+            ["792.29056719758728", "-296.58944391552149", "-0.18144856180583702", "0.65194989215398214"],
+            ["785.1867066740441", "-299.1312104546351", "-0.12408507148074932", "0.57994985725791826"]
+          ],
+          "rider_state": "DISMOUNTING",
           "sled_state": "INTACT"
         }
       ]

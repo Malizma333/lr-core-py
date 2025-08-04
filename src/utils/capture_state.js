@@ -23,17 +23,21 @@ function captureState(testName, includeScarf = false, includeState = false) {
         };
 
         if (includeState) {
-          if (entity.riderMounted === true) {
-            entityState["rider_state"] = "MOUNTED";
-          } else if (entity.riderMounted === false) {
-            entityState["rider_state"] = "DISMOUNTED";
+          if (entity.riderState === undefined) {
+            if (entity.riderMounted) {
+              entityState["rider_state"] = "MOUNTED";
+            } else {
+              entityState["rider_state"] = "DISMOUNTED";
+            }
           } else {
             entityState["rider_state"] = entity.riderState;
           }
-          if (entity.sledIntact === true) {
-            entityState["sled_state"] = "INTACT";
-          } else if (entity.sledIntact === true) {
-            entityState["sled_state"] = "BROKEN";
+          if (entity.sledState === undefined) {
+            if (entity.sledIntact) {
+              entityState["sled_state"] = "INTACT";
+            } else {
+              entityState["sled_state"] = "BROKEN";
+            }
           } else {
             entityState["sled_state"] = entity.sledState;
           }

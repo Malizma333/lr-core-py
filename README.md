@@ -34,3 +34,9 @@ Planned TODOs:
 # License
 
 This project is licensed with GPL to remain compliant with LRA's GPL license, since it was used as a reference. Any modification or reference of this project must also be GPL-licensed and remain open source. See the [licenses directory](LICENSES/) for the full list of included licenses.
+
+Track fixtures sampled from the following:
+- [Phunner](https://www.youtube.com/watch?v=Ak2_7jHtRpA) (6.7 gravity bug)
+- [Wonky Walking](https://www.youtube.com/watch?v=E2-tvct-MpE) (linerider.com remount physics)
+- [Bolted to the Wall](https://www.youtube.com/watch?v=0TBGNxzdiHw) (6.0 grid compatibility)
+- [lr-core fixtures](https://github.com/conundrumer/lr-core/tree/master/fixtures) (6.1 compatibility, feature tests)
