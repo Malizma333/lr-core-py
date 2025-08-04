@@ -207,6 +207,12 @@ class RiderVehiclePair:
                 start_position, start_velocity, start_position - start_velocity
             )
 
+    def is_mounted(self):
+        return (
+            self.mount_state == MountState.MOUNTED
+            or self.mount_state == MountState.REMOUNTING
+        )
+
     def transition_to_mount_state(self, new_mount_state: MountState, reset_timer: bool):
         # Sets the new state while safely resetting timers
         if new_mount_state == MountState.DISMOUNTING and reset_timer:
@@ -218,7 +224,7 @@ class RiderVehiclePair:
 
         self.mount_state = new_mount_state
 
-    def cause_dismount(self):
+    def dismount(self):
         self.dismounted_this_frame = True
         if self.remount_version == RemountVersion.NONE:
             # Just dismount, ignore timers
@@ -249,15 +255,12 @@ class RiderVehiclePair:
             bone.process()
 
         for bone in self.vehicle_mount_bones:
-            if (
-                self.mount_state == MountState.MOUNTED
-                or self.mount_state == MountState.REMOUNTING
-            ):
+            if self.is_mounted():
                 remounting = self.mount_state == MountState.REMOUNTING
                 intact = bone.get_intact(remounting)
                 bone.process(remounting)
                 if not intact:
-                    self.cause_dismount()
+                    self.dismount()
 
         for bone in self.vehicle.base.repel_bones:
             bone.process()
@@ -266,15 +269,12 @@ class RiderVehiclePair:
             bone.process()
 
         for bone in self.rider_mount_bones:
-            if (
-                self.mount_state == MountState.MOUNTED
-                or self.mount_state == MountState.REMOUNTING
-            ):
+            if self.is_mounted():
                 remounting = self.mount_state == MountState.REMOUNTING
                 intact = bone.get_intact(remounting)
                 bone.process(remounting)
                 if not intact:
-                    self.cause_dismount()
+                    self.dismount()
 
         for bone in self.rider.base.repel_bones:
             bone.process()
@@ -299,19 +299,12 @@ class RiderVehiclePair:
 
     def process_joints(self):
         for joint in self.joints:
-            if (
-                self.mount_state == MountState.MOUNTED
-                or self.mount_state == MountState.REMOUNTING
-            ):
-                if joint.should_break():
-                    self.cause_dismount()
+            if self.is_mounted() and joint.should_break():
+                self.dismount()
 
         if self.remount_version == RemountVersion.COM_V1:
             # Don't process sled joints if dismounted
-            if not (
-                self.mount_state == MountState.DISMOUNTING
-                or self.mount_state == MountState.DISMOUNTED
-            ):
+            if self.is_mounted():
                 self.vehicle.process_joints()
         else:
             # Process sled joints regardless
@@ -340,10 +333,7 @@ class RiderVehiclePair:
         return (
             self.vehicle.state == VehicleState.INTACT
             and self.vehicle.remount_enabled
-            and (
-                self.mount_state == MountState.DISMOUNTED
-                or self.mount_state == MountState.DISMOUNTING
-            )
+            and not self.is_mounted()
         )
 
     def process_remount(self, available_vehicles: list[VehicleEntity]):

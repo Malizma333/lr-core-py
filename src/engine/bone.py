@@ -1,5 +1,6 @@
-from typing import Union, Optional
 from engine.point import ContactPoint, FlutterPoint
+
+from typing import Union, Optional
 
 
 # Common bone properties and methods

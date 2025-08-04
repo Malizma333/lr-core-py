@@ -21,7 +21,7 @@ class DrawTag(Enum):
 
 class TrackSimulator:
     DRAW_LINES = True
-    START_FRAME = 14 * 40 + 34
+    START_FRAME = 0
     ZOOM = 6
     MV_LENGTH = 3
     MV_WIDTH = 0.25
@@ -236,12 +236,13 @@ class TrackSimulator:
                 DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.NORMAL_BONE_COLOR
             )
 
-        for bone in entity.vehicle_mount_bones + entity.rider_mount_bones:
-            p1 = self._physics_to_canvas(bone.base.point1.base.position)
-            p2 = self._physics_to_canvas(bone.base.point2.base.position)
-            self._generate_line(
-                DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.MOUNT_BONE_COLOR
-            )
+        if entity.is_mounted():
+            for bone in entity.vehicle_mount_bones + entity.rider_mount_bones:
+                p1 = self._physics_to_canvas(bone.base.point1.base.position)
+                p2 = self._physics_to_canvas(bone.base.point2.base.position)
+                self._generate_line(
+                    DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.MOUNT_BONE_COLOR
+                )
 
         for bone in entity.vehicle.base.repel_bones + entity.rider.base.repel_bones:
             p1 = self._physics_to_canvas(bone.base.point1.base.position)
@@ -409,4 +410,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/wonky.track.json")
+    TrackSimulator("fixtures/remount_rider.track.json")

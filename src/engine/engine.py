@@ -1,10 +1,10 @@
-from __future__ import annotations
-from typing import Optional
 from engine.vector import Vector
 from engine.entity import RiderVehiclePair, VehicleEntity
 from engine.grid import Grid, GridVersion
 from engine.line import Line
 from engine.flags import GRAVITY_FIX
+
+from typing import Optional
 
 
 class CachedFrame:

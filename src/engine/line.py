@@ -1,6 +1,7 @@
-from typing import Union
 from engine.vector import Vector
 from engine.point import ContactPoint
+
+from typing import Union
 
 # TODO
 #   - Deceleration Lines

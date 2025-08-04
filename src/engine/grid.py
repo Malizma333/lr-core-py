@@ -1,6 +1,7 @@
 from engine.vector import Vector
 from engine.line import Line
 from engine.point import ContactPoint
+
 from enum import Enum
 from typing import Optional
 import math
