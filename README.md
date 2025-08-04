@@ -19,10 +19,11 @@ Current features:
 - multiple riders
 - flash scarf physics
 - linerider.com scarf physics (approximation)
+- linerider.com remounting
 
 Planned TODOs:
 - Remount implementation
-  - Linerider.com
+  - Multirider Linerider.com
   - LRA:CE
 - Beta 2 mod features
   - Windboxes

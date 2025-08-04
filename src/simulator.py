@@ -4,7 +4,7 @@ from enum import Enum
 
 from engine.engine import Engine
 from engine.vector import Vector
-from engine.entity import RiderVehiclePair, NormalBone, MountBone, RepelBone
+from engine.entity import RiderVehiclePair
 from engine.line import NormalLine, PhysicsLine, AccelerationLine, Line
 from utils.convert import convert_lines, convert_entities, convert_version
 
@@ -21,7 +21,7 @@ class DrawTag(Enum):
 
 class TrackSimulator:
     DRAW_LINES = True
-    START_FRAME = 0
+    START_FRAME = 14 * 40 + 34
     ZOOM = 6
     MV_LENGTH = 3
     MV_WIDTH = 0.25
@@ -409,4 +409,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/remount_rider.track.json")
+    TrackSimulator("fixtures/wonky.track.json")
