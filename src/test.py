@@ -9,6 +9,10 @@ from enum import Enum
 import json
 import sys
 
+# Test flags to filter results
+LOAD_FRAME_THRESHOLD: Optional[int] = 80
+TARGET_TEST: Optional[int] = 25
+
 
 # This is not enforced at runtime, but useful for documentation
 class JsonPointData(tuple[str, str, str, str]):
@@ -44,8 +48,6 @@ def print_styled(message: str, style: PRINT_STYLE):
 
 
 class Tests:
-    LOAD_FRAME_THRESHOLD: Optional[int] = 80
-
     def __init__(self):
         self.tests = json.load(open("tests.json", "r"))
         self.pass_count = 0
@@ -149,7 +151,10 @@ class Tests:
         return True
 
     def run_tests(self):
-        for test in self.tests:
+        for i, test in enumerate(self.tests):
+            if TARGET_TEST != None and TARGET_TEST != i + 1:
+                continue
+
             track_file = test["file"]
             test_name = test["test"]
             frame = test["frame"]
@@ -163,20 +168,20 @@ class Tests:
                 self.loaded[track_file] = Engine(version, entities, lines)
 
             engine = self.loaded[track_file]
-            format_string = "{:<5} {:<15} {}"
+            format_string = "{:<2} {:<5} {:<15} {}"
 
-            if self.LOAD_FRAME_THRESHOLD != None and frame > self.LOAD_FRAME_THRESHOLD:
+            if LOAD_FRAME_THRESHOLD != None and frame > LOAD_FRAME_THRESHOLD:
                 continue
 
             if self.states_equal(engine.get_frame(frame), frame_state):
                 print_styled(
-                    format_string.format("PASS", track_file, test_name),
+                    format_string.format(str(i + 1), "PASS", track_file, test_name),
                     PRINT_STYLE.GREEN,
                 )
                 self.pass_count += 1
             else:
                 print_styled(
-                    format_string.format("FAIL", track_file, test_name),
+                    format_string.format(str(i + 1), "FAIL", track_file, test_name),
                     PRINT_STYLE.RED,
                 )
                 print_styled(self.fail_message, PRINT_STYLE.YELLOW)
