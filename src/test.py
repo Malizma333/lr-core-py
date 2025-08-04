@@ -11,7 +11,7 @@ import sys
 
 # Test flags to filter results
 MAX_FRAME: Optional[int] = None
-TARGET_TEST: Optional[int] = None
+TARGET_TESTS: Optional[tuple[int, int]] = (27, 33)
 
 
 # This is not enforced at runtime, but useful for documentation
@@ -152,9 +152,10 @@ class Tests:
 
     def run_tests(self):
         for i, test in enumerate(self.tests):
-            if (TARGET_TEST != None and TARGET_TEST != i + 1) or (
-                MAX_FRAME != None and test["frame"] > MAX_FRAME
-            ):
+            if (
+                TARGET_TESTS != None
+                and (TARGET_TESTS[0] > i + 1 or i + 1 > TARGET_TESTS[1])
+            ) or (MAX_FRAME != None and test["frame"] > MAX_FRAME):
                 continue
 
             track_file = test["file"]

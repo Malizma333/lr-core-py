@@ -23,9 +23,7 @@ class Engine:
         DEFAULT_CELL_SIZE = 14
         self.grid = Grid(grid_version, DEFAULT_CELL_SIZE)
         self.gravity_vector = Vector(0, 1)
-        self.state_cache: list[CachedFrame] = [
-            CachedFrame([entity.copy() for entity in entities])
-        ]
+        self.state_cache: list[CachedFrame] = [CachedFrame(entities)]
 
         self.gravity_scale = 0.175
         if GRAVITY_FIX:
@@ -63,9 +61,9 @@ class Engine:
             for entity in new_entities:
                 # check for available vehicles to test
                 available_vehicles: list[VehicleEntity] = []
-                for entity in new_entities:
-                    if entity.vehicle_available():
-                        available_vehicles.append(entity.vehicle)
+                for other_entity in new_entities:
+                    if other_entity.vehicle_available():
+                        available_vehicles.append(other_entity.vehicle)
                 # remount states
                 entity.process_remount(available_vehicles)
 
