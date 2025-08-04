@@ -10,7 +10,7 @@ import json
 import sys
 
 # Test flags to filter results
-LOAD_FRAME_THRESHOLD: Optional[int] = 80
+LOAD_FRAME_THRESHOLD: Optional[int] = None
 TARGET_TEST: Optional[int] = None
 
 

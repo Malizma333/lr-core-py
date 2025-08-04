@@ -43,7 +43,7 @@ class Vector:
 
     # str(v1), etc
     def __repr__(self):
-        return f"Vector({self.x:.17g}, {self.y:.17g})"
+        return f"({self.x:.17g}, {self.y:.17g})"
 
     def length_sq(self) -> float:
         return self.x * self.x + self.y * self.y

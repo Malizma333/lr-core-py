@@ -151,21 +151,21 @@ class RiderVehiclePair:
 
     def add_rider_mount_bone(
         self,
-        point1: ContactPoint,
-        point2: ContactPoint,
+        rider_point: ContactPoint,
+        vehicle_point: ContactPoint,
         endurance: float,
     ) -> MountBone:
-        bone = MountBone(BaseBone(point1, point2), endurance)
+        bone = MountBone(BaseBone(rider_point, vehicle_point), endurance)
         self.rider_mount_bones.append(bone)
         return bone
 
     def add_vehicle_mount_bone(
         self,
-        point1: ContactPoint,
-        point2: ContactPoint,
+        vehicle_point: ContactPoint,
+        rider_point: ContactPoint,
         endurance: float,
     ) -> MountBone:
-        bone = MountBone(BaseBone(point1, point2), endurance)
+        bone = MountBone(BaseBone(vehicle_point, rider_point), endurance)
         self.vehicle_mount_bones.append(bone)
         return bone
 
@@ -209,7 +209,7 @@ class RiderVehiclePair:
     def transition_to_mount_state(self, new_mount_state: MountState, reset_timer: bool):
         # Sets the new state while safely resetting timers
         if new_mount_state == MountState.DISMOUNTING and reset_timer:
-            self.frames_until_dismounted = 30
+            self.frames_until_dismounted = 31  # 30 frames + this frame
         elif new_mount_state == MountState.DISMOUNTED and reset_timer:
             self.frames_until_remounting = 3
         elif new_mount_state == MountState.REMOUNTING and reset_timer:
@@ -247,9 +247,13 @@ class RiderVehiclePair:
             bone.process()
 
         for bone in self.vehicle_mount_bones:
-            if self.mount_state == MountState.MOUNTED:
-                bone.process()
-                if not bone.get_intact():
+            if (
+                self.mount_state == MountState.MOUNTED
+                or self.mount_state == MountState.REMOUNTING
+            ):
+                remounting = self.mount_state == MountState.REMOUNTING
+                bone.process(remounting)
+                if not bone.get_intact(remounting):
                     self.cause_dismount()
 
         for bone in self.vehicle.base.repel_bones:
@@ -259,9 +263,13 @@ class RiderVehiclePair:
             bone.process()
 
         for bone in self.rider_mount_bones:
-            if self.mount_state == MountState.MOUNTED:
-                bone.process()
-                if not bone.get_intact():
+            if (
+                self.mount_state == MountState.MOUNTED
+                or self.mount_state == MountState.REMOUNTING
+            ):
+                remounting = self.mount_state == MountState.REMOUNTING
+                bone.process(remounting)
+                if not bone.get_intact(remounting):
                     self.cause_dismount()
 
         for bone in self.rider.base.repel_bones:
@@ -310,6 +318,12 @@ class RiderVehiclePair:
                 return False
         for bone in self.rider_mount_bones:
             if not bone.get_intact(remounting):
+                return False
+        for joint in self.vehicle.joints:
+            if joint.should_break():
+                return False
+        for joint in self.joints:
+            if joint.should_break():
                 return False
         return True
 
@@ -433,8 +447,8 @@ def create_default_rider(
     rider.base.add_normal_bone(BUTT, RIGHT_FOOT)
     rider.base.add_normal_bone(SHOULDER, RIGHT_HAND)
     rider_sled_pair.add_rider_mount_bone(SHOULDER, PEG, DEFAULT_MOUNT_ENDURANCE)
-    rider_sled_pair.add_rider_mount_bone(STRING, LEFT_HAND, DEFAULT_MOUNT_ENDURANCE)
-    rider_sled_pair.add_rider_mount_bone(STRING, RIGHT_HAND, DEFAULT_MOUNT_ENDURANCE)
+    rider_sled_pair.add_rider_mount_bone(LEFT_HAND, STRING, DEFAULT_MOUNT_ENDURANCE)
+    rider_sled_pair.add_rider_mount_bone(RIGHT_HAND, STRING, DEFAULT_MOUNT_ENDURANCE)
     rider_sled_pair.add_rider_mount_bone(LEFT_FOOT, NOSE, DEFAULT_MOUNT_ENDURANCE)
     rider_sled_pair.add_rider_mount_bone(RIGHT_FOOT, NOSE, DEFAULT_MOUNT_ENDURANCE)
     rider.base.add_repel_bone(SHOULDER, LEFT_FOOT, DEFAULT_REPEL_LENGTH_FACTOR)

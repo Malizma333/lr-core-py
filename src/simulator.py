@@ -331,12 +331,20 @@ class TrackSimulator:
             self.canvas_center.y * 2 - 25,
         )
 
-        pos_strings = [
+        rider_data_strings = [
             f"{p.position}" for p in entities[self.focused_entity].get_all_points()
         ]
-        pos_strings[6], pos_strings[7] = pos_strings[7], pos_strings[6]
+        # Switch hands
+        # rider_data_strings[6], rider_data_strings[7] = (
+        #     rider_data_strings[7],
+        #     rider_data_strings[6],
+        # )
+        # Exclude scarf
+        rider_data_strings = rider_data_strings[:10]
+        # Include mount state
+        rider_data_strings.append(entities[self.focused_entity].mount_state.name)
 
-        for i, pos_str in enumerate(pos_strings):
+        for i, pos_str in enumerate(rider_data_strings):
             self._generate_text(f"{pos_str}", 10, i * 25 + 25)
 
     def _generate_line(
@@ -401,4 +409,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/dismount.track.json")
+    TrackSimulator("fixtures/remount_rider.track.json")
