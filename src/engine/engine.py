@@ -1,5 +1,5 @@
 from engine.vector import Vector
-from engine.entity import RiderVehiclePair, VehicleEntity
+from engine.entity import RiderVehiclePair
 from engine.grid import Grid, GridVersion
 from engine.line import Line
 from engine.flags import GRAVITY_FIX
@@ -59,13 +59,8 @@ class Engine:
                 entity.process_joints()
 
             for entity in new_entities:
-                # check for available vehicles to test
-                available_vehicles: list[VehicleEntity] = []
-                for other_entity in new_entities:
-                    if other_entity.vehicle_available():
-                        available_vehicles.append(other_entity.vehicle)
                 # remount states
-                entity.process_remount(available_vehicles)
+                entity.process_remount()
 
             self.state_cache.append(CachedFrame(new_entities))
 

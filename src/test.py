@@ -1,7 +1,7 @@
 # Reads test case data from tests.json and run tests
 
 from engine.engine import Engine, CachedFrame
-from engine.entity import MountState, VehicleState
+from engine.entity import MountState
 from utils.convert import convert_lines, convert_entities, convert_version
 
 from typing import TypedDict, List, Optional
@@ -11,7 +11,7 @@ import sys
 
 # Test flags to filter results
 MAX_FRAME: Optional[int] = None
-TARGET_TESTS: Optional[tuple[int, int]] = (27, 33)
+TARGET_TESTS: Optional[tuple[int, int]] = None
 
 
 # This is not enforced at runtime, but useful for documentation
@@ -99,7 +99,7 @@ class Tests:
         for i, expected_entity_state in enumerate(expected_entities):
             self.fail_message = f"rider {i}: "
 
-            if "rider_state" in expected_entity_state:
+            if "mount_state" in expected_entity_state:
                 rider_state_map = {
                     "MOUNTED": MountState.MOUNTED,
                     "DISMOUNTING": MountState.DISMOUNTING,
@@ -107,25 +107,31 @@ class Tests:
                     "REMOUNTING": MountState.REMOUNTING,
                 }
                 if result_entities[i].mount_state != rider_state_map.get(
-                    expected_entity_state["rider_state"] or "", MountState.MOUNTED
+                    expected_entity_state["mount_state"] or "", MountState.MOUNTED
                 ):
                     self.fail_message += (
                         "mounted state did not match: "
-                        + f"expected {expected_entity_state['rider_state']} got {result_entities[i].mount_state}"
+                        + f"expected {expected_entity_state['mount_state']} got {result_entities[i].mount_state}"
                     )
                     return False
 
             if "sled_state" in expected_entity_state:
-                sled_state_map = {
-                    "INTACT": VehicleState.INTACT,
-                    "BROKEN": VehicleState.BROKEN,
-                }
-                if result_entities[i].vehicle.state != sled_state_map.get(
-                    expected_entity_state["sled_state"] or "", VehicleState.INTACT
+                if result_entities[i].vehicle.intact != (
+                    (expected_entity_state["sled_state"] or "INTACT") == "INTACT"
                 ):
                     self.fail_message += (
                         "sled state did not match: "
-                        + f"expected {expected_entity_state['sled_state']} got {result_entities[i].vehicle.state}"
+                        + f"expected {expected_entity_state['sled_state']} got {result_entities[i].vehicle.intact}"
+                    )
+                    return False
+
+            if "rider_state" in expected_entity_state:
+                if result_entities[i].rider.intact != (
+                    (expected_entity_state["rider_state"] or "INTACT") == "INTACT"
+                ):
+                    self.fail_message += (
+                        "rider state did not match: "
+                        + f"expected {expected_entity_state['rider_state']} got {result_entities[i].rider.intact}"
                     )
                     return False
 
