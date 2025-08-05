@@ -1,0 +1,59 @@
+EntityType:
+  remount_enabled: bool
+  bones: list Bone
+  points: list Point
+  joints: list Joint
+
+  add_point
+  add_bone
+  add_joint
+  add_connection (with other entity type)
+  create -> apply_initial_state -> EntityInstance (disable add funcs)
+  clone (EntityInstance current_state) -> EntityInstance copied current_state
+
+EntityInstance:
+  type: EntityType
+  current_state:
+    intact: bool
+    points: list Point
+    bones: list Bone # Do i need this
+    joints: list Joint # Do i need this
+    mount_state?
+
+  process_momentum -> process point momentum
+  process_bones -> process bones
+  process_collisions -> process point-line collisions
+  process_joints -> process joints, update intact
+
+  process_remount -> ???
+
+Engine:
+  control_loop:
+    for entity in entities:
+      process_momentum
+      x6
+        process_bones
+        process_collisions
+      process_joints
+
+    for entity in entities:
+      process_remount (check entities here?)
+
+Point:
+  position: Vec
+  velocity: Vec
+
+  update -> update position, velocity
+  initial_step(momentum) -> update position, velocity
+
+Bone:
+  points: [Point, Point]
+  rest_length: dist(points)
+
+  process -> update points based on rest_length and dist(points)
+
+Joint:
+  bones: [Bone, Bone]
+
+  should_break -> cross(bones vectors) > 0
+

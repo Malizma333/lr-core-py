@@ -1,12 +1,12 @@
 from engine.grid import Grid
 from engine.vector import Vector
 from engine.point import BasePoint, ContactPoint, FlutterPoint
-from engine.bone import BaseBone, NormalBone, RepelBone, MountBone, FlutterChain
+from engine.bone import NormalBone, RepelBone, MountBone, FlutterBone, BaseBone
 from engine.joint import Joint
 from engine.flags import LR_COM_SCARF, LRA_LEGACY_FAKIE_CHECK, LRA_REMOUNT
 
 from enum import Enum
-from typing import TypedDict
+from typing import TypedDict, Union
 import math
 
 
@@ -42,7 +42,7 @@ class BaseEntity:
         self.flutter_points: list[FlutterPoint] = []
         self.normal_bones: list[NormalBone] = []
         self.repel_bones: list[RepelBone] = []
-        self.flutter_chains: list[FlutterChain] = []
+        self.flutter_bones: list[FlutterBone] = []
         self.joints: list[Joint] = []
         self.intact = True
         self.remount_enabled = remount_enabled
@@ -59,31 +59,24 @@ class BaseEntity:
         self.flutter_points.append(point)
         return point
 
-    def add_normal_bone(
-        self,
-        point1: ContactPoint,
-        point2: ContactPoint,
-    ) -> NormalBone:
-        bone = NormalBone(BaseBone(point1, point2))
+    def add_normal_bone(self, point1: ContactPoint, point2: ContactPoint) -> NormalBone:
+        bone = NormalBone(point1, point2)
         self.normal_bones.append(bone)
         return bone
 
     def add_repel_bone(
-        self,
-        point1: ContactPoint,
-        point2: ContactPoint,
-        length_factor: float,
+        self, point1: ContactPoint, point2: ContactPoint, length_factor: float
     ) -> RepelBone:
-        bone = RepelBone(BaseBone(point1, point2), length_factor)
+        bone = RepelBone(point1, point2, length_factor)
         self.repel_bones.append(bone)
         return bone
 
-    def add_flutter_chain(
-        self, points: list[FlutterPoint], attachment: ContactPoint
-    ) -> FlutterChain:
-        chain = FlutterChain(points, attachment)
-        self.flutter_chains.append(chain)
-        return chain
+    def add_flutter_bone(
+        self, point1: Union[FlutterPoint, ContactPoint], point2: FlutterPoint
+    ) -> FlutterBone:
+        bone = FlutterBone(point1, point2)
+        self.flutter_bones.append(bone)
+        return bone
 
     def add_joint(self, bone1: BaseBone, bone2: BaseBone):
         self.joints.append(Joint(bone1, bone2))
@@ -128,7 +121,7 @@ class RiderVehiclePair:
         vehicle_point: ContactPoint,
         endurance: float,
     ) -> MountBone:
-        bone = MountBone(BaseBone(rider_point, vehicle_point), endurance)
+        bone = MountBone(rider_point, vehicle_point, endurance)
         self.rider_mount_bones.append(bone)
         return bone
 
@@ -138,7 +131,7 @@ class RiderVehiclePair:
         rider_point: ContactPoint,
         endurance: float,
     ) -> MountBone:
-        bone = MountBone(BaseBone(vehicle_point, rider_point), endurance)
+        bone = MountBone(vehicle_point, rider_point, endurance)
         self.vehicle_mount_bones.append(bone)
         return bone
 
@@ -264,10 +257,10 @@ class RiderVehiclePair:
                 point.base.update_state(new_pos, point.base.velocity, new_prev_pos)
 
     def process_flutter(self):
-        for chain in self.vehicle.flutter_chains:
+        for chain in self.vehicle.flutter_bones:
             chain.process()
 
-        for chain in self.rider.flutter_chains:
+        for chain in self.rider.flutter_bones:
             chain.process()
 
     def process_joints(self):
@@ -445,9 +438,13 @@ def create_default_rider(
     rider_sled_pair.add_rider_mount_bone(RIGHT_FOOT, NOSE, DEFAULT_MOUNT_ENDURANCE)
     rider.add_repel_bone(SHOULDER, LEFT_FOOT, DEFAULT_REPEL_LENGTH_FACTOR)
     rider.add_repel_bone(SHOULDER, RIGHT_FOOT, DEFAULT_REPEL_LENGTH_FACTOR)
-    rider.add_flutter_chain(
-        [SCARF_0, SCARF_1, SCARF_2, SCARF_3, SCARF_4, SCARF_5, SCARF_6], SHOULDER
-    )
+    rider.add_flutter_bone(SHOULDER, SCARF_0)
+    rider.add_flutter_bone(SCARF_0, SCARF_1)
+    rider.add_flutter_bone(SCARF_1, SCARF_2)
+    rider.add_flutter_bone(SCARF_2, SCARF_3)
+    rider.add_flutter_bone(SCARF_3, SCARF_4)
+    rider.add_flutter_bone(SCARF_4, SCARF_5)
+    rider.add_flutter_bone(SCARF_5, SCARF_6)
 
     # Add the bindings with their joints
     rider_sled_pair.add_joint(TORSO.base, SLED_FRONT.base)
