@@ -3,11 +3,10 @@ from engine.vector import Vector
 from engine.point import BasePoint, ContactPoint, FlutterPoint
 from engine.bone import NormalBone, RepelBone, MountBone, FlutterBone, BaseBone
 from engine.joint import Joint
-from engine.flags import LR_COM_SCARF, LRA_LEGACY_FAKIE_CHECK, LRA_REMOUNT
+from engine.flags import LRA_LEGACY_FAKIE_CHECK
 
 from enum import Enum
-from typing import TypedDict, Union
-import math
+from typing import TypedDict, Optional
 
 
 class InitialEntityParams(TypedDict):
@@ -17,7 +16,18 @@ class InitialEntityParams(TypedDict):
     REMOUNT: bool
 
 
-class RemountVersion(Enum):
+class MountState(Enum):
+    # Connected to another entity
+    MOUNTED = 0
+    # Just disconnected, not yet ready to reconnect
+    DISMOUNTING = 1
+    # Fully disconnected, ready to reconnect
+    DISMOUNTED = 2
+    # Currently reconnecting
+    REMOUNTING = 3
+
+
+class MountJointVersion(Enum):
     # pre-remount (indicated with "remountable": undefined) the tail fakie breaks the sled after dismount
     NONE = 0
     # remount-v1 (indicated with "remountable": true) the tail fakie does not break the sled after dismount (bug)
@@ -28,146 +38,76 @@ class RemountVersion(Enum):
     LRA = 3
 
 
-class MountState(Enum):
-    MOUNTED = 0
-    DISMOUNTING = 1
-    DISMOUNTED = 2
-    REMOUNTING = 3
-
-
-# A base entity that holds the skeleton
-class BaseEntity:
-    def __init__(self, remount_enabled):
+# An entity with a skeleton, connected to another entity used for remount processing
+# The default self is the vehicle, and the default other is the rider
+# The engine's entity array then looks like this [sled1, rider1, sled2, rider2]
+# Where sled1.other = rider1 and rider1.other = sled1, and so on
+class Entity:
+    def __init__(self, remount_enabled: bool, mount_joint_version: MountJointVersion):
+        # Constant versioning properties
+        self.remount_enabled = remount_enabled
+        self.mount_joint_version = mount_joint_version
+        # Entity points that define the skeleton
         self.contact_points: list[ContactPoint] = []
         self.flutter_points: list[FlutterPoint] = []
+        # Bones connecting points that adjust point positions
         self.normal_bones: list[NormalBone] = []
+        self.mount_bones: list[MountBone] = []
         self.repel_bones: list[RepelBone] = []
         self.flutter_bones: list[FlutterBone] = []
+        self.all_bones: list[BaseBone] = []
+        # Joints that change state whenever bones cross
         self.joints: list[Joint] = []
+        self.mount_joints: list[Joint] = []
+        # Entity state
         self.intact = True
-        self.remount_enabled = remount_enabled
-
-    def add_contact_point(self, position: Vector, friction: float) -> ContactPoint:
-        base_point = BasePoint(position, Vector(0, 0), position)
-        point = ContactPoint(base_point, friction)
-        self.contact_points.append(point)
-        return point
-
-    def add_flutter_point(self, position: Vector, air_friction: float) -> FlutterPoint:
-        base_point = BasePoint(position, Vector(0, 0), position)
-        point = FlutterPoint(base_point, air_friction)
-        self.flutter_points.append(point)
-        return point
-
-    def add_normal_bone(self, point1: ContactPoint, point2: ContactPoint) -> NormalBone:
-        bone = NormalBone(point1, point2)
-        self.normal_bones.append(bone)
-        return bone
-
-    def add_repel_bone(
-        self, point1: ContactPoint, point2: ContactPoint, length_factor: float
-    ) -> RepelBone:
-        bone = RepelBone(point1, point2, length_factor)
-        self.repel_bones.append(bone)
-        return bone
-
-    def add_flutter_bone(
-        self, point1: Union[FlutterPoint, ContactPoint], point2: FlutterPoint
-    ) -> FlutterBone:
-        bone = FlutterBone(point1, point2)
-        self.flutter_bones.append(bone)
-        return bone
-
-    def add_joint(self, bone1: BaseBone, bone2: BaseBone):
-        self.joints.append(Joint(bone1, bone2))
-
-    def process_joints(self):
-        for joint in self.joints:
-            if self.intact and joint.should_break():
-                self.intact = False
-
-
-# A rider and vehicle pair with mounted context between them
-class RiderVehiclePair:
-    def __init__(
-        self,
-        rider: BaseEntity,
-        vehicle: BaseEntity,
-        mount_joint_version: RemountVersion,
-    ):
-        self.rider = rider
-        self.vehicle = vehicle
-        self.rider_mount_bones: list[MountBone] = []
-        self.vehicle_mount_bones: list[MountBone] = []
-        self.joints: list[Joint] = []
+        self.physics_processed = False
+        self.other: Optional[Entity] = None
         self.mount_state = MountState.MOUNTED
         self.frames_until_dismounted = 0
         self.frames_until_remounting = 0
         self.frames_until_mounted = 0
         self.dismounted_this_frame = False
-        self.remount_version = mount_joint_version
 
-        if LRA_REMOUNT:
-            self.remount_version = RemountVersion.LRA
-
-    # Copy is used for deep copying entity states after each frame
     def copy(self):
-        # TODO clean way to deep copy
+        # TODO deep copy
+        self.physics_processed = False
         return self
 
-    def add_rider_mount_bone(
-        self,
-        rider_point: ContactPoint,
-        vehicle_point: ContactPoint,
-        endurance: float,
-    ) -> MountBone:
-        bone = MountBone(rider_point, vehicle_point, endurance)
-        self.rider_mount_bones.append(bone)
-        return bone
+    # Ensures other entity exists before using it
+    def require_other(self):
+        if self.other == None:
+            raise Exception("Other undefined")
+        return self.other
 
-    def add_vehicle_mount_bone(
-        self,
-        vehicle_point: ContactPoint,
-        rider_point: ContactPoint,
-        endurance: float,
-    ) -> MountBone:
-        bone = MountBone(vehicle_point, rider_point, endurance)
-        self.vehicle_mount_bones.append(bone)
-        return bone
+    def get_overall_points(self) -> list[BasePoint]:
+        points: list[BasePoint] = []
 
-    def add_joint(self, bone1: BaseBone, bone2: BaseBone):
-        self.joints.append(Joint(bone1, bone2))
+        for point in self.contact_points:
+            points.append(point.base)
 
-    # This updates the contact points with initial position, velocity, and a rotation
-    # about the tail, as well as setting the remount property
-    def apply_initial_state(
-        self, init_state: InitialEntityParams, rotation_origin: Vector
-    ):
-        origin = rotation_origin
-        # Note that the use of cos and sin here is not exactly the same as javascript
-        # engines might implement it (which usually use system calls anyway)
-        # This gets tested with 50 degrees so it happens to pass the test case,
-        # but this may not give the same output for every input
-        cos_theta = math.cos(init_state["ROTATION"] * math.pi / 180)
-        sin_theta = math.sin(init_state["ROTATION"] * math.pi / 180)
+        for point in self.flutter_points:
+            points.append(point.base)
 
-        for point in self.get_all_points():
-            offset = point.position - origin
-            point.update_state(
-                Vector(
-                    origin.x + offset.x * cos_theta - offset.y * sin_theta,
-                    origin.y + offset.x * sin_theta + offset.y * cos_theta,
-                ),
-                point.velocity,
-                point.previous_position,
-            )
+        if self.other != None:
+            for point in self.other.contact_points:
+                points.append(point.base)
 
-        for point in self.get_all_points():
-            start_position = point.position + init_state["POSITION"]
-            start_velocity = point.velocity + init_state["VELOCITY"]
-            point.update_state(
-                start_position, start_velocity, start_position - start_velocity
-            )
+            for point in self.other.flutter_points:
+                points.append(point.base)
+
+        return points
+
+    def can_remount(self):
+        return (
+            self.remount_enabled
+            and self.intact
+            and self.mount_state == MountState.DISMOUNTED
+        )
+
+    def mount(self, other: "Entity"):
+        self.other = other
+        other.other = self
 
     def is_mounted(self):
         return (
@@ -186,9 +126,41 @@ class RiderVehiclePair:
 
         self.mount_state = new_mount_state
 
+    # Checks if either remounting or mounted states can be entered by checking
+    # that the bone stays intact with different strength/endurance remount values
+    def can_enter_mount_state(self, state: MountState):
+        other = self.require_other()
+        remounting = state == MountState.REMOUNTING
+
+        for bone in self.mount_bones:
+            if not bone.get_intact(remounting):
+                return False
+
+        for bone in other.mount_bones:
+            if not bone.get_intact(remounting):
+                return False
+
+        for joint in self.joints:
+            if joint.should_break():
+                return False
+
+        for joint in other.joints:
+            if joint.should_break():
+                return False
+
+        for joint in self.mount_joints:
+            if joint.should_break():
+                return False
+
+        return True
+
     def dismount(self):
+        if self.dismounted_this_frame:
+            return
+
         self.dismounted_this_frame = True
-        if self.remount_version == RemountVersion.NONE:
+
+        if self.mount_joint_version == MountJointVersion.NONE:
             # Just dismount, ignore timers
             self.transition_to_mount_state(MountState.DISMOUNTED, False)
         else:
@@ -199,69 +171,117 @@ class RiderVehiclePair:
                 # Revert from remounting to dismounted without timer
                 self.transition_to_mount_state(MountState.DISMOUNTED, True)
 
-    def process_initial_step(self, gravity: Vector):
-        for point in self.vehicle.contact_points:
+        other = self.require_other()
+        other.dismount()
+
+    def add_contact_point(self, position: Vector, friction: float) -> int:
+        base_point = BasePoint(position, Vector(0, 0), position)
+        point = ContactPoint(base_point, friction)
+        self.contact_points.append(point)
+        return len(self.contact_points) - 1
+
+    def add_flutter_point(self, position: Vector, air_friction: float) -> int:
+        base_point = BasePoint(position, Vector(0, 0), position)
+        point = FlutterPoint(base_point, air_friction)
+        self.flutter_points.append(point)
+        return len(self.flutter_points) - 1
+
+    def add_normal_bone(self, point1_id: int, point2_id: int) -> int:
+        bone = NormalBone(
+            self.contact_points[point1_id], self.contact_points[point2_id]
+        )
+        self.normal_bones.append(bone)
+        self.all_bones.append(bone.base)
+        return len(self.all_bones) - 1
+
+    def add_mount_bone(self, point1_id: int, point2_id: int, endurance: float) -> int:
+        if self.other == None:
+            return -1
+
+        bone = MountBone(
+            self.contact_points[point1_id],
+            self.other.contact_points[point2_id],
+            endurance,
+        )
+        self.mount_bones.append(bone)
+        self.all_bones.append(bone.base)
+        return len(self.all_bones) - 1
+
+    def add_repel_bone(self, point1: int, point2: int, length_factor: float) -> int:
+        bone = RepelBone(
+            self.contact_points[point1], self.contact_points[point2], length_factor
+        )
+        self.repel_bones.append(bone)
+        self.all_bones.append(bone.base)
+        return len(self.all_bones) - 1
+
+    def add_flutter_bone(self, point1: int, point2: int) -> int:
+        bone = FlutterBone(self.flutter_points[point1], self.flutter_points[point2])
+        self.flutter_bones.append(bone)
+        self.all_bones.append(bone.base)
+        return len(self.all_bones) - 1
+
+    def add_flutter_connector_bone(self, point1: int, point2: int) -> int:
+        bone = FlutterBone(self.contact_points[point1], self.flutter_points[point2])
+        self.flutter_bones.append(bone)
+        self.all_bones.append(bone.base)
+        return len(self.all_bones) - 1
+
+    # Adds a joint between two bones on this entity
+    # The joint sets this entity's intact state
+    def add_self_joint(self, bone1: int, bone2: int):
+        self.joints.append(Joint(self.all_bones[bone1], self.all_bones[bone2]))
+
+    # Adds a joint between a bone on this entity and the other entity
+    # The joint sets this entity's intact state
+    def add_other_joint(self, bone1: int, bone2: int):
+        other = self.require_other()
+        self.joints.append(Joint(self.all_bones[bone1], other.all_bones[bone2]))
+
+    # Adds a joint between two bones on this entity
+    # The joint sets this entity's mount state
+    def add_self_mount_joint(self, bone1: int, bone2: int):
+        self.mount_joints.append(Joint(self.all_bones[bone1], self.all_bones[bone2]))
+
+    # Adds a joint between a bone on this entity and the other entity
+    # The joint sets this entity's mount state
+    def add_other_mount_joint(self, bone1: int, bone2: int):
+        other = self.require_other()
+        self.mount_joints.append(Joint(self.all_bones[bone1], other.all_bones[bone2]))
+
+    def process_initial_points(self, gravity: Vector):
+        for point in self.contact_points:
             point.initial_step(gravity)
 
-        for point in self.rider.contact_points:
+        for point in self.flutter_points:
             point.initial_step(gravity)
 
-        for point in self.vehicle.flutter_points:
-            point.initial_step(gravity)
-
-        for point in self.rider.flutter_points:
-            point.initial_step(gravity)
-
-    def process_bones(self):
-        for bone in self.vehicle.normal_bones:
+    def process_structural_bones(self):
+        for bone in self.normal_bones:
             bone.process()
 
-        for bone in self.vehicle_mount_bones:
+        for bone in self.mount_bones:
             if self.is_mounted():
                 remounting = self.mount_state == MountState.REMOUNTING
                 intact = bone.get_intact(remounting)
                 bone.process(remounting)
+
                 if not intact:
                     self.dismount()
 
-        for bone in self.vehicle.repel_bones:
-            bone.process()
-
-        for bone in self.rider.normal_bones:
-            bone.process()
-
-        for bone in self.rider_mount_bones:
-            if self.is_mounted():
-                remounting = self.mount_state == MountState.REMOUNTING
-                intact = bone.get_intact(remounting)
-                bone.process(remounting)
-                if not intact:
-                    self.dismount()
-
-        for bone in self.rider.repel_bones:
+        for bone in self.repel_bones:
             bone.process()
 
     def process_collisions(self, grid: Grid):
-        contact_points: list[ContactPoint] = []
-
-        for point in self.vehicle.contact_points:
-            contact_points.append(point)
-
-        for point in self.rider.contact_points:
-            contact_points.append(point)
-
-        for point in contact_points:
+        for point in self.contact_points:
             interacting_lines = grid.get_interacting_lines(point)
             for line in interacting_lines:
                 new_pos, new_prev_pos = line.interact(point)
                 point.base.update_state(new_pos, point.base.velocity, new_prev_pos)
 
-    def process_flutter(self):
-        for chain in self.vehicle.flutter_bones:
-            chain.process()
-
-        for chain in self.rider.flutter_bones:
-            chain.process()
+    def process_flutter_bones(self):
+        for bone in self.flutter_bones:
+            bone.process()
 
     def process_joints(self):
         if LRA_LEGACY_FAKIE_CHECK:
@@ -269,64 +289,77 @@ class RiderVehiclePair:
             if not self.is_mounted():
                 return
 
-        for joint in self.joints:
+        self.process_mount_joints()
+
+        if self.mount_joint_version == MountJointVersion.COM_V1:
+            # Don't process self joints afterward if dismounted
+            if self.is_mounted():
+                self.process_self_joints()
+        else:
+            # Process self joints regardless
+            self.process_self_joints()
+
+        if self.other != None:
+            self.other.process_self_joints()
+
+    def process_mount_joints(self):
+        if self.other == None:
+            return
+
+        for joint in self.mount_joints:
             if self.is_mounted() and joint.should_break():
                 self.dismount()
 
-        if self.remount_version == RemountVersion.COM_V1:
-            # Don't process vehicle joints if dismounted
-            if self.is_mounted():
-                self.vehicle.process_joints()
-        else:
-            # Process vehicle joints regardless
-            self.vehicle.process_joints()
+        for joint in self.other.mount_joints:
+            if self.other.is_mounted() and joint.should_break():
+                self.other.dismount()
 
-        # Process rider joints (default has none)
-        self.rider.process_joints()
-
-    # Checks if either remounting or mounted states can be entered by checking
-    # that the bone stays intact with different strength/endurance remount values
-    def can_enter_state(self, state: MountState):
-        remounting = state == MountState.REMOUNTING
-
-        for bone in self.vehicle_mount_bones:
-            if not bone.get_intact(remounting):
-                return False
-
-        for bone in self.rider_mount_bones:
-            if not bone.get_intact(remounting):
-                return False
-
-        for joint in self.vehicle.joints:
-            if joint.should_break():
-                return False
-
-        for joint in self.rider.joints:
-            if joint.should_break():
-                return False
-
+    def process_self_joints(self):
         for joint in self.joints:
-            if joint.should_break():
-                return False
+            if self.intact and joint.should_break():
+                self.intact = False
 
-        return True
+    def process_skeleton(self, gravity: Vector, grid: Grid):
+        if self.physics_processed:
+            return
 
-    # Checks if this rider-vehicle pair has a vehicle available for swapping
-    def vehicle_available(self):
-        return (
-            self.vehicle.intact
-            and self.vehicle.remount_enabled
-            and not self.is_mounted()
-        )
+        # momentum
+        self.process_initial_points(gravity)
+        if self.other != None:
+            self.other.process_initial_points(gravity)
+
+        for _ in range(6):
+            # bones
+            self.process_structural_bones()
+            if self.other != None:
+                self.other.process_structural_bones()
+
+            # line collisions
+            self.process_collisions(grid)
+            if self.other != None:
+                self.other.process_collisions(grid)
+
+        # flutter bones (like scarf)
+        self.process_flutter_bones()
+        if self.other != None:
+            self.other.process_flutter_bones()
+
+        # dismount or break entities (like sled break)
+        self.process_joints()
+
+        self.physics_processed = True
+        if self.other != None:
+            self.other.physics_processed = True
 
     def process_remount(self):
         if (
-            self.remount_version == RemountVersion.NONE
-            or self.rider.remount_enabled == False
+            self.mount_joint_version == MountJointVersion.NONE
+            or self.remount_enabled == False
         ):
             return
 
         if self.dismounted_this_frame:
+            self.other = None
             self.dismounted_this_frame = False
             return
 
@@ -339,7 +372,8 @@ class RiderVehiclePair:
                 self.transition_to_mount_state(MountState.DISMOUNTED, True)
         elif self.mount_state == MountState.DISMOUNTED:
             # TODO check this for each available vehicle, then break on the first one that works
-            if self.can_enter_state(MountState.REMOUNTING):
+            return
+            if self.can_enter_mount_state(MountState.REMOUNTING):
                 self.frames_until_remounting = max(self.frames_until_remounting - 1, 0)
             else:
                 self.transition_to_mount_state(MountState.DISMOUNTED, True)
@@ -347,116 +381,11 @@ class RiderVehiclePair:
             if self.frames_until_remounting == 0:
                 self.transition_to_mount_state(MountState.REMOUNTING, True)
         else:
-            if self.can_enter_state(MountState.MOUNTED):
+            return
+            if self.can_enter_mount_state(MountState.MOUNTED):
                 self.frames_until_mounted = max(self.frames_until_mounted - 1, 0)
             else:
                 self.transition_to_mount_state(MountState.REMOUNTING, True)
 
             if self.frames_until_mounted == 0:
                 self.transition_to_mount_state(MountState.MOUNTED, True)
-
-    def get_all_points(self) -> list[BasePoint]:
-        all_points = []
-
-        for contact_point in self.vehicle.contact_points:
-            all_points.append(contact_point.base)
-
-        for contact_point in self.rider.contact_points:
-            all_points.append(contact_point.base)
-
-        for flutter_point in self.vehicle.flutter_points:
-            all_points.append(flutter_point.base)
-
-        for flutter_point in self.rider.flutter_points:
-            all_points.append(flutter_point.base)
-
-        return all_points
-
-
-def create_default_rider(
-    init_state: InitialEntityParams,
-    mount_joint_version: RemountVersion,
-) -> RiderVehiclePair:
-    rider = BaseEntity(init_state["REMOUNT"])
-    sled = BaseEntity(init_state["REMOUNT"])
-    rider_sled_pair = RiderVehiclePair(rider, sled, mount_joint_version)
-
-    DEFAULT_MOUNT_ENDURANCE = 0.057
-    DEFAULT_REPEL_LENGTH_FACTOR = 0.5
-
-    if LR_COM_SCARF:
-        SCARF_FRICTION = 0.2
-    else:
-        SCARF_FRICTION = 0.1
-
-    # Create the contact points first, at their initial positions
-    # Order doesn't really matter, added in this order to match linerider.com
-    # based test cases
-    # Sled points
-    PEG = sled.add_contact_point(Vector(0.0, 0.0), 0.8)
-    TAIL = sled.add_contact_point(Vector(0.0, 5.0), 0.0)
-    NOSE = sled.add_contact_point(Vector(15.0, 5.0), 0.0)
-    STRING = sled.add_contact_point(Vector(17.5, 0.0), 0.0)
-
-    # Rider points
-    BUTT = rider.add_contact_point(Vector(5.0, 0.0), 0.8)
-    SHOULDER = rider.add_contact_point(Vector(5.0, -5.5), 0.8)
-    RIGHT_HAND = rider.add_contact_point(Vector(11.5, -5.0), 0.1)
-    LEFT_HAND = rider.add_contact_point(Vector(11.5, -5.0), 0.1)
-    LEFT_FOOT = rider.add_contact_point(Vector(10.0, 5.0), 0.0)
-    RIGHT_FOOT = rider.add_contact_point(Vector(10.0, 5.0), 0.0)
-    SCARF_0 = rider.add_flutter_point(Vector(3, -5.5), SCARF_FRICTION)
-    SCARF_1 = rider.add_flutter_point(Vector(1, -5.5), SCARF_FRICTION)
-    SCARF_2 = rider.add_flutter_point(Vector(-1, -5.5), SCARF_FRICTION)
-    SCARF_3 = rider.add_flutter_point(Vector(-3, -5.5), SCARF_FRICTION)
-    SCARF_4 = rider.add_flutter_point(Vector(-5, -5.5), SCARF_FRICTION)
-    SCARF_5 = rider.add_flutter_point(Vector(-7, -5.5), SCARF_FRICTION)
-    SCARF_6 = rider.add_flutter_point(Vector(-9, -5.5), SCARF_FRICTION)
-
-    # Sled bones
-    SLED_BACK = sled.add_normal_bone(PEG, TAIL)
-    sled.add_normal_bone(TAIL, NOSE)
-    sled.add_normal_bone(NOSE, STRING)
-    SLED_FRONT = sled.add_normal_bone(STRING, PEG)
-    sled.add_normal_bone(PEG, NOSE)
-    sled.add_normal_bone(STRING, TAIL)
-    rider_sled_pair.add_vehicle_mount_bone(PEG, BUTT, DEFAULT_MOUNT_ENDURANCE)
-    rider_sled_pair.add_vehicle_mount_bone(TAIL, BUTT, DEFAULT_MOUNT_ENDURANCE)
-    rider_sled_pair.add_vehicle_mount_bone(NOSE, BUTT, DEFAULT_MOUNT_ENDURANCE)
-
-    # Rider bones
-    TORSO = rider.add_normal_bone(SHOULDER, BUTT)
-    rider.add_normal_bone(SHOULDER, LEFT_HAND)
-    rider.add_normal_bone(SHOULDER, RIGHT_HAND)
-    rider.add_normal_bone(BUTT, LEFT_FOOT)
-    rider.add_normal_bone(BUTT, RIGHT_FOOT)
-    rider.add_normal_bone(SHOULDER, RIGHT_HAND)
-    rider_sled_pair.add_rider_mount_bone(SHOULDER, PEG, DEFAULT_MOUNT_ENDURANCE)
-    rider_sled_pair.add_rider_mount_bone(LEFT_HAND, STRING, DEFAULT_MOUNT_ENDURANCE)
-    rider_sled_pair.add_rider_mount_bone(RIGHT_HAND, STRING, DEFAULT_MOUNT_ENDURANCE)
-    rider_sled_pair.add_rider_mount_bone(LEFT_FOOT, NOSE, DEFAULT_MOUNT_ENDURANCE)
-    rider_sled_pair.add_rider_mount_bone(RIGHT_FOOT, NOSE, DEFAULT_MOUNT_ENDURANCE)
-    rider.add_repel_bone(SHOULDER, LEFT_FOOT, DEFAULT_REPEL_LENGTH_FACTOR)
-    rider.add_repel_bone(SHOULDER, RIGHT_FOOT, DEFAULT_REPEL_LENGTH_FACTOR)
-    rider.add_flutter_bone(SHOULDER, SCARF_0)
-    rider.add_flutter_bone(SCARF_0, SCARF_1)
-    rider.add_flutter_bone(SCARF_1, SCARF_2)
-    rider.add_flutter_bone(SCARF_2, SCARF_3)
-    rider.add_flutter_bone(SCARF_3, SCARF_4)
-    rider.add_flutter_bone(SCARF_4, SCARF_5)
-    rider.add_flutter_bone(SCARF_5, SCARF_6)
-
-    # Add the bindings with their joints
-    rider_sled_pair.add_joint(TORSO.base, SLED_FRONT.base)
-    rider_sled_pair.add_joint(SLED_BACK.base, SLED_FRONT.base)
-    sled.add_joint(SLED_BACK.base, SLED_FRONT.base)
-
-    if LRA_LEGACY_FAKIE_CHECK:
-        sled.add_joint(TORSO.base, SLED_FRONT.base)
-
-    # Apply initial state once everything is initialized
-    # Note that this must be applied after bone rest lengths are calculated
-    # because it does not affect bone rest lengths
-    rider_sled_pair.apply_initial_state(init_state, TAIL.base.position)
-
-    return rider_sled_pair

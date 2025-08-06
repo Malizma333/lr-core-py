@@ -36,11 +36,12 @@ class ContactPoint:
         self.friction = friction
 
     def initial_step(self, gravity: Vector):
-        new_velocity = self.base.position - self.base.previous_position + gravity
+        computed_velocity = self.base.position - self.base.previous_position
+        new_velocity = computed_velocity + gravity
         current_position = self.base.position
-        self.base.update_state(
-            current_position + new_velocity, new_velocity, current_position
-        )
+        new_position = current_position + new_velocity
+
+        self.base.update_state(new_position, new_velocity, current_position)
 
 
 # Non-colliding point of an entity, used for the scarf

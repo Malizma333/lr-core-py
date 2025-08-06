@@ -1,5 +1,5 @@
 from engine.vector import Vector
-from engine.entity import RiderVehiclePair
+from engine.entity import Entity
 from engine.grid import Grid, GridVersion
 from engine.line import Line
 from engine.flags import GRAVITY_FIX
@@ -8,8 +8,8 @@ from typing import Optional
 
 
 class CachedFrame:
-    def __init__(self, entities: list[RiderVehiclePair]):
-        self.entities: list[RiderVehiclePair] = entities
+    def __init__(self, entities: list[Entity]):
+        self.entities: list[Entity] = entities
 
 
 # Not specific implementation, just used for caching
@@ -17,7 +17,7 @@ class Engine:
     def __init__(
         self,
         grid_version: GridVersion,
-        entities: list[RiderVehiclePair],
+        entities: list[Entity],
         lines: list[Line],
     ):
         DEFAULT_CELL_SIZE = 14
@@ -36,30 +36,20 @@ class Engine:
         if target_frame < 0:
             return None
 
+        gravity = self.gravity_scale * self.gravity_vector
+
         for frame in range(len(self.state_cache), target_frame + 1):
-            new_entities: list[RiderVehiclePair] = []
+            new_entities: list[Entity] = []
 
             for entity in self.state_cache[frame - 1].entities:
                 new_entities.append(entity.copy())
 
             for entity in new_entities:
-                # gravity + momentum
-                entity.process_initial_step(self.gravity_scale * self.gravity_vector)
-
-                for _ in range(6):
-                    # bones
-                    entity.process_bones()
-                    # line collisions
-                    entity.process_collisions(self.grid)
-
-                # scarf
-                entity.process_flutter()
-
-                # dismount or break sled
-                entity.process_joints()
+                # physics steps
+                entity.process_skeleton(gravity, self.grid)
 
             for entity in new_entities:
-                # remount states
+                # remount steps
                 entity.process_remount()
 
             self.state_cache.append(CachedFrame(new_entities))

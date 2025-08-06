@@ -3,11 +3,6 @@ from engine.point import ContactPoint
 
 from typing import Union
 
-# TODO
-#   - Deceleration Lines
-#   - Trapdoor Lines
-#   - Wind boxes
-
 
 class PhysicsLine:
     HITBOX_HEIGHT = 10

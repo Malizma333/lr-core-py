@@ -86,6 +86,7 @@ class RepelBone:
         self, point1: ContactPoint, point2: ContactPoint, length_factor: float
     ):
         self.base = BaseBone(point1, point2, 0.5)
+        # TODO refactor to keep track of length factor
         self.base.rest_length *= length_factor
 
     def process(self):
