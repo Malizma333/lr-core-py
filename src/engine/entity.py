@@ -70,7 +70,6 @@ class Entity:
         self.dismounted_this_frame = False
 
     def copy(self):
-        # TODO deep copy
         self.physics_processed = False
         return self
 

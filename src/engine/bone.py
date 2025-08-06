@@ -21,13 +21,13 @@ class BaseBone:
     def get_vector(self):
         return self.point1.base.position - self.point2.base.position
 
-    def get_adjustment(self):
+    def get_adjustment(self, length_factor):
         current_length = self.get_vector().length()
 
         if current_length == 0:
             return 0
 
-        return (current_length - self.rest_length) / current_length
+        return (current_length - self.rest_length * length_factor) / current_length
 
     def update_points(self, adjustment):
         bone_vector = self.get_vector()
@@ -49,7 +49,7 @@ class NormalBone:
         self.base = BaseBone(point1, point2, 0.5)
 
     def process(self):
-        adjustment = self.base.get_adjustment()
+        adjustment = self.base.get_adjustment(1)
         self.base.update_points(adjustment)
 
 
@@ -61,7 +61,7 @@ class MountBone:
         self.endurance = endurance
 
     def get_intact(self, remounting: Optional[bool] = None) -> bool:
-        adjustment = self.base.get_adjustment()
+        adjustment = self.base.get_adjustment(1)
         endurance = self.endurance
 
         if remounting:
@@ -70,7 +70,7 @@ class MountBone:
         return adjustment <= endurance * self.base.rest_length
 
     def process(self, remounting: Optional[bool] = None):
-        adjustment = self.base.get_adjustment()
+        adjustment = self.base.get_adjustment(1)
 
         strength = 1
         if remounting:
@@ -86,13 +86,12 @@ class RepelBone:
         self, point1: ContactPoint, point2: ContactPoint, length_factor: float
     ):
         self.base = BaseBone(point1, point2, 0.5)
-        # TODO refactor to keep track of length factor
-        self.base.rest_length *= length_factor
+        self.length_factor = length_factor
 
     def process(self):
-        adjustment = self.base.get_adjustment()
+        adjustment = self.base.get_adjustment(self.length_factor)
 
-        if self.base.get_vector().length() < self.base.rest_length:
+        if self.base.get_vector().length() < self.base.rest_length * self.length_factor:
             self.base.update_points(adjustment)
 
 
@@ -102,5 +101,5 @@ class FlutterBone:
         self.base = BaseBone(point1, point2, 1)
 
     def process(self):
-        adjustment = self.base.get_adjustment()
+        adjustment = self.base.get_adjustment(1)
         self.base.update_points(adjustment)

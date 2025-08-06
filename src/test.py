@@ -10,7 +10,7 @@ import json
 import sys
 
 # Test flags to filter results
-MAX_FRAME: Optional[int] = None
+MAX_FRAME: Optional[int] = 80
 TARGET_TESTS: Optional[tuple[int, int]] = None
 
 
