@@ -1,7 +1,7 @@
 # Converts .track.json files to in-memory representations
 
 from engine.vector import Vector
-from engine.entity import Entity, InitialEntityParams, MountJointVersion
+from engine.entity import Entity, InitialEntityParams, RemountVersion
 from engine.grid import GridVersion
 from engine.line import Line, NormalLine, AccelerationLine, PhysicsLine
 from engine.flags import LRA_REMOUNT, LR_COM_SCARF, LRA_LEGACY_FAKIE_CHECK
@@ -10,7 +10,7 @@ import math
 
 def create_default_rider(
     init_state: InitialEntityParams,
-    mount_joint_version: MountJointVersion,
+    mount_joint_version: RemountVersion,
 ) -> tuple[Entity, Entity]:
     rider = Entity(init_state["REMOUNT"], mount_joint_version)
     sled = Entity(init_state["REMOUNT"], mount_joint_version)
@@ -147,17 +147,17 @@ def convert_lines(lines: list) -> list[Line]:
 def merge_entity_pairs(riders: list) -> list[Entity]:
     converted_entities: list[Entity] = []
     for rider in riders:
-        mount_joint_version = MountJointVersion.NONE
+        mount_joint_version = RemountVersion.NONE
 
         remountable = rider.get("remountable", None)
         if type(remountable) == bool:
-            mount_joint_version = MountJointVersion.COM_V1
+            mount_joint_version = RemountVersion.COM_V1
         elif type(remountable) == int:
-            mount_joint_version = MountJointVersion.COM_V2
+            mount_joint_version = RemountVersion.COM_V2
 
         # Override remount version
         if LRA_REMOUNT:
-            mount_joint_version = MountJointVersion.LRA
+            mount_joint_version = RemountVersion.LRA
 
         initial_state: InitialEntityParams = {
             "POSITION": Vector(

@@ -27,7 +27,7 @@ class MountState(Enum):
     REMOUNTING = 3
 
 
-class MountJointVersion(Enum):
+class RemountVersion(Enum):
     # pre-remount (indicated with "remountable": undefined) the tail fakie breaks the sled after dismount
     NONE = 0
     # remount-v1 (indicated with "remountable": true) the tail fakie does not break the sled after dismount (bug)
@@ -43,7 +43,7 @@ class MountJointVersion(Enum):
 # The engine's entity array then looks like this [sled1, rider1, sled2, rider2]
 # Where sled1.other = rider1 and rider1.other = sled1, and so on
 class Entity:
-    def __init__(self, remount_enabled: bool, mount_joint_version: MountJointVersion):
+    def __init__(self, remount_enabled: bool, mount_joint_version: RemountVersion):
         # Constant versioning properties
         self.remount_enabled = remount_enabled
         self.mount_joint_version = mount_joint_version
@@ -159,7 +159,7 @@ class Entity:
 
         self.dismounted_this_frame = True
 
-        if self.mount_joint_version == MountJointVersion.NONE:
+        if self.mount_joint_version == RemountVersion.NONE:
             # Just dismount, ignore timers
             self.transition_to_mount_state(MountState.DISMOUNTED, False)
         else:
@@ -290,7 +290,7 @@ class Entity:
 
         self.process_mount_joints()
 
-        if self.mount_joint_version == MountJointVersion.COM_V1:
+        if self.mount_joint_version == RemountVersion.COM_V1:
             # Don't process self joints afterward if dismounted
             if self.is_mounted():
                 self.process_self_joints()
@@ -352,7 +352,7 @@ class Entity:
 
     def process_remount(self):
         if (
-            self.mount_joint_version == MountJointVersion.NONE
+            self.mount_joint_version == RemountVersion.NONE
             or self.remount_enabled == False
         ):
             return
