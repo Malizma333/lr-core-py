@@ -1,11 +1,10 @@
 # Converts .track.json files to in-memory representations
 
 from engine.vector import Vector
-from engine.skeleton_mount import RemountVersion
-from engine.entity import Entity
 from engine.grid import GridVersion
 from engine.line import Line, NormalLine, AccelerationLine, BaseLine
 from engine.flags import LRA_REMOUNT, LR_COM_SCARF, LRA_LEGACY_FAKIE_CHECK
+from engine.entity import Entity, RemountVersion
 import math
 from typing import TypedDict
 
@@ -19,10 +18,10 @@ class InitialEntityParams(TypedDict):
 
 def create_default_rider(
     init_state: InitialEntityParams,
-    mount_joint_version: RemountVersion,
+    remount_version: RemountVersion,
 ) -> tuple[Entity, Entity]:
-    rider = Entity(init_state["REMOUNT"], mount_joint_version)
-    sled = Entity(init_state["REMOUNT"], mount_joint_version)
+    rider = Entity(init_state["REMOUNT"], remount_version)
+    sled = Entity(init_state["REMOUNT"], remount_version)
     sled.mount(rider)
 
     DEFAULT_MOUNT_ENDURANCE = 0.057

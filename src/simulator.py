@@ -220,30 +220,30 @@ class TrackSimulator:
         mv_len_zoom = self.MV_LENGTH * self.ZOOM
 
         for bone in entity.flutter_bones:
-            p1 = self._physics_to_canvas(bone.base.point1.base.position)
-            p2 = self._physics_to_canvas(bone.base.point1.base.position)
+            p1 = self._physics_to_canvas(bone.base.point1.position)
+            p2 = self._physics_to_canvas(bone.base.point1.position)
             self._generate_line(
                 DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.FLUTTER_BONE_COLOR
             )
 
         for bone in entity.normal_bones:
-            p1 = self._physics_to_canvas(bone.base.point1.base.position)
-            p2 = self._physics_to_canvas(bone.base.point2.base.position)
+            p1 = self._physics_to_canvas(bone.base.point1.position)
+            p2 = self._physics_to_canvas(bone.base.point2.position)
             self._generate_line(
                 DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.NORMAL_BONE_COLOR
             )
 
         if entity.is_mounted():
             for bone in entity.mount_bones:
-                p1 = self._physics_to_canvas(bone.base.point1.base.position)
-                p2 = self._physics_to_canvas(bone.base.point2.base.position)
+                p1 = self._physics_to_canvas(bone.base.point1.position)
+                p2 = self._physics_to_canvas(bone.base.point2.position)
                 self._generate_line(
                     DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.MOUNT_BONE_COLOR
                 )
 
         for bone in entity.repel_bones:
-            p1 = self._physics_to_canvas(bone.base.point1.base.position)
-            p2 = self._physics_to_canvas(bone.base.point2.base.position)
+            p1 = self._physics_to_canvas(bone.base.point1.position)
+            p2 = self._physics_to_canvas(bone.base.point2.position)
             self._generate_line(
                 DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.REPEL_BONE_COLOR
             )
