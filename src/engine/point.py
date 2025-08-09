@@ -4,7 +4,6 @@ from engine.flags import LR_COM_SCARF
 import math
 
 
-# Common point properties and methods
 class BasePoint:
     def __init__(
         self,
@@ -35,6 +34,14 @@ class ContactPoint:
         self.base = base_point
         self.friction = friction
 
+    def copy(self):
+        return ContactPoint(
+            BasePoint(
+                self.base.position, self.base.velocity, self.base.previous_position
+            ),
+            self.friction,
+        )
+
     def initial_step(self, gravity: Vector):
         computed_velocity = self.base.position - self.base.previous_position
         new_velocity = computed_velocity + gravity
@@ -44,7 +51,7 @@ class ContactPoint:
         self.base.update_state(new_position, new_velocity, current_position)
 
 
-# Non-colliding point of an entity, used for the scarf
+# Non-colliding point of an entity
 class FlutterPoint:
     def __init__(
         self,
@@ -53,6 +60,14 @@ class FlutterPoint:
     ):
         self.base = base
         self.air_friction = air_friction
+
+    def copy(self):
+        return FlutterPoint(
+            BasePoint(
+                self.base.position, self.base.velocity, self.base.previous_position
+            ),
+            self.air_friction,
+        )
 
     # glsl pseudo-randomness
     def rand(self, seed):

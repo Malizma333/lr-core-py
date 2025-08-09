@@ -4,7 +4,7 @@ from engine.point import ContactPoint
 from typing import Union
 
 
-class PhysicsLine:
+class BaseLine:
     HITBOX_HEIGHT = 10
 
     def __init__(
@@ -88,7 +88,7 @@ class PhysicsLine:
 
 
 class NormalLine:
-    def __init__(self, base: PhysicsLine):
+    def __init__(self, base: BaseLine):
         self.base = base
         self.update_computed()
 
@@ -120,7 +120,7 @@ class NormalLine:
 
 
 class AccelerationLine:
-    def __init__(self, base: PhysicsLine, acceleration: float):
+    def __init__(self, base: BaseLine, acceleration: float):
         self.base = base
         self.acceleration = acceleration
         self.update_computed()

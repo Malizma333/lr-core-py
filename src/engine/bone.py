@@ -1,105 +1,120 @@
-from engine.point import ContactPoint, FlutterPoint
-
-from typing import Union, Optional
+from engine.point import BasePoint
 
 
 # Common bone properties and methods
 class BaseBone:
     def __init__(
-        self,
-        point1: Union[ContactPoint, FlutterPoint],
-        point2: Union[ContactPoint, FlutterPoint],
-        bias: float,
+        self, point1: BasePoint, point2: BasePoint, bias: float, length_factor: float
     ):
         self.point1 = point1
         self.point2 = point2
         # Initial rest length of the bone
-        self.rest_length = point1.base.position.distance_from(point2.base.position)
+        self.rest_length = (
+            point1.position.distance_from(point2.position) * length_factor
+        )
         # Which point gets updated more (0 affects point 1 entirely, 1 affects point 2 entirely)
         self.bias = bias
 
     def get_vector(self):
-        return self.point1.base.position - self.point2.base.position
+        return self.point1.position - self.point2.position
 
-    def get_adjustment(self, length_factor):
+    def get_adjustment(self):
         current_length = self.get_vector().length()
 
         if current_length == 0:
             return 0
 
-        return (current_length - self.rest_length * length_factor) / current_length
+        return (current_length - self.rest_length) / current_length
 
     def update_points(self, adjustment):
         bone_vector = self.get_vector()
-        self.point1.base.update_state(
-            self.point1.base.position - bone_vector * adjustment * (1 - self.bias),
-            self.point1.base.velocity,
-            self.point1.base.previous_position,
+        self.point1.update_state(
+            self.point1.position - bone_vector * adjustment * (1 - self.bias),
+            self.point1.velocity,
+            self.point1.previous_position,
         )
-        self.point2.base.update_state(
-            self.point2.base.position + bone_vector * adjustment * self.bias,
-            self.point2.base.velocity,
-            self.point2.base.previous_position,
+        self.point2.update_state(
+            self.point2.position + bone_vector * adjustment * self.bias,
+            self.point2.velocity,
+            self.point2.previous_position,
         )
 
 
 # Bones connecting points to keep them as the same structure
 class NormalBone:
-    def __init__(self, point1: ContactPoint, point2: ContactPoint):
-        self.base = BaseBone(point1, point2, 0.5)
+    def __init__(self, point1: BasePoint, point2: BasePoint):
+        self.base = BaseBone(point1, point2, 0.5, 1)
+
+    def copy(self, point1: BasePoint, point2: BasePoint):
+        bone = NormalBone(point1, point2)
+        bone.base.rest_length = self.base.rest_length
+        return bone
 
     def process(self):
-        adjustment = self.base.get_adjustment(1)
+        adjustment = self.base.get_adjustment()
+        self.base.update_points(adjustment)
+
+
+# Bones designed to only repel points after a certain rest length is reached
+class RepelBone:
+    def __init__(self, point1: BasePoint, point2: BasePoint, length_factor: float):
+        self.base = BaseBone(point1, point2, 0.5, length_factor)
+
+    def copy(self, point1: BasePoint, point2: BasePoint):
+        bone = RepelBone(point1, point2, 1)
+        bone.base.rest_length = self.base.rest_length
+        return bone
+
+    def process(self):
+        adjustment = self.base.get_adjustment()
+
+        if self.base.get_vector().length() < self.base.rest_length:
+            self.base.update_points(adjustment)
+
+
+class FlutterBone:
+    def __init__(self, point1: BasePoint, point2: BasePoint):
+        self.base = BaseBone(point1, point2, 1, 1)
+
+    def copy(self, point1: BasePoint, point2: BasePoint):
+        bone = FlutterBone(point1, point2)
+        bone.base.rest_length = self.base.rest_length
+        return bone
+
+    def process(self):
+        adjustment = self.base.get_adjustment()
         self.base.update_points(adjustment)
 
 
 # Bones that can break after a certain stretch threshold
-# These bones are connected between rider and vehicle points
+# These bones are connected between two skeletons
 class MountBone:
-    def __init__(self, point1: ContactPoint, point2: ContactPoint, endurance: float):
-        self.base = BaseBone(point1, point2, 0.5)
+    def __init__(self, point1: BasePoint, point2: BasePoint, endurance: float):
+        self.base = BaseBone(point1, point2, 0.5, 1)
         self.endurance = endurance
 
-    def get_intact(self, remounting: Optional[bool] = None) -> bool:
-        adjustment = self.base.get_adjustment(1)
-        endurance = self.endurance
+    def copy(self, point1: BasePoint, point2: BasePoint):
+        bone = MountBone(point1, point2, self.endurance)
+        bone.base.rest_length = self.base.rest_length
+        return bone
+
+    def get_intact(self, remounting: bool) -> bool:
+        adjustment = self.base.get_adjustment()
 
         if remounting:
-            endurance *= 2
+            endurance = self.endurance * 2
+        else:
+            endurance = self.endurance
 
         return adjustment <= endurance * self.base.rest_length
 
-    def process(self, remounting: Optional[bool] = None):
-        adjustment = self.base.get_adjustment(1)
+    def process(self, remounting: bool):
+        adjustment = self.base.get_adjustment()
 
-        strength = 1
         if remounting:
-            strength = 0.1
+            adjustment_strength = 0.1
+        else:
+            adjustment_strength = 1
 
         if self.get_intact(remounting):
-            self.base.update_points(adjustment * strength)
-
-
-# Bones designed to only repel points after a certain fraction of their rest length is reached
-class RepelBone:
-    def __init__(
-        self, point1: ContactPoint, point2: ContactPoint, length_factor: float
-    ):
-        self.base = BaseBone(point1, point2, 0.5)
-        self.length_factor = length_factor
-
-    def process(self):
-        adjustment = self.base.get_adjustment(self.length_factor)
-
-        if self.base.get_vector().length() < self.base.rest_length * self.length_factor:
-            self.base.update_points(adjustment)
-
-
-# Non-colliding bone connecting a flutter point to another flutter point or a contact point
-class FlutterBone:
-    def __init__(self, point1: Union[FlutterPoint, ContactPoint], point2: FlutterPoint):
-        self.base = BaseBone(point1, point2, 1)
-
-    def process(self):
-        adjustment = self.base.get_adjustment(1)
-        self.base.update_points(adjustment)
+            self.base.update_points(adjustment * adjustment_strength)

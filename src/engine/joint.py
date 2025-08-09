@@ -11,6 +11,9 @@ class Joint:
         self.bone1 = bone1
         self.bone2 = bone2
 
+    def copy(self, bone1: BaseBone, bone2: BaseBone):
+        return Joint(bone1, bone2)
+
     def should_break(self):
         delta1 = self.bone1.get_vector()
         delta2 = self.bone2.get_vector()

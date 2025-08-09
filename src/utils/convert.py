@@ -1,11 +1,20 @@
 # Converts .track.json files to in-memory representations
 
 from engine.vector import Vector
-from engine.entity import Entity, InitialEntityParams, RemountVersion
+from engine.skeleton_mount import RemountVersion
+from engine.entity import Entity
 from engine.grid import GridVersion
-from engine.line import Line, NormalLine, AccelerationLine, PhysicsLine
+from engine.line import Line, NormalLine, AccelerationLine, BaseLine
 from engine.flags import LRA_REMOUNT, LR_COM_SCARF, LRA_LEGACY_FAKIE_CHECK
 import math
+from typing import TypedDict
+
+
+class InitialEntityParams(TypedDict):
+    POSITION: Vector
+    VELOCITY: Vector
+    ROTATION: float  # In degrees
+    REMOUNT: bool
 
 
 def create_default_rider(
@@ -127,7 +136,7 @@ def convert_lines(lines: list) -> list[Line]:
         if line["type"] != 2 and not (
             line["x1"] == line["x2"] and line["y1"] == line["y2"]
         ):
-            new_line = PhysicsLine(
+            new_line = BaseLine(
                 line["id"],
                 Vector(line["x1"], line["y1"]),
                 Vector(line["x2"], line["y2"]),

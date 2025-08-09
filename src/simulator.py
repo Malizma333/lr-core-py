@@ -5,7 +5,7 @@ from enum import Enum
 from engine.engine import Engine
 from engine.vector import Vector
 from engine.entity import Entity
-from engine.line import NormalLine, PhysicsLine, AccelerationLine, Line
+from engine.line import NormalLine, BaseLine, AccelerationLine, Line
 from utils.convert import convert_lines, merge_entity_pairs, convert_version
 
 
@@ -113,7 +113,7 @@ class TrackSimulator:
             end_physics_point = self._canvas_to_physics(end_canvas_point)
 
             if start_physics_point != end_physics_point:
-                new_line = PhysicsLine(
+                new_line = BaseLine(
                     -1, start_physics_point, end_physics_point, False, False, False
                 )
                 new_normal_line = NormalLine(new_line)
@@ -332,7 +332,7 @@ class TrackSimulator:
         rider_data_strings = [
             f"{p.position}" for p in entities[self.focused_entity].get_overall_points()
         ]
-        rider_data_strings.insert(0, entities[self.focused_entity].mount_state.name)
+        rider_data_strings.insert(0, entities[self.focused_entity].mount_phase.name)
 
         for i, pos_str in enumerate(rider_data_strings):
             self._generate_text(f"{pos_str}", 10, i * 25 + 25)
