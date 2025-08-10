@@ -1,10 +1,9 @@
 from engine.vector import Vector
 from engine.entity import Entity
 from engine.grid import Grid, GridVersion
-from engine.line import Line
+from engine.line import NormalLine, AccelerationLine
 from engine.flags import GRAVITY_FIX
-
-from typing import Optional
+from typing import Optional, Union
 
 
 class CachedFrame:
@@ -18,7 +17,7 @@ class Engine:
         self,
         grid_version: GridVersion,
         entities: list[Entity],
-        lines: list[Line],
+        lines: list[Union[NormalLine, AccelerationLine]],
     ):
         DEFAULT_CELL_SIZE = 14
         self.grid = Grid(grid_version, DEFAULT_CELL_SIZE)
@@ -58,7 +57,7 @@ class Engine:
 
     # Primitive add and remove line methods
     # A proper implementation would look through the grid to optimize cache clears
-    def add_line(self, line: Line):
+    def add_line(self, line: Union[NormalLine, AccelerationLine]):
         line.base.id = self.grid.get_max_line_id() + 1
         self.state_cache = [self.state_cache[0]]
         self.grid.add_line(line)

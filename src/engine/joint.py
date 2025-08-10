@@ -1,4 +1,10 @@
 from engine.bone import BaseBone
+from enum import Enum
+
+
+class JointType(Enum):
+    INNER = 0
+    MOUNT = 1
 
 
 # Joint between two bones that can break
@@ -10,9 +16,6 @@ class Joint:
     ):
         self.bone1 = bone1
         self.bone2 = bone2
-
-    def copy(self, bone1: BaseBone, bone2: BaseBone):
-        return Joint(bone1, bone2)
 
     def should_break(self):
         delta1 = self.bone1.get_vector()

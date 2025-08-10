@@ -1,12 +1,13 @@
-import tkinter as tk
-import json
-from enum import Enum
-
 from engine.engine import Engine
 from engine.vector import Vector
 from engine.entity import Entity
-from engine.line import NormalLine, BaseLine, AccelerationLine, Line
-from utils.convert import convert_lines, merge_entity_pairs, convert_version
+from engine.line import NormalLine, BaseLine, AccelerationLine
+from engine.bone import NormalBone, MountBone, RepelBone
+import tkinter as tk
+import json
+from enum import Enum
+from typing import Union
+from utils.convert import convert_lines, convert_riders, convert_version
 
 
 class DrawTag(Enum):
@@ -20,8 +21,8 @@ class DrawTag(Enum):
 
 
 class TrackSimulator:
-    DRAW_LINES = True
     START_FRAME = 0
+    DRAW_LINES = True
     ZOOM = 6
     MV_LENGTH = 3
     MV_WIDTH = 0.25
@@ -45,7 +46,7 @@ class TrackSimulator:
         self.track_path = track_path
         self.track = json.load(open(track_path, "r"))
         version = convert_version(self.track["version"])
-        self.entities = merge_entity_pairs(self.track["riders"])
+        self.entities = convert_riders(self.track["riders"])
         self.lines = convert_lines(self.track["lines"])
         self.engine = Engine(version, self.entities, self.lines)
 
@@ -196,7 +197,7 @@ class TrackSimulator:
         self.canvas.tag_raise(DrawTag.Text.name)
 
     def _get_origin(self, current_entity: Entity):
-        all_points = current_entity.get_overall_points()
+        all_points = current_entity.base_points
         total_x = 0
         total_y = 0
         num_points = len(all_points)
@@ -226,29 +227,28 @@ class TrackSimulator:
                 DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.FLUTTER_BONE_COLOR
             )
 
-        for bone in entity.normal_bones:
-            p1 = self._physics_to_canvas(bone.base.point1.position)
-            p2 = self._physics_to_canvas(bone.base.point2.position)
-            self._generate_line(
-                DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.NORMAL_BONE_COLOR
-            )
+        for bone in entity.structural_bones:
+            if isinstance(bone, NormalBone):
+                p1 = self._physics_to_canvas(bone.base.point1.position)
+                p2 = self._physics_to_canvas(bone.base.point2.position)
+                self._generate_line(
+                    DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.NORMAL_BONE_COLOR
+                )
 
-        if entity.is_mounted():
-            for bone in entity.mount_bones:
+            elif isinstance(bone, MountBone) and entity.state.is_mounted():
                 p1 = self._physics_to_canvas(bone.base.point1.position)
                 p2 = self._physics_to_canvas(bone.base.point2.position)
                 self._generate_line(
                     DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.MOUNT_BONE_COLOR
                 )
+            elif isinstance(bone, RepelBone):
+                p1 = self._physics_to_canvas(bone.base.point1.position)
+                p2 = self._physics_to_canvas(bone.base.point2.position)
+                self._generate_line(
+                    DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.REPEL_BONE_COLOR
+                )
 
-        for bone in entity.repel_bones:
-            p1 = self._physics_to_canvas(bone.base.point1.position)
-            p2 = self._physics_to_canvas(bone.base.point2.position)
-            self._generate_line(
-                DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.REPEL_BONE_COLOR
-            )
-
-        for point in entity.get_overall_points():
+        for point in entity.base_points:
             pos = self._physics_to_canvas(point.position)
             vel_length = point.velocity.length()
             vel_unit = Vector(0, 1)
@@ -262,7 +262,7 @@ class TrackSimulator:
                 DrawTag.Point, pos.x, pos.y, self.CP_RADIUS, color=self.CP_COLOR
             )
 
-    def _draw_line(self, line: Line):
+    def _draw_line(self, line: Union[NormalLine, AccelerationLine]):
         p1, p2 = line.base.endpoints
         if line.base.flipped:
             p1, p2 = p2, p1
@@ -330,9 +330,11 @@ class TrackSimulator:
         )
 
         rider_data_strings = [
-            f"{p.position}" for p in entities[self.focused_entity].get_overall_points()
+            f"{p.position}" for p in entities[self.focused_entity].base_points
         ]
-        rider_data_strings.insert(0, entities[self.focused_entity].mount_phase.name)
+        rider_data_strings.insert(
+            0, entities[self.focused_entity].state.mount_phase.name
+        )
 
         for i, pos_str in enumerate(rider_data_strings):
             self._generate_text(f"{pos_str}", 10, i * 25 + 25)

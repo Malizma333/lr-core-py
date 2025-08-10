@@ -1,7 +1,12 @@
 from engine.vector import Vector
 from engine.flags import LR_COM_SCARF
-
 import math
+from enum import Enum
+
+
+class PointType(Enum):
+    CONTACT = 0
+    FLUTTER = 1
 
 
 class BasePoint:
@@ -28,19 +33,11 @@ class BasePoint:
 class ContactPoint:
     def __init__(
         self,
-        base_point: BasePoint,
+        initial_position: Vector,
         friction: float,
     ):
-        self.base = base_point
+        self.base = BasePoint(initial_position, Vector(0, 0), initial_position)
         self.friction = friction
-
-    def copy(self):
-        return ContactPoint(
-            BasePoint(
-                self.base.position, self.base.velocity, self.base.previous_position
-            ),
-            self.friction,
-        )
 
     def initial_step(self, gravity: Vector):
         computed_velocity = self.base.position - self.base.previous_position
@@ -55,19 +52,11 @@ class ContactPoint:
 class FlutterPoint:
     def __init__(
         self,
-        base: BasePoint,
+        initial_position: Vector,
         air_friction: float,
     ):
-        self.base = base
+        self.base = BasePoint(initial_position, Vector(0, 0), initial_position)
         self.air_friction = air_friction
-
-    def copy(self):
-        return FlutterPoint(
-            BasePoint(
-                self.base.position, self.base.velocity, self.base.previous_position
-            ),
-            self.air_friction,
-        )
 
     # glsl pseudo-randomness
     def rand(self, seed):

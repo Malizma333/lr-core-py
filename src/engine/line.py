@@ -1,8 +1,6 @@
 from engine.vector import Vector
 from engine.point import ContactPoint
 
-from typing import Union
-
 
 class BaseLine:
     HITBOX_HEIGHT = 10
@@ -158,6 +156,3 @@ class AccelerationLine:
             return (new_position, new_previous_position)
         else:
             return (point.base.position, point.base.previous_position)
-
-
-Line = Union[NormalLine, AccelerationLine]

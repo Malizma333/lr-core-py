@@ -2,7 +2,7 @@
 
 from engine.engine import Engine, CachedFrame
 from engine.entity import MountPhase
-from utils.convert import convert_lines, merge_entity_pairs, convert_version
+from utils.convert import convert_lines, convert_riders, convert_version
 
 from typing import TypedDict, List, Optional
 from enum import Enum
@@ -90,12 +90,7 @@ class Tests:
             return False
 
         expected_entities = expected_state["entities"]
-
-        # For test cases, merge entities that don't have a defined other, for getting contact points correctly
-        for i in range(0, len(result_state.entities), 2):
-            if result_state.entities[i].other == None:
-                result_state.entities[i].other = result_state.entities[i + 1]
-        result_entities = result_state.entities[::2]
+        result_entities = result_state.entities
 
         if len(result_entities) != len(expected_entities):
             self.fail_message += "states did not match in length"
@@ -111,38 +106,27 @@ class Tests:
                     "DISMOUNTED": MountPhase.DISMOUNTED,
                     "REMOUNTING": MountPhase.REMOUNTING,
                 }
-                if result_entities[i].mount_phase != rider_state_map.get(
+                if result_entities[i].state.mount_phase != rider_state_map.get(
                     expected_entity_state["mount_state"] or "", MountPhase.MOUNTED
                 ):
                     self.fail_message += (
                         "mounted state did not match: "
-                        + f"expected {expected_entity_state['mount_state']} got {result_entities[i].mount_phase}"
+                        + f"expected {expected_entity_state['mount_state']} got {result_entities[i].state.mount_phase}"
                     )
                     return False
 
             if "sled_state" in expected_entity_state:
-                if result_entities[i].intact != (
+                if result_entities[i].state.sled_intact != (
                     (expected_entity_state["sled_state"] or "INTACT") == "INTACT"
                 ):
                     self.fail_message += (
                         "sled state did not match: "
-                        + f"expected {expected_entity_state['sled_state']} got {result_entities[i].intact}"
-                    )
-                    return False
-
-            if "rider_state" in expected_entity_state:
-                other_entity = result_entities[i].other
-                if other_entity != None and other_entity.intact != (
-                    (expected_entity_state["rider_state"] or "INTACT") == "INTACT"
-                ):
-                    self.fail_message += (
-                        "rider state did not match: "
-                        + f"expected {expected_entity_state['rider_state']} got {other_entity.intact}"
+                        + f"expected {expected_entity_state['sled_state']} got {result_entities[i].state.sled_intact}"
                     )
                     return False
 
             for j, expected_point_data in enumerate(expected_entity_state["points"]):
-                result_points = result_entities[i].get_overall_points()
+                result_points = result_entities[i].base_points
                 if len(result_points) < len(expected_entity_state):
                     self.fail_message += "entity points did not match in length"
                     return False
@@ -178,7 +162,7 @@ class Tests:
             if track_file not in self.loaded:
                 track_data = json.load(open(f"fixtures/{track_file}.track.json", "r"))
                 version = convert_version(track_data["version"])
-                entities = merge_entity_pairs(track_data["riders"])
+                entities = convert_riders(track_data["riders"])
                 lines = convert_lines(track_data["lines"])
                 self.loaded[track_file] = Engine(version, entities, lines)
 

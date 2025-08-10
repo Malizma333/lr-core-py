@@ -1,4 +1,12 @@
 from engine.point import BasePoint
+from enum import Enum
+
+
+class BoneType(Enum):
+    NORMAL = 0
+    MOUNT = 1
+    REPEL = 2
+    FLUTTER = 3
 
 
 # Common bone properties and methods
@@ -45,11 +53,6 @@ class NormalBone:
     def __init__(self, point1: BasePoint, point2: BasePoint):
         self.base = BaseBone(point1, point2, 0.5, 1)
 
-    def copy(self, point1: BasePoint, point2: BasePoint):
-        bone = NormalBone(point1, point2)
-        bone.base.rest_length = self.base.rest_length
-        return bone
-
     def process(self):
         adjustment = self.base.get_adjustment()
         self.base.update_points(adjustment)
@@ -59,11 +62,6 @@ class NormalBone:
 class RepelBone:
     def __init__(self, point1: BasePoint, point2: BasePoint, length_factor: float):
         self.base = BaseBone(point1, point2, 0.5, length_factor)
-
-    def copy(self, point1: BasePoint, point2: BasePoint):
-        bone = RepelBone(point1, point2, 1)
-        bone.base.rest_length = self.base.rest_length
-        return bone
 
     def process(self):
         adjustment = self.base.get_adjustment()
@@ -76,11 +74,6 @@ class FlutterBone:
     def __init__(self, point1: BasePoint, point2: BasePoint):
         self.base = BaseBone(point1, point2, 1, 1)
 
-    def copy(self, point1: BasePoint, point2: BasePoint):
-        bone = FlutterBone(point1, point2)
-        bone.base.rest_length = self.base.rest_length
-        return bone
-
     def process(self):
         adjustment = self.base.get_adjustment()
         self.base.update_points(adjustment)
@@ -92,11 +85,6 @@ class MountBone:
     def __init__(self, point1: BasePoint, point2: BasePoint, endurance: float):
         self.base = BaseBone(point1, point2, 0.5, 1)
         self.endurance = endurance
-
-    def copy(self, point1: BasePoint, point2: BasePoint):
-        bone = MountBone(point1, point2, self.endurance)
-        bone.base.rest_length = self.base.rest_length
-        return bone
 
     def get_intact(self, remounting: bool) -> bool:
         adjustment = self.base.get_adjustment()

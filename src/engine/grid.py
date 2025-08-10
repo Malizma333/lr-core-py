@@ -1,9 +1,8 @@
 from engine.vector import Vector
-from engine.line import Line
+from engine.line import NormalLine, AccelerationLine
 from engine.point import ContactPoint
-
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
 import math
 
 
@@ -29,11 +28,11 @@ class CellPosition:
 # A container for lines that serves as an ordered list (descending line id order)
 class GridCell:
     def __init__(self, position: CellPosition):
-        self.lines: list[Line] = []
+        self.lines: list[Union[NormalLine, AccelerationLine]] = []
         self.ids = set()
         self.position = position
 
-    def add_line(self, new_line: Line):
+    def add_line(self, new_line: Union[NormalLine, AccelerationLine]):
         for i, line in enumerate(self.lines):
             if line.base.id < new_line.base.id:
                 self.lines.insert(i, new_line)
@@ -68,7 +67,9 @@ class Grid:
                             max_found = line.base.id
         return max_found
 
-    def get_line_by_id(self, line_id: int) -> Optional[Line]:
+    def get_line_by_id(
+        self, line_id: int
+    ) -> Optional[Union[NormalLine, AccelerationLine]]:
         for cell in self.cells.values():
             if line_id in cell.ids:
                 for line in cell.lines:
@@ -76,19 +77,24 @@ class Grid:
                         return line
         return None
 
-    def add_line(self, line: Line):
+    def add_line(self, line: Union[NormalLine, AccelerationLine]):
         for position in self.get_cell_positions_between(
             line.base.endpoints[0], line.base.endpoints[1]
         ):
             self.register(line, position)
 
-    def remove_line(self, line: Line):
+    def remove_line(self, line: Union[NormalLine, AccelerationLine]):
         for position in self.get_cell_positions_between(
             line.base.endpoints[0], line.base.endpoints[1]
         ):
             self.unregister(line, position)
 
-    def move_line(self, old_point1: Vector, old_point2: Vector, line: Line):
+    def move_line(
+        self,
+        old_point1: Vector,
+        old_point2: Vector,
+        line: Union[NormalLine, AccelerationLine],
+    ):
         for position in self.get_cell_positions_between(old_point1, old_point2):
             self.unregister(line, position)
 
@@ -97,7 +103,9 @@ class Grid:
         ):
             self.register(line, position)
 
-    def register(self, line: Line, position: CellPosition):
+    def register(
+        self, line: Union[NormalLine, AccelerationLine], position: CellPosition
+    ):
         cell_key = position.get_key()
         if cell_key not in self.cells:
             self.cells[cell_key] = GridCell(
@@ -105,7 +113,9 @@ class Grid:
             )
         self.cells[cell_key].add_line(line)
 
-    def unregister(self, line: Line, position: CellPosition):
+    def unregister(
+        self, line: Union[NormalLine, AccelerationLine], position: CellPosition
+    ):
         cell_key = position.get_key()
         if cell_key in self.cells:
             self.cells[cell_key].remove_line(line.base.id)
@@ -258,7 +268,7 @@ class Grid:
         return cells
 
     def get_interacting_lines(self, point: ContactPoint):
-        interacting_lines: list[Line] = []
+        interacting_lines: list[Union[NormalLine, AccelerationLine]] = []
         # Get cells in a 3 x 3
         # May need update if line hitbox size is modified
         for x_offset in (-1, 0, 1):
