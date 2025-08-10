@@ -49,7 +49,7 @@ class Engine:
 
             for entity in new_entities:
                 # remount steps
-                entity.process_remount()
+                entity.process_remount(new_entities)
 
             self.state_cache.append(CachedFrame(new_entities))
 
