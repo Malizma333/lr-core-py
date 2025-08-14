@@ -133,10 +133,10 @@ class Entity:
         self.state = state
         self.contact_points: list[ContactPoint] = []
         self.flutter_points: list[FlutterPoint] = []
-        self.base_points: list[BasePoint] = []
+        self.points: list[BasePoint] = []
         self.structural_bones: list[Union[NormalBone, MountBone, RepelBone]] = []
         self.flutter_bones: list[FlutterBone] = []
-        self.base_bones: list[BaseBone] = []
+        self.bones: list[BaseBone] = []
         self.break_joints: list[Joint] = []
         self.mount_joints: list[Joint] = []
 
@@ -148,7 +148,7 @@ class Entity:
 
         # Create the contact points first, at their initial positions
         # Order doesn't really matter, added in this order to match linerider.com
-        # based test cases
+        # based test cases (and because hard-coded parts depend on it)
 
         # Sled points
         PEG = self.add_contact_point(Vector(0.0, 0.0), 0.8)
@@ -215,12 +215,8 @@ class Entity:
     def copy(self):
         new_entity = Entity(self.state.copy())
 
-        for i in range(len(self.base_points)):
-            new_entity.base_points[i].update_state(
-                self.base_points[i].position,
-                self.base_points[i].velocity,
-                self.base_points[i].previous_position,
-            )
+        for i in range(len(self.points)):
+            new_entity.points[i].copy(self.points[i])
 
         return new_entity
 
@@ -228,53 +224,62 @@ class Entity:
     # Full implementation should have a proper mount bone connection system
     # (likely with a template class that defines how two skeletons mount each other)
     def swap_sleds(self, other: "Entity"):
-        # TODO swap sleds and sled state
-        pass
+        SLED_POINTS = (0, 1, 2, 3)
+        if self.state.remount_version == RemountVersion.COM_V2:
+            sled_intact = self.state.sled_intact
+            self.state.sled_intact = other.state.sled_intact
+            other.state.sled_intact = sled_intact
+        for i in SLED_POINTS:
+            point = BasePoint(
+                self.points[i].position,
+                self.points[i].velocity,
+                self.points[i].previous_position,
+            )
+            self.points[i].copy(other.points[i])
+            other.points[i].copy(point)
 
     def add_contact_point(self, start_position: Vector, friction: float):
         point = ContactPoint(start_position, friction)
-        self.base_points.append(point.base)
+        self.points.append(point.base)
         self.contact_points.append(point)
-        return len(self.base_points) - 1
+        return len(self.points) - 1
 
     def add_flutter_point(self, start_position: Vector, air_friction: float):
         point = FlutterPoint(start_position, air_friction)
-        self.base_points.append(point.base)
+        self.points.append(point.base)
         self.flutter_points.append(point)
-        return len(self.base_points) - 1
+        return len(self.points) - 1
 
     def add_normal_bone(self, point1: int, point2: int):
-        bone = NormalBone(self.base_points[point1], self.base_points[point2])
-        self.base_bones.append(bone.base)
+        bone = NormalBone(self.points[point1], self.points[point2])
+        self.bones.append(bone.base)
         self.structural_bones.append(bone)
-        return len(self.base_bones) - 1
+        return len(self.bones) - 1
 
     def add_mount_bone(self, point1: int, point2: int, endurance: float):
-        bone = MountBone(self.base_points[point1], self.base_points[point2], endurance)
-        self.base_bones.append(bone.base)
+        bone = MountBone(self.points[point1], self.points[point2], endurance)
+        self.bones.append(bone.base)
         self.structural_bones.append(bone)
-        return len(self.base_bones) - 1
+        return len(self.bones) - 1
 
     def add_repel_bone(self, point1: int, point2: int, length_factor: float):
-        bone = RepelBone(
-            self.base_points[point1], self.base_points[point2], length_factor
-        )
-        self.base_bones.append(bone.base)
+        bone = RepelBone(self.points[point1], self.points[point2], length_factor)
+        self.bones.append(bone.base)
         self.structural_bones.append(bone)
-        return len(self.base_bones) - 1
+        return len(self.bones) - 1
 
     def add_flutter_bone(self, point1: int, point2: int):
-        bone = FlutterBone(self.base_points[point1], self.base_points[point2])
-        self.base_bones.append(bone.base)
+        bone = FlutterBone(self.points[point1], self.points[point2])
+        self.bones.append(bone.base)
         self.flutter_bones.append(bone)
-        return len(self.base_bones) - 1
+        return len(self.bones) - 1
 
     def add_break_joint(self, bone1: int, bone2: int):
-        joint = Joint(self.base_bones[bone1], self.base_bones[bone2])
+        joint = Joint(self.bones[bone1], self.bones[bone2])
         self.break_joints.append(joint)
 
     def add_mount_joint(self, bone1: int, bone2: int):
-        joint = Joint(self.base_bones[bone1], self.base_bones[bone2])
+        joint = Joint(self.bones[bone1], self.bones[bone2])
         self.mount_joints.append(joint)
 
     def process_initial_points(self, gravity: Vector):
@@ -300,7 +305,7 @@ class Entity:
 
     def process_collisions(self, grid: Grid):
         for point in self.contact_points:
-            interacting_lines = grid.get_interacting_lines(point)
+            interacting_lines = grid.get_lines_near_position(point.base.position)
             for line in interacting_lines:
                 new_pos, new_prev_pos = line.interact(point)
                 point.base.update_state(new_pos, point.base.velocity, new_prev_pos)

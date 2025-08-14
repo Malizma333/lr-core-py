@@ -22,6 +22,9 @@ class BasePoint:
         # It is used to track effects of friction, acceleration, and other collision forces
         self.previous_position = previous_position.copy()
 
+    def copy(self, other: "BasePoint"):
+        self.update_state(other.position, other.velocity, other.previous_position)
+
     # Function used to update contact points, as multiple properties often get updated at once
     def update_state(self, new_pos: Vector, new_vel: Vector, new_prev_pos: Vector):
         self.position = new_pos.copy()

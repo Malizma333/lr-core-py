@@ -21,7 +21,7 @@ class DrawTag(Enum):
 
 
 class TrackSimulator:
-    START_FRAME = 0
+    START_FRAME = 61
     DRAW_LINES = True
     ZOOM = 6
     MV_LENGTH = 3
@@ -197,7 +197,7 @@ class TrackSimulator:
         self.canvas.tag_raise(DrawTag.Text.name)
 
     def _get_origin(self, current_entity: Entity):
-        all_points = current_entity.base_points
+        all_points = current_entity.points
         total_x = 0
         total_y = 0
         num_points = len(all_points)
@@ -248,7 +248,7 @@ class TrackSimulator:
                     DrawTag.Bone, self.BONE_WIDTH, p1, p2, color=self.REPEL_BONE_COLOR
                 )
 
-        for point in entity.base_points:
+        for point in entity.points:
             pos = self._physics_to_canvas(point.position)
             vel_length = point.velocity.length()
             vel_unit = Vector(0, 1)
@@ -330,7 +330,7 @@ class TrackSimulator:
         )
 
         rider_data_strings = [
-            f"{p.position}" for p in entities[self.focused_entity].base_points
+            f"{p.position}" for p in entities[self.focused_entity].points
         ]
         rider_data_strings.insert(
             0, entities[self.focused_entity].state.mount_phase.name
@@ -401,4 +401,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/dismount.track.json")
+    TrackSimulator("fixtures/grid_62.track.json")

@@ -31,7 +31,7 @@ def create_default_rider(
     sin_theta = math.sin(init_state["ROTATION"] * math.pi / 180)
     origin = entity.contact_points[1].base.position  # Hardcoded to be tail
 
-    for point in entity.base_points:
+    for point in entity.points:
         offset = point.position - origin
         point.update_state(
             Vector(
@@ -42,7 +42,7 @@ def create_default_rider(
             point.previous_position,
         )
 
-    for point in entity.base_points:
+    for point in entity.points:
         start_position = point.position + init_state["POSITION"]
         start_velocity = point.velocity + init_state["VELOCITY"]
         point.update_state(

@@ -10,7 +10,7 @@ import json
 import sys
 
 # Test flags to filter results
-MAX_FRAME: Optional[int] = 80
+MAX_FRAME: Optional[int] = None
 TARGET_TESTS: Optional[tuple[int, int]] = None
 
 
@@ -126,7 +126,7 @@ class Tests:
                     return False
 
             for j, expected_point_data in enumerate(expected_entity_state["points"]):
-                result_points = result_entities[i].base_points
+                result_points = result_entities[i].points
                 if len(result_points) < len(expected_entity_state):
                     self.fail_message += "entity points did not match in length"
                     return False

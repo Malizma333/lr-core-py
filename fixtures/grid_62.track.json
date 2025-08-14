@@ -1,5 +1,5 @@
 {
-  "label": "shuffle_sleds",
+  "label": "grid_62",
   "creator": "",
   "description": "",
   "duration": 400,
@@ -11,21 +11,6 @@
       "startPosition": { "x": 0, "y": 0 },
       "startVelocity": { "x": 0.4, "y": 0 },
       "remountable": 1
-    },
-    {
-      "startVelocity": { "x": 0.4, "y": 0 },
-      "remountable": 1,
-      "startPosition": { "x": -1, "y": 0 }
-    },
-    {
-      "startVelocity": { "x": 0.4, "y": 0 },
-      "remountable": 1,
-      "startPosition": { "x": -2, "y": 0 }
-    },
-    {
-      "startVelocity": { "x": 0.4, "y": 0 },
-      "remountable": 1,
-      "startPosition": { "x": -3, "y": 0 }
     }
   ],
   "layers": [

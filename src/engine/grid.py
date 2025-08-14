@@ -159,9 +159,9 @@ class Grid:
 
             if curr_cell_pos.y < 0:
                 if line_vector.y > 0:
-                    delta_y = self.cell_size + curr_cell_pos.remainder.x
+                    delta_y = self.cell_size + curr_cell_pos.remainder.y
                 else:
-                    delta_y = -(self.cell_size + curr_cell_pos.remainder.x)
+                    delta_y = -(self.cell_size + curr_cell_pos.remainder.y)
 
         if line_vector.x == 0:
             next_pos = Vector(curr_pos.x, curr_pos.y + delta_y)
@@ -179,8 +179,8 @@ class Grid:
             else:
                 next_pos = Vector(next_x, curr_pos.y + delta_y)
         else:
-            y_based_delta_x = delta_y * line_vector.x / line_vector.y
-            x_based_delta_y = delta_x * line_vector.y / line_vector.x
+            y_based_delta_x = delta_y * (line_vector.x / line_vector.y)
+            x_based_delta_y = delta_x * (line_vector.y / line_vector.x)
             next_x = curr_pos.x + y_based_delta_x
             next_y = curr_pos.y + x_based_delta_y
             if abs(x_based_delta_y) < abs(delta_y):
@@ -267,19 +267,21 @@ class Grid:
 
         return cells
 
-    def get_interacting_lines(self, point: ContactPoint):
+    def get_lines_near_position(self, position: Vector):
         interacting_lines: list[Union[NormalLine, AccelerationLine]] = []
         # Get cells in a 3 x 3
         # May need update if line hitbox size is modified
         for x_offset in (-1, 0, 1):
             for y_offset in (-1, 0, 1):
                 cell = self.get_cell(
-                    point.base.position + self.cell_size * Vector(x_offset, y_offset)
+                    position + self.cell_size * Vector(x_offset, y_offset)
                 )
 
-                if cell != None:
-                    for line in cell.lines:
-                        # Intentionally contains duplicates, ordered by id
-                        interacting_lines.append(line)
+                if cell == None:
+                    continue
+
+                for line in cell.lines:
+                    # Intentionally contains duplicates, ordered by id
+                    interacting_lines.append(line)
 
         return interacting_lines

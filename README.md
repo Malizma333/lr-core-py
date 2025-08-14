@@ -13,17 +13,16 @@ Thanks to:
 
 Current features:
 - 6.0, 6.1, 6.2 grid implementations
-- 6.7 gravity fix
+- 6.3 / 6.7 gravity fix
 - rider bones, points, and bindings
 - line extensions, flipped lines, acceleration multipliers
 - multiple riders
 - flash scarf physics
 - linerider.com scarf physics (approximation)
-- linerider.com remounting
+- linerider.com remounting (with multirider support)
 
 Planned TODOs:
 - Remount implementation
-  - Multirider Linerider.com
   - LRA:CE
 - Beta 2 mod features
   - Windboxes
