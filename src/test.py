@@ -2,7 +2,7 @@
 
 from engine.engine import Engine, CachedFrame
 from engine.entity import MountPhase
-from utils.convert import convert_lines, convert_riders, convert_version
+from utils.convert import convert_track
 
 from typing import TypedDict, List, Optional
 from enum import Enum
@@ -11,7 +11,7 @@ import sys
 
 # Test flags to filter results
 MAX_FRAME: Optional[int] = None
-TARGET_TESTS: Optional[tuple[int, int]] = None
+TARGET_TESTS: Optional[tuple[int, int]] = (27, 30)
 
 
 # This is not enforced at runtime, but useful for documentation
@@ -161,10 +161,7 @@ class Tests:
 
             if track_file not in self.loaded:
                 track_data = json.load(open(f"fixtures/{track_file}.track.json", "r"))
-                version = convert_version(track_data["version"])
-                entities = convert_riders(track_data["riders"])
-                lines = convert_lines(track_data["lines"])
-                self.loaded[track_file] = Engine(version, entities, lines)
+                self.loaded[track_file] = convert_track(track_data)
 
             engine = self.loaded[track_file]
             format_string = "{:<2} {:<5} {:<25} {}"

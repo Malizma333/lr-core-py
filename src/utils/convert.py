@@ -3,10 +3,10 @@
 from engine.vector import Vector
 from engine.grid import GridVersion
 from engine.line import NormalLine, AccelerationLine, BaseLine
-from engine.flags import LRA_REMOUNT
 from engine.entity import Entity, RemountVersion, EntityState
+from engine.engine import Engine
 import math
-from typing import TypedDict, Union
+from typing import TypedDict, Union, Any
 
 
 class InitialEntityParams(TypedDict):
@@ -75,7 +75,7 @@ def convert_lines(lines: list):
     return converted_lines
 
 
-def convert_riders(riders: list) -> list[Entity]:
+def convert_riders(riders: list, LRA: bool) -> list[Entity]:
     converted_entities: list[Entity] = []
     for rider in riders:
         mount_joint_version = RemountVersion.NONE
@@ -87,7 +87,7 @@ def convert_riders(riders: list) -> list[Entity]:
             mount_joint_version = RemountVersion.COM_V2
 
         # Override remount version
-        if LRA_REMOUNT:
+        if LRA:
             mount_joint_version = RemountVersion.LRA
 
         initial_state: InitialEntityParams = {
@@ -117,3 +117,12 @@ def convert_version(grid_version_string: str) -> GridVersion:
     }
 
     return grid_version_mapping.get(grid_version_string, GridVersion.V6_2)
+
+
+def convert_track(track_data: dict[str, Any]):
+    version = convert_version(track_data["version"])
+    entities = convert_riders(
+        track_data["riders"], track_data.get("USE_LRA_MOUNT_PHYSICS", False)
+    )
+    lines = convert_lines(track_data["lines"])
+    return Engine(version, entities, lines)

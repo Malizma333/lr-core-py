@@ -285,3 +285,13 @@ class Grid:
                     interacting_lines.append(line)
 
         return interacting_lines
+
+    def get_all_lines(self):
+        seen = set()
+        lines = []
+        for cell in self.cells.values():
+            for line in cell.lines:
+                if line.base.id not in seen:
+                    lines.append(line)
+                    seen.add(line.base.id)
+        return lines

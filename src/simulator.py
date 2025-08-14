@@ -7,7 +7,7 @@ import tkinter as tk
 import json
 from enum import Enum
 from typing import Union
-from utils.convert import convert_lines, convert_riders, convert_version
+from utils.convert import convert_track
 
 
 class DrawTag(Enum):
@@ -45,10 +45,13 @@ class TrackSimulator:
     def __init__(self, track_path: str):
         self.track_path = track_path
         self.track = json.load(open(track_path, "r"))
-        version = convert_version(self.track["version"])
-        self.entities = convert_riders(self.track["riders"])
-        self.lines = convert_lines(self.track["lines"])
-        self.engine = Engine(version, self.entities, self.lines)
+        self.engine = convert_track(self.track)
+        frame = self.engine.get_frame(0)
+        if frame == None:
+            self.entities = []
+        else:
+            self.entities = frame.entities
+        self.lines = self.engine.grid.get_all_lines()
 
         self.root = tk.Tk()
         self.root.title("Line Rider Python Engine")
@@ -401,4 +404,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/grid_62.track.json")
+    TrackSimulator("fixtures/lra_shoulder_fakie.track.json")

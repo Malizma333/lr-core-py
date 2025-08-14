@@ -1,0 +1,62 @@
+{
+  "USE_LRA_MOUNT_PHYSICS": true,
+  "label": "lra_shoulder_fakie",
+  "creator": "",
+  "description": "",
+  "duration": 1200,
+  "version": "6.2",
+  "audio": null,
+  "startPosition": { "x": 0, "y": 0 },
+  "riders": [
+    {
+      "startPosition": { "x": 0, "y": 0 },
+      "startVelocity": { "x": 0.4, "y": 0 },
+      "remountable": true
+    }
+  ],
+  "layers": [
+    {
+      "id": 0,
+      "type": 0,
+      "name": "#000000Base Layer",
+      "visible": true,
+      "editable": true,
+      "folderId": -1
+    }
+  ],
+  "lines": [
+    {
+      "id": 1,
+      "type": 0,
+      "x1": 12.99048699680094,
+      "y1": 5.643786648502385,
+      "x2": 19.62324563426681,
+      "y2": 0.6891958590700487,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    },
+    {
+      "id": 2,
+      "type": 0,
+      "x1": -1.9055313133485439,
+      "y1": 79.42536146337392,
+      "x2": -1.8624557752858832,
+      "y2": 79.42485162891434,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    },
+    {
+      "id": 3,
+      "type": 0,
+      "x1": -2.9056026108258375,
+      "y1": 83.86317784592941,
+      "x2": -2.862527072763177,
+      "y2": 83.86266801146984,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    }
+  ]
+}

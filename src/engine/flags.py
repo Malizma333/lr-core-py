@@ -9,11 +9,3 @@ LR_COM_SCARF = False
 # but other than that they work identically to 6.2 physics
 # (try loading phunner.track.json 21 seconds in)
 GRAVITY_FIX = False
-
-# LRA dismount does not work exactly the same as flash and linerider.com
-# - sled breaks for shoulder fakie (which it shouldn't, according to flash)
-# - sled doesn't ever break if bosh is dismounted (which it should still do for tail fakies, according to current .com)
-LRA_LEGACY_FAKIE_CHECK = False
-
-# LRA remount is implemented completely differently from linerider.com
-LRA_REMOUNT = False

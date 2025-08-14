@@ -3,7 +3,7 @@ from engine.vector import Vector
 from engine.point import ContactPoint, FlutterPoint, BasePoint
 from engine.bone import NormalBone, RepelBone, MountBone, FlutterBone, BaseBone
 from engine.joint import Joint
-from engine.flags import LRA_LEGACY_FAKIE_CHECK, LR_COM_SCARF
+from engine.flags import LR_COM_SCARF
 from enum import Enum
 from typing import Union
 
@@ -322,13 +322,13 @@ class Entity:
             if joint.should_break() and not self.dismounted_this_frame:
                 self.dismounted_this_frame = True
                 self.state.dismount()
-                if LRA_LEGACY_FAKIE_CHECK:
+                if self.state.remount_version == RemountVersion.LRA:
                     # LRA also breaks sled on mount joint break
                     self.state.break_sled()
 
     def process_break_joints(self):
         if (
-            LRA_LEGACY_FAKIE_CHECK
+            self.state.remount_version == RemountVersion.LRA
             or self.state.remount_version == RemountVersion.COM_V1
         ):
             # Don't process joints if dismounted
@@ -364,6 +364,11 @@ class Entity:
             or self.state.remount_enabled == False
         ):
             return
+
+        if self.state.remount_version == RemountVersion.LRA:
+            if not self.state.sled_intact:
+                self.state.enter_mount_phase(MountPhase.DISMOUNTED, False)
+                return
 
         if self.dismounted_this_frame:
             self.dismounted_this_frame = False
