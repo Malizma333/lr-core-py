@@ -7,8 +7,6 @@ from engine.flags import LR_COM_SCARF
 from enum import Enum
 from typing import Union
 
-REMOUNT_ENDURANCE_FACTOR = 2
-
 
 class MountPhase(Enum):
     # Connected to another entity
