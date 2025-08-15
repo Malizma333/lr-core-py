@@ -53,9 +53,9 @@ class NormalBone:
     def __init__(self, point1: BasePoint, point2: BasePoint):
         self.base = BaseBone(point1, point2, 0.5, 1)
 
-    def process(self):
+    def process(self, adjustment_strength: float):
         adjustment = self.base.get_adjustment()
-        self.base.update_points(adjustment)
+        self.base.update_points(adjustment * adjustment_strength)
 
 
 # Bones designed to only repel points after a certain rest length is reached
@@ -63,11 +63,10 @@ class RepelBone:
     def __init__(self, point1: BasePoint, point2: BasePoint, length_factor: float):
         self.base = BaseBone(point1, point2, 0.5, length_factor)
 
-    def process(self):
+    def process(self, adjustment_strength: float):
         adjustment = self.base.get_adjustment()
-
         if self.base.get_vector().length() < self.base.rest_length:
-            self.base.update_points(adjustment)
+            self.base.update_points(adjustment * adjustment_strength)
 
 
 class FlutterBone:
@@ -86,23 +85,12 @@ class MountBone:
         self.base = BaseBone(point1, point2, 0.5, 1)
         self.endurance = endurance
 
-    def get_intact(self, remounting: bool) -> bool:
+    def get_intact(self, endurance_multiplier: float) -> bool:
         adjustment = self.base.get_adjustment()
-
-        if remounting:
-            endurance = self.endurance * 2
-        else:
-            endurance = self.endurance
-
+        endurance = self.endurance * endurance_multiplier
         return adjustment <= endurance * self.base.rest_length
 
-    def process(self, remounting: bool):
+    def process(self, adjustment_strength: float, endurance_multiplier: float):
         adjustment = self.base.get_adjustment()
-
-        if remounting:
-            adjustment_strength = 0.1
-        else:
-            adjustment_strength = 1
-
-        if self.get_intact(remounting):
+        if self.get_intact(endurance_multiplier):
             self.base.update_points(adjustment * adjustment_strength)

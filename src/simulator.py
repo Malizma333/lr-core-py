@@ -21,7 +21,7 @@ class DrawTag(Enum):
 
 
 class TrackSimulator:
-    START_FRAME = 61
+    START_FRAME = 8 * 40 + 19
     DRAW_LINES = True
     ZOOM = 6
     MV_LENGTH = 3
@@ -404,4 +404,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/lra_shoulder_fakie.track.json")
+    TrackSimulator("fixtures/lra_remount.track.json")

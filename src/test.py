@@ -11,7 +11,7 @@ import sys
 
 # Test flags to filter results
 MAX_FRAME: Optional[int] = None
-TARGET_TESTS: Optional[tuple[int, int]] = (55, 100)
+TARGET_TESTS: Optional[tuple[int, int]] = None
 
 
 # This is not enforced at runtime, but useful for documentation
