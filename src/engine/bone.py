@@ -85,12 +85,14 @@ class MountBone:
         self.base = BaseBone(point1, point2, 0.5, 1)
         self.endurance = endurance
 
-    def get_intact(self, endurance_multiplier: float) -> bool:
+    def get_intact(self, remounting: bool) -> bool:
         adjustment = self.base.get_adjustment()
-        endurance = self.endurance * endurance_multiplier
+        endurance = self.endurance
+        if remounting:
+            endurance *= 2
         return adjustment <= endurance * self.base.rest_length
 
-    def process(self, adjustment_strength: float, endurance_multiplier: float):
+    def process(self, adjustment_strength: float, remounting: bool):
         adjustment = self.base.get_adjustment()
-        if self.get_intact(endurance_multiplier):
+        if self.get_intact(remounting):
             self.base.update_points(adjustment * adjustment_strength)

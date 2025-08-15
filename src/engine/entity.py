@@ -7,6 +7,8 @@ from engine.flags import LR_COM_SCARF
 from enum import Enum
 from typing import Union
 
+REMOUNT_ENDURANCE_FACTOR = 2
+
 
 class MountPhase(Enum):
     # Connected to another entity
@@ -54,9 +56,7 @@ class EntityState:
     def available_to_swap_sled(self):
         return self.sled_intact and not self.is_mounted()
 
-    def can_enter_remounting(
-        self, entity: "Entity", other_entities: list["Entity"], remount_endurance: float
-    ):
+    def can_enter_remounting(self, entity: "Entity", other_entities: list["Entity"]):
         for other_entity in other_entities:
             if not other_entity.state.available_to_swap_sled():
                 continue
@@ -64,7 +64,7 @@ class EntityState:
             # Swap sleds to check entity can safely remount
             entity.swap_sleds(other_entity)
 
-            if self.can_enter_mount_phase(entity, remount_endurance):
+            if self.can_enter_mount_phase(entity, MountPhase.REMOUNTING):
                 return True
 
             # Swap sleds back if we failed
@@ -74,10 +74,10 @@ class EntityState:
 
     # Checks if either remounting or mounted states can be entered by checking
     # that the bone stays intact with different strength/endurance remount values
-    def can_enter_mount_phase(self, entity: "Entity", endurance_multiplier: float):
+    def can_enter_mount_phase(self, entity: "Entity", mount_phase: MountPhase):
         for bone in entity.structural_bones:
             if isinstance(bone, MountBone):
-                intact = bone.get_intact(endurance_multiplier)
+                intact = bone.get_intact(mount_phase == MountPhase.REMOUNTING)
                 if not intact:
                     return False
 
@@ -131,11 +131,6 @@ class EntityState:
 # connection class for how to connect those skeleton entities with mount bones
 # and mount joints
 class Entity:
-    # TODO refactor scope of these
-    REMOUNT_ENDURANCE_MULTIPLIER = 2.0
-    REMOUNT_STRENGTH_MULTIPLIER = 0.1
-    LRA_REMOUNT_STRENGTH_MULTIPLIER = 0.5
-
     def __init__(self, state: EntityState):
         self.state = state
         self.contact_points: list[ContactPoint] = []
@@ -296,40 +291,41 @@ class Entity:
         for point in self.flutter_points:
             point.initial_step(gravity)
 
-    def process_bones(self, current_frame_phase: MountPhase):
+    def process_bones(self, initial_phase: MountPhase):
+        REMOUNT_STRENGTH_FACTOR = 0.1
+        LRA_REMOUNT_STRENGTH_FACTOR = 0.5
+
         for bone in self.structural_bones:
             if isinstance(bone, NormalBone) or isinstance(bone, RepelBone):
                 if (
                     self.state.remount_version == RemountVersion.LRA
-                    and current_frame_phase == MountPhase.REMOUNTING
+                    and initial_phase == MountPhase.REMOUNTING
                 ):
                     # Non-mount bones are affected by strength multiplier in LRA remounting
-                    bone.process(self.LRA_REMOUNT_STRENGTH_MULTIPLIER)
+                    strength = LRA_REMOUNT_STRENGTH_FACTOR
                 else:
-                    bone.process(1)
+                    strength = 1
+
+                bone.process(strength)
             else:
                 if self.state.is_mounted():
+                    # LRA uses the mount phase known at the start of this frame,
+                    # while .com uses the current mount phase (which can change)
                     if (
                         self.state.remount_version == RemountVersion.LRA
-                        and current_frame_phase == MountPhase.REMOUNTING
+                        and initial_phase == MountPhase.REMOUNTING
                     ):
-                        intact = bone.get_intact(self.REMOUNT_ENDURANCE_MULTIPLIER)
-                        bone.process(
-                            self.LRA_REMOUNT_STRENGTH_MULTIPLIER,
-                            self.REMOUNT_ENDURANCE_MULTIPLIER,
-                        )
+                        intact = bone.get_intact(True)
+                        bone.process(LRA_REMOUNT_STRENGTH_FACTOR, True)
                     elif (
                         self.state.remount_version != RemountVersion.LRA
                         and self.state.mount_phase == MountPhase.REMOUNTING
                     ):
-                        intact = bone.get_intact(self.REMOUNT_ENDURANCE_MULTIPLIER)
-                        bone.process(
-                            self.REMOUNT_STRENGTH_MULTIPLIER,
-                            self.REMOUNT_ENDURANCE_MULTIPLIER,
-                        )
+                        intact = bone.get_intact(True)
+                        bone.process(REMOUNT_STRENGTH_FACTOR, True)
                     else:
-                        intact = bone.get_intact(1)
-                        bone.process(1, 1)
+                        intact = bone.get_intact(False)
+                        bone.process(1, False)
 
                     if not intact and not self.dismounted_this_frame:
                         self.dismounted_this_frame = True
@@ -375,10 +371,10 @@ class Entity:
         # momentum
         self.process_initial_points(gravity)
 
-        current_frame_phase = self.state.mount_phase
+        initial_phase = self.state.mount_phase
         for _ in range(6):
             # bones
-            self.process_bones(current_frame_phase)
+            self.process_bones(initial_phase)
             # line collisions
             self.process_collisions(grid)
 
@@ -415,9 +411,7 @@ class Entity:
                 else:
                     self.state.frames_until_dismounted -= 1
             elif self.state.mount_phase == MountPhase.DISMOUNTED:
-                if self.state.can_enter_remounting(
-                    self, other_entities, self.REMOUNT_ENDURANCE_MULTIPLIER
-                ):
+                if self.state.can_enter_remounting(self, other_entities):
                     if self.state.frames_until_remounting <= 0:
                         self.state.enter_mount_phase(MountPhase.REMOUNTING, True)
                     else:
@@ -425,7 +419,7 @@ class Entity:
                 else:
                     self.state.enter_mount_phase(MountPhase.DISMOUNTED, True)
             else:
-                if self.state.can_enter_mount_phase(self, 1):
+                if self.state.can_enter_mount_phase(self, MountPhase.MOUNTED):
                     if self.state.frames_until_mounted <= 0:
                         self.state.enter_mount_phase(MountPhase.MOUNTED, True)
                     else:
@@ -440,16 +434,14 @@ class Entity:
                 if self.state.frames_until_dismounted <= 0:
                     self.state.enter_mount_phase(MountPhase.DISMOUNTED, True)
             elif self.state.mount_phase == MountPhase.DISMOUNTED:
-                if self.state.can_enter_remounting(
-                    self, other_entities, self.REMOUNT_ENDURANCE_MULTIPLIER
-                ):
+                if self.state.can_enter_remounting(self, other_entities):
                     self.state.frames_until_remounting -= 1
                 else:
                     self.state.enter_mount_phase(MountPhase.DISMOUNTED, True)
                 if self.state.frames_until_remounting <= 0:
                     self.state.enter_mount_phase(MountPhase.REMOUNTING, True)
             else:
-                if self.state.can_enter_mount_phase(self, 1):
+                if self.state.can_enter_mount_phase(self, MountPhase.MOUNTED):
                     self.state.frames_until_mounted -= 1
                 else:
                     self.state.enter_mount_phase(MountPhase.REMOUNTING, True)
