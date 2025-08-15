@@ -21,8 +21,8 @@ class DrawTag(Enum):
 
 
 class TrackSimulator:
-    START_FRAME = 8 * 40 + 19
-    DRAW_LINES = True
+    START_FRAME = 69 * 40
+    DRAW_LINES = False
     ZOOM = 6
     MV_LENGTH = 3
     MV_WIDTH = 0.25
@@ -404,4 +404,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/lra_remount.track.json")
+    TrackSimulator("fixtures/fakie_park_autumn.track.json")
