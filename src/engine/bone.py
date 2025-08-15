@@ -86,10 +86,11 @@ class MountBone:
         self.endurance = endurance
 
     def get_intact(self, remounting: bool) -> bool:
+        REMOUNT_ENDURANCE_FACTOR = 2
         adjustment = self.base.get_adjustment()
         endurance = self.endurance
         if remounting:
-            endurance *= 2
+            endurance *= REMOUNT_ENDURANCE_FACTOR
         return adjustment <= endurance * self.base.rest_length
 
     def process(self, adjustment_strength: float, remounting: bool):
