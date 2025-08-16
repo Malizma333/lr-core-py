@@ -6,12 +6,12 @@ import math
 import sys
 from pathlib import Path
 from typing import Optional, Dict, Any
-from engine.grid import CellPosition
+from engine.grid import CellPosition, Grid, GridVersion
 from engine.vector import Vector
 from utils.create_fixture_test import sanitize, create_fixture_test
 
 # Caps the engine test cases that get included based on frame * rider calculations
-MAX_ENGINE_CALCS: Optional[int] = 500
+MAX_ENGINE_CALCS: Optional[int] = 0
 
 
 class ColorTestResult(unittest.TextTestResult):
@@ -39,6 +39,10 @@ class ColorTextTestRunner(unittest.TextTestRunner):
 
 
 class TestGrid(unittest.TestCase):
+    def setUp(self) -> None:
+        self.grid_62 = Grid(GridVersion.V6_2, 14)
+        self.grid_61 = Grid(GridVersion.V6_1, 14)
+
     def test_cellposition_hashes_unique(self):
         """Ensure CellPosition.get_key() produces unique keys for signed integer pairs"""
         seen = {}
@@ -51,6 +55,44 @@ class TestGrid(unittest.TestCase):
                     f"Duplicate key {key} for {(i, j)} and {seen.get(key)}",
                 )
                 seen[key] = (i, j)
+
+    def _run_cases(self, grid: Grid, cases: list, engine_name: str):
+        for _, case in enumerate(cases):
+            with self.subTest(engine=engine_name, case=case["name"]):
+                x1, y1, x2, y2 = case["input"]
+                cell_positions = grid.get_cell_positions_between(
+                    Vector(x1, y1), Vector(x2, y2)
+                )
+
+                expected = case["output"]
+                self.assertEqual(
+                    len(cell_positions),
+                    len(expected),
+                    f"{engine_name}:{case['name']} length mismatch "
+                    f"(got {len(cell_positions)}, expected {len(expected)})",
+                )
+
+                for j, exp in enumerate(expected):
+                    self.assertEqual(
+                        cell_positions[j].x,
+                        exp[0],
+                        f"{engine_name}:{case['name']} point {j} x mismatch "
+                        f"(got {cell_positions[j].x}, expected {exp[0]})",
+                    )
+                    self.assertEqual(
+                        cell_positions[j].y,
+                        exp[1],
+                        f"{engine_name}:{case['name']} point {j} y mismatch "
+                        f"(got {cell_positions[j].y}, expected {exp[1]})",
+                    )
+
+    def test_grid_62_cases(self):
+        grid_tests = json.loads(Path("grid_62_tests.json").read_text())
+        self._run_cases(self.grid_62, grid_tests, "grid_62")
+
+    def test_grid_61_cases(self):
+        grid_tests = json.loads(Path("grid_61_tests.json").read_text())
+        self._run_cases(self.grid_61, grid_tests, "grid_61")
 
 
 class TestVector(unittest.TestCase):

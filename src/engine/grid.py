@@ -219,13 +219,13 @@ class Grid:
         curr_pos = point1.copy()
         curr_cell_pos = initial_cell
 
-        line_vector = point2 - point1
-        line_normal_unit = line_vector.rot_ccw() * (1 / line_vector.length())
-
         if (point1.x == point2.x and point1.y == point2.y) or (
             initial_cell.x == final_cell.x and initial_cell.y == final_cell.y
         ):
             return [initial_cell]
+
+        line_vector = point2 - point1
+        line_normal_unit = line_vector.rot_ccw() * (1 / line_vector.length())
 
         if self.version == GridVersion.V6_0:
             # Reference: https://github.com/kevansevans/OpenLR/blob/542bb76e85aff820ae720cfc0d5af1bb4eb50969/src/hxlr/engine/Grid.hx#L251

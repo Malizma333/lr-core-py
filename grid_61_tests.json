@@ -1,0 +1,431 @@
+[
+  { "name": "zero_length_line", "input": [0, 0, 0, 0], "output": [[0, 0]] },
+  {
+    "name": "short_diagonal_inside_same_cell",
+    "input": [1, 1, 13, 13],
+    "output": [[0, 0]]
+  },
+  {
+    "name": "horizontal_positive_x",
+    "input": [0, 0, 28, 0],
+    "output": [
+      [0, 0],
+      [1, 0],
+      [2, 0]
+    ]
+  },
+  {
+    "name": "vertical_positive_y",
+    "input": [0, 0, 0, 28],
+    "output": [
+      [0, 0],
+      [0, 1],
+      [0, 2]
+    ]
+  },
+  {
+    "name": "diagonal_positive_xy",
+    "input": [0, 0, 28, 28],
+    "output": [
+      [0, 0],
+      [1, 1],
+      [2, 2]
+    ]
+  },
+  {
+    "name": "shallow_slope_positive",
+    "input": [7, 7, 35, 21],
+    "output": [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+      [2, 1]
+    ]
+  },
+  {
+    "name": "shallow_slope_positive_reversed",
+    "input": [35, 21, 7, 7],
+    "output": [
+      [2, 1],
+      [1, 1],
+      [1, 0],
+      [0, 0]
+    ]
+  },
+  {
+    "name": "steep_slope_positive",
+    "input": [7, 7, 21, 35],
+    "output": [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 2]
+    ]
+  },
+  {
+    "name": "steep_slope_positive_reversed",
+    "input": [21, 35, 7, 7],
+    "output": [
+      [1, 2],
+      [1, 1],
+      [0, 1],
+      [0, 0]
+    ]
+  },
+  {
+    "name": "shallow_diagonal_positive_offset",
+    "input": [13, 1, 27, 15],
+    "output": [
+      [0, 0],
+      [1, 0],
+      [1, 1]
+    ]
+  },
+  {
+    "name": "steep_diagonal_positive_offset",
+    "input": [1, 13, 15, 27],
+    "output": [
+      [0, 0],
+      [0, 1],
+      [1, 1]
+    ]
+  },
+  {
+    "name": "shallow_diagonal_negative_x",
+    "input": [-13, 1, -27, 15],
+    "output": [
+      [-1, 0],
+      [-2, 0],
+      [-2, 1]
+    ]
+  },
+  {
+    "name": "steep_diagonal_negative_x",
+    "input": [-1, 13, -15, 27],
+    "output": [
+      [-1, 0],
+      [-1, 1],
+      [-2, 1]
+    ]
+  },
+  {
+    "name": "short_diagonal_negative_x_inside_same_cell",
+    "input": [-1, 1, -13, 13],
+    "output": [[-1, 0]]
+  },
+  {
+    "name": "horizontal_negative_x",
+    "input": [0, 0, -28, 0],
+    "output": [
+      [0, 0],
+      [-1, 0],
+      [-2, 0]
+    ]
+  },
+  {
+    "name": "vertical_positive_y_again",
+    "input": [0, 0, 0, 28],
+    "output": [
+      [0, 0],
+      [0, 1],
+      [0, 2]
+    ]
+  },
+  {
+    "name": "diagonal_negative_x_positive_y",
+    "input": [0, 0, -28, 28],
+    "output": [
+      [0, 0],
+      [-1, 0],
+      [-1, 1],
+      [-2, 1],
+      [-2, 2]
+    ]
+  },
+  {
+    "name": "shallow_slope_negative_x",
+    "input": [-7, 7, -35, 21],
+    "output": [
+      [-1, 0],
+      [-2, 0],
+      [-2, 1],
+      [-3, 1]
+    ]
+  },
+  {
+    "name": "shallow_slope_negative_x_reversed",
+    "input": [-35, 21, -7, 7],
+    "output": [
+      [-3, 1],
+      [-2, 1],
+      [-2, 0],
+      [-1, 0]
+    ]
+  },
+  {
+    "name": "steep_slope_negative_x",
+    "input": [-7, 7, -21, 35],
+    "output": [
+      [-1, 0],
+      [-1, 1],
+      [-2, 1],
+      [-2, 2]
+    ]
+  },
+  {
+    "name": "steep_slope_negative_x_reversed",
+    "input": [-21, 35, -7, 7],
+    "output": [
+      [-2, 2],
+      [-2, 1],
+      [-1, 1],
+      [-1, 0]
+    ]
+  },
+  {
+    "name": "shallow_diagonal_positive_y_negative_offset",
+    "input": [13, -1, 27, -15],
+    "output": [
+      [0, -1],
+      [1, -1],
+      [1, -2]
+    ]
+  },
+  {
+    "name": "steep_diagonal_positive_y_negative_offset",
+    "input": [1, -13, 15, -27],
+    "output": [
+      [0, -1],
+      [0, -2],
+      [1, -2]
+    ]
+  },
+  {
+    "name": "shallow_diagonal_negative_xy",
+    "input": [-13, -1, -27, -15],
+    "output": [
+      [-1, -1],
+      [-2, -1],
+      [-2, -2]
+    ]
+  },
+  {
+    "name": "steep_diagonal_negative_xy",
+    "input": [-1, -13, -15, -27],
+    "output": [
+      [-1, -1],
+      [-1, -2],
+      [-2, -2]
+    ]
+  },
+  {
+    "name": "short_diagonal_negative_xy_inside_same_cell",
+    "input": [-1, -1, -13, -13],
+    "output": [[-1, -1]]
+  },
+  {
+    "name": "horizontal_negative_x_again",
+    "input": [0, 0, -28, 0],
+    "output": [
+      [0, 0],
+      [-1, 0],
+      [-2, 0]
+    ]
+  },
+  {
+    "name": "vertical_negative_y",
+    "input": [0, 0, 0, -28],
+    "output": [
+      [0, 0],
+      [0, -1],
+      [0, -2]
+    ]
+  },
+  {
+    "name": "diagonal_negative_xy",
+    "input": [0, 0, -28, -28],
+    "output": [
+      [0, 0],
+      [-1, -1],
+      [-2, -2]
+    ]
+  },
+  {
+    "name": "shallow_slope_negative_xy",
+    "input": [-7, -7, -35, -21],
+    "output": [
+      [-1, -1],
+      [-2, -1],
+      [-2, -2],
+      [-3, -2]
+    ]
+  },
+  {
+    "name": "short_diagonal_positive_x_negative_y_inside_same_cell",
+    "input": [1, -1, 13, -13],
+    "output": [[0, -1]]
+  },
+  {
+    "name": "shallow_slope_negative_xy_reversed",
+    "input": [-35, -21, -7, -7],
+    "output": [
+      [-3, -2],
+      [-2, -2],
+      [-2, -1],
+      [-1, -1]
+    ]
+  },
+  {
+    "name": "steep_slope_negative_xy",
+    "input": [-7, -7, -21, -35],
+    "output": [
+      [-1, -1],
+      [-1, -2],
+      [-2, -2],
+      [-2, -3]
+    ]
+  },
+  {
+    "name": "steep_slope_negative_xy_reversed",
+    "input": [-21, -35, -7, -7],
+    "output": [
+      [-2, -3],
+      [-2, -2],
+      [-1, -2],
+      [-1, -1]
+    ]
+  },
+  {
+    "name": "horizontal_positive_x_again",
+    "input": [0, 0, 28, 0],
+    "output": [
+      [0, 0],
+      [1, 0],
+      [2, 0]
+    ]
+  },
+  {
+    "name": "vertical_negative_y_again",
+    "input": [0, 0, 0, -28],
+    "output": [
+      [0, 0],
+      [0, -1],
+      [0, -2]
+    ]
+  },
+  {
+    "name": "diagonal_positive_x_negative_y",
+    "input": [0, 0, 28, -28],
+    "output": [
+      [0, 0],
+      [0, -1],
+      [1, -1],
+      [1, -2],
+      [2, -2]
+    ]
+  },
+  {
+    "name": "shallow_slope_positive_x_negative_y",
+    "input": [7, -7, 35, -21],
+    "output": [
+      [0, -1],
+      [1, -1],
+      [1, -2],
+      [2, -2]
+    ]
+  },
+  {
+    "name": "shallow_slope_positive_x_negative_y_reversed",
+    "input": [35, -21, 7, -7],
+    "output": [
+      [2, -2],
+      [1, -2],
+      [1, -1],
+      [0, -1]
+    ]
+  },
+  {
+    "name": "steep_slope_positive_x_negative_y",
+    "input": [7, -7, 21, -35],
+    "output": [
+      [0, -1],
+      [0, -2],
+      [1, -2],
+      [1, -3]
+    ]
+  },
+  {
+    "name": "steep_slope_positive_x_negative_y_reversed",
+    "input": [21, -35, 7, -7],
+    "output": [
+      [1, -3],
+      [1, -2],
+      [0, -2],
+      [0, -1]
+    ]
+  },
+  {
+    "name": "diagonal_cross_through_origin",
+    "input": [-14, -14, 14, 14],
+    "output": [
+      [-1, -1],
+      [0, 0],
+      [1, 1]
+    ]
+  },
+  {
+    "name": "anti_diagonal_cross_through_origin",
+    "input": [14, -14, -14, 14],
+    "output": [
+      [1, -1],
+      [0, -1],
+      [0, 0],
+      [-1, 0],
+      [-1, 1]
+    ]
+  },
+  {
+    "name": "short_diagonal_cross_through_origin",
+    "input": [-13, -13, 13, 13],
+    "output": [
+      [-1, -1],
+      [0, 0]
+    ]
+  },
+  {
+    "name": "horizontal_negative_x_high_y",
+    "input": [14, 14, -14, 14],
+    "output": [
+      [1, 1],
+      [0, 1],
+      [-1, 1]
+    ]
+  },
+  {
+    "name": "horizontal_negative_x_low_y",
+    "input": [14, -14, -14, -14],
+    "output": [
+      [1, -1],
+      [0, -1],
+      [-1, -1]
+    ]
+  },
+  {
+    "name": "vertical_negative_y_to_positive_y",
+    "input": [-14, -14, -14, 14],
+    "output": [
+      [-1, -1],
+      [-1, 0],
+      [-1, 1]
+    ]
+  },
+  {
+    "name": "vertical_positive_y_to_negative_y",
+    "input": [14, -14, 14, 14],
+    "output": [
+      [1, -1],
+      [1, 0],
+      [1, 1]
+    ]
+  }
+]
