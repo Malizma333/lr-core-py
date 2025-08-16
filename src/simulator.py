@@ -404,4 +404,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/lra_tail_fakie_remount.track.json")
+    TrackSimulator("fixtures/wonky.track.json")

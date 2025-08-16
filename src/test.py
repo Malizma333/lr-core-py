@@ -2,38 +2,13 @@
 
 from engine.engine import Engine, CachedFrame
 from engine.entity import MountPhase
+from engine.grid import CellPosition
+from engine.vector import Vector
 from utils.convert import convert_track
-
-from typing import TypedDict, List, Optional
+from typing import Optional, Any
 from enum import Enum
 import json
 import sys
-
-# Test flags to filter results
-MAX_FRAME: Optional[int] = None
-TARGET_TESTS: Optional[tuple[int, int]] = (71, 71)
-
-
-# This is not enforced at runtime, but useful for documentation
-class JsonPointData(tuple[str, str, str, str]):
-    """A list of 4 stringified floats: x, y, vx, vy"""
-
-
-class JsonEntityState(TypedDict):
-    points: List[List[str]]
-    rider_state: Optional[str]
-    sled_state: Optional[str]
-
-
-class JsonTestState(TypedDict):
-    entities: List[JsonEntityState]
-
-
-class JsonTestFile(TypedDict):
-    file: str  # substituted into fixtures/*.track.json
-    test: str  # name/description
-    frame: int  # frame number
-    state: Optional[JsonTestState]  # optional state block
 
 
 class PRINT_STYLE(Enum):
@@ -43,17 +18,35 @@ class PRINT_STYLE(Enum):
     RED = "\033[91m"
 
 
-def print_styled(message: str, style: PRINT_STYLE):
-    print(f"{style.value}{message}\033[0m")
-
-
 class Tests:
     def __init__(self):
-        self.tests = json.load(open("tests.json", "r"))
+        self.engine_tests = json.load(open("tests.json", "r"))
+        self.test_number = 0
         self.pass_count = 0
         self.fail_count = 0
-        self.loaded: dict[str, Engine] = {}
+        self.loaded_tracks: dict[str, Engine] = {}
         self.fail_message = ""
+
+    def print_styled(self, message: str, style: PRINT_STYLE):
+        print(f"{style.value}{message}\033[0m")
+
+    def output_result(self, test_name: str, passed: bool):
+        format_string = "{:<3} {:<5} {:<25}"
+        if passed:
+            self.print_styled(
+                format_string.format(self.test_number + 1, "PASS", test_name),
+                PRINT_STYLE.GREEN,
+            )
+            self.pass_count += 1
+        else:
+            self.print_styled(
+                format_string.format(self.test_number + 1, "FAIL", test_name),
+                PRINT_STYLE.RED,
+            )
+            self.print_styled(self.fail_message, PRINT_STYLE.YELLOW)
+            self.fail_count += 1
+            self.fail_message = ""
+        self.test_number += 1
 
     # Compare 17 point precision float strings from test cases to python formatting
     def compare(self, f: float, s: str):
@@ -73,10 +66,10 @@ class Tests:
             self.fail_message += f"{x} != {s}"
         return x == s
 
-    def states_equal(
+    def engine_states_equal(
         self,
         result_state: Optional[CachedFrame],
-        expected_state: Optional[JsonTestState],
+        expected_state: Optional[Any],
     ) -> bool:
         if result_state is None:
             if expected_state is None:
@@ -146,43 +139,45 @@ class Tests:
 
         return True
 
-    def run_tests(self):
-        for i, test in enumerate(self.tests):
-            if (
-                TARGET_TESTS != None
-                and (TARGET_TESTS[0] > i + 1 or i + 1 > TARGET_TESTS[1])
-            ) or (MAX_FRAME != None and test["frame"] > MAX_FRAME):
-                continue
+    def run_engine_tests(self):
+        for engine_tests in self.engine_tests:
+            track_file = engine_tests["file"]
+            description = engine_tests["test"]
+            frame = engine_tests["frame"]
+            frame_state = engine_tests.get("state", None)
 
-            track_file = test["file"]
-            test_name = test["test"]
-            frame = test["frame"]
-            frame_state = test.get("state", None)
-
-            if track_file not in self.loaded:
+            if track_file not in self.loaded_tracks:
                 track_data = json.load(open(f"fixtures/{track_file}.track.json", "r"))
-                self.loaded[track_file] = convert_track(track_data)
+                self.loaded_tracks[track_file] = convert_track(track_data)
 
-            engine = self.loaded[track_file]
-            format_string = "{:<2} {:<5} {:<25} {}"
+            engine = self.loaded_tracks[track_file]
+            test_name = f"{track_file}: {description}"
+            passed = self.engine_states_equal(engine.get_frame(frame), frame_state)
+            self.output_result(test_name, passed)
 
-            if self.states_equal(engine.get_frame(frame), frame_state):
-                print_styled(
-                    format_string.format(str(i + 1), "PASS", track_file, test_name),
-                    PRINT_STYLE.GREEN,
-                )
-                self.pass_count += 1
-            else:
-                print_styled(
-                    format_string.format(str(i + 1), "FAIL", track_file, test_name),
-                    PRINT_STYLE.RED,
-                )
-                print_styled(self.fail_message, PRINT_STYLE.YELLOW)
-                self.fail_count += 1
-            self.fail_message = ""
+    def run_hash_tests(self):
+        seen = dict()
+        failed = False
+        for i in range(-10, 11):
+            for j in range(-10, 11):
+                key = CellPosition(Vector(i, j), 1).get_key()
+                if key in seen:
+                    self.fail_message += (
+                        f"duplicate key {key} for hash({(i, j)}) and hash({seen[key]})"
+                    )
+                    failed = True
+                    break
+                seen[key] = (i, j)
+            if failed:
+                break
+        self.output_result("hash test", not failed)
 
-        print_styled(f"Passed: {self.pass_count}", PRINT_STYLE.BOLD)
-        print_styled(f"Failed: {self.fail_count}", PRINT_STYLE.BOLD)
+    def run_tests(self):
+        self.run_engine_tests()
+        self.run_hash_tests()
+
+        self.print_styled(f"Passed: {self.pass_count}", PRINT_STYLE.BOLD)
+        self.print_styled(f"Failed: {self.fail_count}", PRINT_STYLE.BOLD)
 
         if self.fail_count > 0:
             sys.exit(1)
