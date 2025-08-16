@@ -11,7 +11,7 @@ from engine.vector import Vector
 from utils.create_fixture_test import sanitize, create_fixture_test
 
 # Caps the engine test cases that get included based on frame * rider calculations
-MAX_ENGINE_CALCS: Optional[int] = 0
+MAX_ENGINE_CALCS: Optional[int] = None
 
 
 class ColorTestResult(unittest.TextTestResult):
