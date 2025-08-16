@@ -19,7 +19,8 @@ class CellPosition:
         self.y = math.floor(world_position.y / cell_size)
         self.remainder = self.world_position - cell_size * Vector(self.x, self.y)
 
-    # No specific implementation, just needs to be deterministic and unique for any pair of signed integers
+    # No specific implementation necessary, just needs to be deterministic and unique for any pair of signed integers
+    # https://github.com/conundrumer/lr-core/blob/ce48ebed967d24ff4582995b31342440901f913d/src/utils/hashNumberPair.js#L16C1-L21C2
     def get_key(self) -> int:
         if self.x >= 0:
             A = 2 * self.x
@@ -235,7 +236,6 @@ class Grid:
             # Finds axis-aligned bounding box and filters it
             for cell_x in range(lower_bound_x, upper_bound_x + 1):
                 for cell_y in range(lower_bound_y, upper_bound_y + 1):
-                    # Note: The sign of line.normal_unit is not important here (cancelled out)
                     curr_pos = self.cell_size * Vector(cell_x + 0.5, cell_y + 0.5)
                     next_cell_pos = self.get_cell_position(curr_pos)
                     dist_between_centers = line_midpoint - curr_pos

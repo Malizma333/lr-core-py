@@ -1,4 +1,4 @@
-This program references code from the following code repositories. Licenses for each have been copied into this directory.
+This program references code from the following sources. Licenses (where relevant) have been copied into this directory.
 
 OpenLR (https://github.com/kevansevans/OpenLR)
 MIT License
