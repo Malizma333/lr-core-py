@@ -1,0 +1,104 @@
+{
+  "USE_LRA_MOUNT_PHYSICS": true,
+  "label": "lra_tail_fakie_remount",
+  "duration": 0,
+  "version": "6.2",
+  "audio": null,
+  "startPosition": { "x": 0, "y": 0 },
+  "riders": [
+    {
+      "startPosition": { "x": 0, "y": 0 },
+      "startVelocity": { "x": 0.4, "y": 0 },
+      "remountable": true
+    }
+  ],
+  "layers": [
+    {
+      "id": 0,
+      "type": 0,
+      "name": "#000000Base Layer",
+      "visible": true,
+      "editable": true,
+      "folderId": -1
+    }
+  ],
+  "lines": [
+    {
+      "id": 0,
+      "type": 0,
+      "x1": 11.691319335549498,
+      "y1": -1.5811654057566926,
+      "x2": 14.875438067803177,
+      "y2": -3.2668753228321687,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    },
+    {
+      "id": 1,
+      "type": 0,
+      "x1": -1.7442742064344952,
+      "y1": -1.64987381221147,
+      "x2": -1.6169406558139396,
+      "y2": -1.7772073628320264,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    },
+    {
+      "id": 2,
+      "type": 0,
+      "x1": -0.247189697965446,
+      "y1": 12.337804993489485,
+      "x2": 3.2227942210456746,
+      "y2": 7.578969904559955,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    },
+    {
+      "id": 3,
+      "type": 0,
+      "x1": -19.08119627806026,
+      "y1": 9.99379211671825,
+      "x2": -10.75323487243358,
+      "y2": 11.381785684322697,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    },
+    {
+      "id": 4,
+      "type": 0,
+      "x1": -28.84387811709725,
+      "y1": -24.688776413666766,
+      "x2": -28.49002646237714,
+      "y2": -23.981073104226546,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    },
+    {
+      "id": 5,
+      "type": 0,
+      "x1": -29.184455024146573,
+      "y1": -6.012490565322295,
+      "x2": -24.277216043738356,
+      "y2": -3.0956975848607797,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    },
+    {
+      "id": 6,
+      "type": 0,
+      "x1": -25.047815281255488,
+      "y1": 1.278201275857235,
+      "x2": -24.423478274931234,
+      "y2": 3.7131156005218173,
+      "flipped": false,
+      "leftExtended": false,
+      "rightExtended": false
+    }
+  ]
+}

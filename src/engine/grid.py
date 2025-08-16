@@ -1,6 +1,5 @@
 from engine.vector import Vector
 from engine.line import NormalLine, AccelerationLine
-from engine.point import ContactPoint
 from enum import Enum
 from typing import Optional, Union
 import math
@@ -20,9 +19,24 @@ class CellPosition:
         self.y = math.floor(world_position.y / cell_size)
         self.remainder = self.world_position - cell_size * Vector(self.x, self.y)
 
-    # No specific implementation, just needs to be deterministic
+    # No specific implementation, just needs to be deterministic and unique for any pair of signed integers
     def get_key(self) -> int:
-        return (self.x * 73856093) ^ (self.y * 19349663)
+        if self.x >= 0:
+            A = 2 * self.x
+        else:
+            A = -2 * self.x - 1
+        if self.y >= 0:
+            B = 2 * self.y
+        else:
+            B = -2 * self.y - 1
+        if A >= B:
+            C = A * A + A + B
+        else:
+            C = B * B + A
+        if C % 2 == 1:
+            return -(C - 1) // 2 - 1
+        else:
+            return C // 2
 
 
 # A container for lines that serves as an ordered list (descending line id order)
@@ -274,7 +288,7 @@ class Grid:
         for x_offset in (-1, 0, 1):
             for y_offset in (-1, 0, 1):
                 cell = self.get_cell(
-                    position + self.cell_size * Vector(x_offset, y_offset)
+                    position + self.cell_size * Vector(x_offset, y_offset),
                 )
 
                 if cell == None:

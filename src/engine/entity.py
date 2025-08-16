@@ -75,8 +75,7 @@ class EntityState:
     def can_enter_mount_phase(self, entity: "Entity", mount_phase: MountPhase):
         for bone in entity.structural_bones:
             if isinstance(bone, MountBone):
-                intact = bone.get_intact(mount_phase == MountPhase.REMOUNTING)
-                if not intact:
+                if not bone.get_intact(mount_phase == MountPhase.REMOUNTING):
                     return False
 
         if self.remount_version != RemountVersion.LRA:
@@ -102,7 +101,7 @@ class EntityState:
         self.mount_phase = new_mount_state
 
     def dismount(self):
-        if self.remount_version == RemountVersion.NONE:
+        if self.remount_version == RemountVersion.NONE or not self.remount_enabled:
             # Just dismount, ignore timers
             self.enter_mount_phase(MountPhase.DISMOUNTED, False)
         else:
@@ -314,20 +313,23 @@ class Entity:
                         and initial_phase == MountPhase.REMOUNTING
                     ):
                         intact = bone.get_intact(True)
-                        bone.process(LRA_REMOUNT_STRENGTH_FACTOR, True)
+                        strength = LRA_REMOUNT_STRENGTH_FACTOR
                     elif (
                         self.state.remount_version != RemountVersion.LRA
                         and self.state.mount_phase == MountPhase.REMOUNTING
                     ):
                         intact = bone.get_intact(True)
-                        bone.process(REMOUNT_STRENGTH_FACTOR, True)
+                        strength = REMOUNT_STRENGTH_FACTOR
                     else:
                         intact = bone.get_intact(False)
-                        bone.process(1, False)
+                        strength = 1
 
-                    if not intact and not self.dismounted_this_frame:
-                        self.dismounted_this_frame = True
-                        self.state.dismount()
+                    if not self.dismounted_this_frame:
+                        if intact:
+                            bone.process(strength)
+                        else:
+                            self.dismounted_this_frame = True
+                            self.state.dismount()
 
     def process_collisions(self, grid: Grid):
         for point in self.contact_points:

@@ -25,13 +25,11 @@ Thanks to:
   - lra:ce remounting
   - linerider.com remounting
     - with multipler riders
-
-## Planned Features
-- Modded line types
-  - Windboxes
-  - Deceleration
-  - Trapdoor
-  - Double Hitbox
+- modded line types
+  - windboxes
+  - deceleration
+  - trapdoor
+  - double hitbox
 
 # License
 
