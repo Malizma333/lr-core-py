@@ -4,152 +4,43 @@ import unittest
 import json
 import math
 import sys
-from enum import Enum
-from typing import Optional
-from engine.engine import Engine, CachedFrame
-from engine.entity import MountPhase
+from pathlib import Path
+from typing import Optional, Dict, Any
 from engine.grid import CellPosition
 from engine.vector import Vector
-from utils.convert import convert_track
+from utils.create_fixture_test import sanitize, create_fixture_test
 
-
-# ANSI styles
-class STYLE:
-    GREEN = "\033[92m"
-    RED = "\033[91m"
-    YELLOW = "\033[93m"
-    BOLD = "\033[1m"
-    END = "\033[0m"
+# Caps the engine test cases that get included based on frame * rider calculations
+MAX_ENGINE_CALCS: Optional[int] = 500
 
 
 class ColorTestResult(unittest.TextTestResult):
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    END = "\033[0m"
+
     def addSuccess(self, test):
         super().addSuccess(test)
-        self.stream.write(STYLE.GREEN + "PASS" + STYLE.END + "\n")
+        self.stream.write(self.GREEN + "PASS" + self.END + "\n")
 
     def addFailure(self, test, err):
         super().addFailure(test, err)
-        self.stream.write(STYLE.RED + "FAIL" + STYLE.END + "\n")
+        self.stream.write(self.RED + "FAIL" + self.END + "\n")
 
     def addError(self, test, err):
         super().addError(test, err)
-        self.stream.write(STYLE.YELLOW + "ERROR" + STYLE.END + "\n")
+        self.stream.write(self.YELLOW + "ERROR" + self.END + "\n")
 
 
 class ColorTextTestRunner(unittest.TextTestRunner):
-    resultclass = ColorTestResult  # type: ignore
-
-
-class PRINT_STYLE(Enum):
-    BOLD = "\033[1m"
-    GREEN = "\033[92m"
-    YELLOW = "\033[93m"
-    RED = "\033[91m"
-
-
-def compare_float(f: float, s: str) -> bool:
-    """Compare float to test-case string representation at ~17-digit precision."""
-    x = format(f, ".17g")
-    if "e" in x:
-        ind = x.index("e")
-        ind2 = x.index(".")
-        offset = int(x[ind + 2 :])
-        if offset < 7:
-            start = ""
-            num = x[:ind2] + x[ind2 + 1 : ind]
-            if x[0] == "-":
-                start = "-"
-                num = x[1:ind2] + x[ind2 + 1 : ind]
-            x = start + "0." + "0" * (offset - 1) + num
-    return x == s
-
-
-def engine_states_equal(
-    result_state: Optional[CachedFrame], expected_state: dict
-) -> bool:
-    if result_state is None or expected_state is None:
-        return result_state is None and expected_state is None
-
-    expected_entities = expected_state["entities"]
-    result_entities = result_state.entities
-
-    if len(result_entities) != len(expected_entities):
-        return False
-
-    for i, expected_entity_state in enumerate(expected_entities):
-        if "mount_state" in expected_entity_state:
-            rider_state_map = {
-                "MOUNTED": MountPhase.MOUNTED,
-                "DISMOUNTING": MountPhase.DISMOUNTING,
-                "DISMOUNTED": MountPhase.DISMOUNTED,
-                "REMOUNTING": MountPhase.REMOUNTING,
-            }
-            if result_entities[i].state.mount_phase != rider_state_map.get(
-                expected_entity_state["mount_state"] or "", MountPhase.MOUNTED
-            ):
-                return False
-
-        if "sled_state" in expected_entity_state:
-            if result_entities[i].state.sled_intact != (
-                (expected_entity_state["sled_state"] or "INTACT") == "INTACT"
-            ):
-                return False
-
-        for j, expected_point_data in enumerate(expected_entity_state["points"]):
-            result_points = result_entities[i].points
-            if len(result_points) < len(expected_entity_state):
-                return False
-
-            result_point_data = (
-                result_points[j].position.x,
-                result_points[j].position.y,
-                result_points[j].velocity.x,
-                result_points[j].velocity.y,
-            )
-
-            if not all(
-                compare_float(result_point_data[k], expected_point_data[k])
-                for k in range(4)
-            ):
-                return False
-
-    return True
-
-
-class TestEngine(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        # Load all test fixtures once
-        with open("fixture_tests.json", "r") as f:
-            cls.engine_tests = json.load(f)
-        cls.loaded_tracks: dict[str, Engine] = {}
-
-    def test_engine_states(self):
-        """Run all engine state tests in fixtures"""
-        for engine_test in self.engine_tests:
-            with self.subTest(engine_test=engine_test):
-                track_file = engine_test["file"]
-                description = engine_test["test"]
-                frame = engine_test["frame"]
-                frame_state = engine_test.get("state", None)
-
-                if track_file not in self.loaded_tracks:
-                    with open(f"fixtures/{track_file}.track.json", "r") as f:
-                        track_data = json.load(f)
-                    self.loaded_tracks[track_file] = convert_track(track_data)
-
-                engine = self.loaded_tracks[track_file]
-                result_state = engine.get_frame(frame)
-
-                self.assertTrue(
-                    engine_states_equal(result_state, frame_state),
-                    msg=f"Track {track_file}, Test {description} failed",
-                )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, resultclass=ColorTestResult, **kwargs)  # type: ignore
 
 
 class TestGrid(unittest.TestCase):
     def test_cellposition_hashes_unique(self):
-        """Ensure CellPosition.get_key() produces unique keys in -10..10 range"""
+        """Ensure CellPosition.get_key() produces unique keys for signed integer pairs"""
         seen = {}
         for i in range(-10, 11):
             for j in range(-10, 11):
@@ -157,7 +48,7 @@ class TestGrid(unittest.TestCase):
                 self.assertNotIn(
                     key,
                     seen,
-                    f"Duplicate key {key} for {(i, j)} and {seen.get(key, None)}",
+                    f"Duplicate key {key} for {(i, j)} and {seen.get(key)}",
                 )
                 seen[key] = (i, j)
 
@@ -233,8 +124,6 @@ class TestVector(unittest.TestCase):
         self.assertIn("1", s)
         self.assertIn("2", s)
 
-    # ---- Extra edge cases ----
-
     def test_zero_vector_length(self):
         v = Vector(0, 0)
         self.assertEqual(v.length(), 0)
@@ -256,9 +145,36 @@ class TestVector(unittest.TestCase):
 
     def test_nan_behavior(self):
         v = Vector(float("nan"), 1)
-        # NaN is never equal to anything, even itself
         self.assertNotEqual(v, v)
 
 
+def create_fixture_tests():
+    fixtures: list[Dict[str, Any]] = json.loads(Path("fixture_tests.json").read_text())
+    _classes_by_file: dict[str, type] = {}
+
+    for i, fixture in enumerate(fixtures):
+        group = fixture["file"]
+        class_name = f"Test_{sanitize(group)}"
+        if class_name not in globals():
+            cls = type(
+                class_name,
+                (unittest.TestCase,),
+                {"__doc__": f"Fixture tests for '{group}'"},
+            )
+            globals()[class_name] = cls
+            _classes_by_file[group] = cls
+
+        frame = fixture.get("frame", 0)
+        num_riders = len(fixture.get("state", {}).get("entities", []))
+        complexity = frame * num_riders
+
+        if MAX_ENGINE_CALCS != None and complexity > MAX_ENGINE_CALCS:
+            continue
+
+        func_name = f"test_{i}_{sanitize(fixture['test'])}"
+        setattr(_classes_by_file[group], func_name, create_fixture_test(fixture))
+
+
 if __name__ == "__main__":
+    create_fixture_tests()
     unittest.main(testRunner=ColorTextTestRunner(verbosity=2, stream=sys.stdout))
