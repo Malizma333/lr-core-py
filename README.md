@@ -26,13 +26,6 @@ Thanks to:
   - linerider.com remounting
     - with multipler riders
 
-## Planned
-- modded line types
-  - windboxes
-  - deceleration
-  - trapdoor
-  - double hitbox
-
 # License
 
 This project is licensed with GPL to remain compliant with LRA's GPL license, since it was used as a reference. Any modification or reference of this project must also be GPL-licensed and remain open source. See the [licenses directory](LICENSES/) for the full list of included licenses.
