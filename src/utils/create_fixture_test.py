@@ -2,7 +2,7 @@ import re
 import json
 import unittest
 from typing import Optional
-from engine.engine import Engine, CachedFrame
+from engine.engine import Engine
 from engine.entity import MountPhase
 from utils.convert import convert_track
 
