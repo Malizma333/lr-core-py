@@ -1,4 +1,3 @@
-from engine.engine import Engine
 from engine.vector import Vector
 from engine.entity import Entity
 from engine.line import NormalLine, BaseLine, AccelerationLine

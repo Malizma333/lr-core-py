@@ -3,53 +3,9 @@
 from engine.vector import Vector
 from engine.grid import GridVersion
 from engine.line import NormalLine, AccelerationLine, BaseLine
-from engine.entity import Entity, RemountVersion, EntityState
+from engine.entity import Entity, RemountVersion, EntityState, InitialEntityParams
 from engine.engine import Engine
-import math
-from typing import TypedDict, Union, Any
-
-
-class InitialEntityParams(TypedDict):
-    POSITION: Vector
-    VELOCITY: Vector
-    ROTATION: float  # In degrees
-    REMOUNT: bool
-
-
-def create_default_rider(
-    init_state: InitialEntityParams, remount_version: RemountVersion
-) -> Entity:
-    entity = Entity(EntityState(init_state["REMOUNT"], remount_version))
-
-    # Apply initial state once everything is initialized
-    # This updates the contact points with initial position, velocity, and initial rotation
-    # This must be applied after bone rest lengths are calculated because it does not affect them
-
-    # Note that the use of cos and sin here may not give the same results for all numbers in different languages
-    # This gets tested with 50 degrees so it happens to pass the test case
-    cos_theta = math.cos(init_state["ROTATION"] * math.pi / 180)
-    sin_theta = math.sin(init_state["ROTATION"] * math.pi / 180)
-    origin = entity.contact_points[1].base.position  # Hardcoded to be tail
-
-    for point in entity.points:
-        offset = point.position - origin
-        point.update_state(
-            Vector(
-                origin.x + offset.x * cos_theta - offset.y * sin_theta,
-                origin.y + offset.x * sin_theta + offset.y * cos_theta,
-            ),
-            point.velocity,
-            point.previous_position,
-        )
-
-    for point in entity.points:
-        start_position = point.position + init_state["POSITION"]
-        start_velocity = point.velocity + init_state["VELOCITY"]
-        point.update_state(
-            start_position, start_velocity, start_position - start_velocity
-        )
-
-    return entity
+from typing import Union, Any
 
 
 def convert_lines(lines: list):
@@ -98,12 +54,11 @@ def convert_riders(riders: list, LRA: bool) -> list[Entity]:
                 rider["startVelocity"]["x"],
                 rider["startVelocity"]["y"],
             ),
-            # Convert to radians
             "ROTATION": rider.get("startAngle", 0),
-            "REMOUNT": bool(rider.get("remountable", False)),
+            "CAN_REMOUNT": bool(rider.get("remountable", False)),
         }
         converted_entities.append(
-            create_default_rider(initial_state, mount_joint_version)
+            Entity(EntityState(initial_state, mount_joint_version))
         )
 
     return converted_entities

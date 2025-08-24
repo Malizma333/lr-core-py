@@ -36,3 +36,4 @@ Some track fixtures sampled from the following:
 - [Bolted to the Wall](https://www.youtube.com/watch?v=0TBGNxzdiHw) (6.0 grid compatibility)
 - [lr-core fixtures](https://github.com/conundrumer/lr-core/tree/master/fixtures) (6.1 compatibility, feature tests)
 - [Fakie Park (Autumn's Section)](https://www.youtube.com/watch?v=tXJnpCyGOgk) (LRA remount physics)
+- [Veil](https://www.dropbox.com/scl/fo/y9k1vya1ryvstnvvhlohs/AOF6zhkCcBuR80Tl3E6n0vY/N%20-%20O%20-%20P%20-%20Q%20-%20R%20-%20S/SPL4SHZ0N3%20_%20Spl4sh%20_%20Splash%20_%20Joseph%20Hall?e=2&preview=Veil+tidbits+%2710g%27+%27new1%27+(Splash).sol&rlkey=6px6yjqafettsvz1wnvk7u4yv&subfolder_nav_tracking=1&dl=0) (bone length offset recalculation test)

@@ -17,9 +17,9 @@ class BaseBone:
         self.point1 = point1
         self.point2 = point2
         # Initial rest length of the bone
-        self.rest_length = (
-            point1.position.distance_from(point2.position) * length_factor
-        )
+        self.rest_length = point1.position.distance_from(point2.position)
+        # Multiplier against the rest length
+        self.length_factor = length_factor
         # Which point gets updated more (0 affects point 1 entirely, 1 affects point 2 entirely)
         self.bias = bias
 
@@ -32,9 +32,9 @@ class BaseBone:
         if current_length == 0:
             return 0
 
-        return (current_length - self.rest_length) / current_length
+        return (current_length - self.rest_length * self.length_factor) / current_length
 
-    def update_points(self, adjustment):
+    def update_points(self, adjustment: float):
         bone_vector = self.get_vector()
         self.point1.update_state(
             self.point1.position - bone_vector * adjustment * (1 - self.bias),
@@ -65,7 +65,10 @@ class RepelBone:
 
     def process(self, adjustment_strength: float):
         adjustment = self.base.get_adjustment()
-        if self.base.get_vector().length() < self.base.rest_length:
+        if (
+            self.base.get_vector().length()
+            < self.base.rest_length * self.base.length_factor
+        ):
             self.base.update_points(adjustment * adjustment_strength)
 
 
@@ -91,7 +94,7 @@ class MountBone:
         endurance = self.endurance
         if remounting:
             endurance *= REMOUNT_ENDURANCE_FACTOR
-        return adjustment <= endurance * self.base.rest_length
+        return adjustment <= endurance * self.base.rest_length * self.base.length_factor
 
     def process(self, adjustment_strength: float):
         adjustment = self.base.get_adjustment()

@@ -3,9 +3,17 @@ from engine.vector import Vector
 from engine.point import ContactPoint, FlutterPoint, BasePoint
 from engine.bone import NormalBone, RepelBone, MountBone, FlutterBone, BaseBone
 from engine.joint import Joint
-from engine.flags import LR_COM_SCARF
+from engine.flags import LR_COM_SCARF, OFFSET_BEFORE_BONES
 from enum import Enum
-from typing import Union
+from typing import Union, TypedDict
+import math
+
+
+class InitialEntityParams(TypedDict):
+    POSITION: Vector
+    VELOCITY: Vector
+    ROTATION: float  # In degrees
+    CAN_REMOUNT: bool
 
 
 class MountPhase(Enum):
@@ -32,8 +40,12 @@ class RemountVersion(Enum):
 
 # Keeps track of entity state (mostly remounting checks)
 class EntityState:
-    def __init__(self, remount_enabled: bool, remount_version: RemountVersion):
-        self.remount_enabled = remount_enabled
+    def __init__(
+        self,
+        init_state: InitialEntityParams,
+        remount_version: RemountVersion,
+    ):
+        self.init_state = init_state
         self.remount_version = remount_version
         # This should be per-skeleton but for now hardcoded for overall entity
         self.sled_intact = True
@@ -101,7 +113,10 @@ class EntityState:
         self.mount_phase = new_mount_state
 
     def dismount(self):
-        if self.remount_version == RemountVersion.NONE or not self.remount_enabled:
+        if (
+            self.remount_version == RemountVersion.NONE
+            or not self.init_state["CAN_REMOUNT"]
+        ):
             # Just dismount, ignore timers
             self.enter_mount_phase(MountPhase.DISMOUNTED, False)
         else:
@@ -113,7 +128,7 @@ class EntityState:
                 self.enter_mount_phase(MountPhase.DISMOUNTED, True)
 
     def copy(self):
-        new_state = EntityState(self.remount_enabled, self.remount_version)
+        new_state = EntityState(self.init_state, self.remount_version)
         new_state.sled_intact = self.sled_intact
         new_state.mount_phase = self.mount_phase
         new_state.frames_until_dismounted = self.frames_until_dismounted
@@ -170,6 +185,9 @@ class Entity:
         SCARF_5 = self.add_flutter_point(Vector(-7, -5.5), SCARF_FRICTION)
         SCARF_6 = self.add_flutter_point(Vector(-9, -5.5), SCARF_FRICTION)
 
+        if OFFSET_BEFORE_BONES:
+            self.apply_initial_state()
+
         # Sled bones
         SLED_BACK = self.add_normal_bone(PEG, TAIL)
         self.add_normal_bone(TAIL, NOSE)
@@ -203,6 +221,9 @@ class Entity:
         self.add_flutter_bone(SCARF_4, SCARF_5)
         self.add_flutter_bone(SCARF_5, SCARF_6)
 
+        if not OFFSET_BEFORE_BONES:
+            self.apply_initial_state()
+
         # Add the bindings with their joints
         self.add_mount_joint(SLED_BACK, SLED_FRONT)
         self.add_mount_joint(TORSO, SLED_FRONT)
@@ -210,6 +231,32 @@ class Entity:
 
         # Variable scoped to this class for checking dismount during this frame
         self.dismounted_this_frame = False
+
+    def apply_initial_state(self):
+        # This updates the contact points with initial position, velocity, and initial rotation
+        # Note that the use of cos and sin here may not give the same results for all numbers in different languages
+        # This gets tested with 50 degrees so it happens to pass the test case
+        cos_theta = math.cos(self.state.init_state["ROTATION"] * math.pi / 180)
+        sin_theta = math.sin(self.state.init_state["ROTATION"] * math.pi / 180)
+        origin = self.contact_points[1].base.position  # Hardcoded to be tail
+
+        for point in self.points:
+            offset = point.position - origin
+            point.update_state(
+                Vector(
+                    origin.x + offset.x * cos_theta - offset.y * sin_theta,
+                    origin.y + offset.x * sin_theta + offset.y * cos_theta,
+                ),
+                point.velocity,
+                point.previous_position,
+            )
+
+        for point in self.points:
+            start_position = point.position + self.state.init_state["POSITION"]
+            start_velocity = point.velocity + self.state.init_state["VELOCITY"]
+            point.update_state(
+                start_position, start_velocity, start_position - start_velocity
+            )
 
     def copy(self):
         new_entity = Entity(self.state.copy())
@@ -390,7 +437,7 @@ class Entity:
     def process_remount(self, other_entities: list["Entity"]):
         if (
             self.state.remount_version == RemountVersion.NONE
-            or self.state.remount_enabled == False
+            or self.state.init_state["CAN_REMOUNT"] == False
         ):
             return
 
