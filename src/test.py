@@ -42,6 +42,7 @@ class TestGrid(unittest.TestCase):
     def setUp(self) -> None:
         self.grid_62 = Grid(GridVersion.V6_2, 14)
         self.grid_61 = Grid(GridVersion.V6_1, 14)
+        self.grid_60 = Grid(GridVersion.V6_0, 14)
 
     def test_cellposition_hashes_unique(self):
         """Ensure CellPosition.get_key() produces unique keys for signed integer pairs"""
@@ -93,6 +94,10 @@ class TestGrid(unittest.TestCase):
     def test_grid_61_cases(self):
         grid_tests = json.loads(Path("grid_61_tests.json").read_text())
         self._run_cases(self.grid_61, grid_tests, "grid_61")
+
+    def test_grid_60_cases(self):
+        grid_tests = json.loads(Path("grid_60_tests.json").read_text())
+        self._run_cases(self.grid_60, grid_tests, "grid_60")
 
 
 class TestVector(unittest.TestCase):
