@@ -65,7 +65,7 @@ class TestGrid(unittest.TestCase):
                     Vector(x1, y1), Vector(x2, y2)
                 )
 
-                expected = case["output"]
+                expected = case["expected"]
                 self.assertEqual(
                     len(cell_positions),
                     len(expected),
