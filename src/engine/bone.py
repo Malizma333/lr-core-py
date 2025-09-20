@@ -1,12 +1,4 @@
 from engine.point import BasePoint
-from enum import Enum
-
-
-class BoneType(Enum):
-    NORMAL = 0
-    MOUNT = 1
-    REPEL = 2
-    FLUTTER = 3
 
 
 # Common bone properties and methods
