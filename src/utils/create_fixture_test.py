@@ -1,6 +1,7 @@
 import re
 import json
 import unittest
+import struct
 from typing import Optional
 from engine.engine import Engine
 from engine.entity import MountPhase
@@ -10,21 +11,8 @@ _LOADED_ENGINES: dict[str, Engine] = {}
 
 
 def compare_float(f: float, s: str) -> bool:
-    """Compare float to test-case string representation at ~17-digit precision."""
-    x = format(f, ".17g")
-    if "e" in x:
-        ind = x.index("e")
-        ind2 = x.index(".")
-        offset = int(x[ind + 2 :])
-        if offset < 7:
-            start = ""
-            num = x[:ind2] + x[ind2 + 1 : ind]
-            if x[0] == "-":
-                start = "-"
-                num = x[1:ind2] + x[ind2 + 1 : ind]
-            x = start + "0." + "0" * (offset - 1) + num
-    return x == s
-
+    """Compare float to test-case hex string."""
+    return s == struct.pack(">d", f).hex()
 
 def get_engine(track_file: str) -> Engine:
     eng = _LOADED_ENGINES.get(track_file)
@@ -119,12 +107,13 @@ def create_fixture_test(fixture: dict):
                     res_point.velocity.y,
                 )
                 labels = ["pos.x", "pos.y", "vel.x", "vel.y"]
-                for k, (a, b) in enumerate(zip(actual, expected_point_data)):
+                split_point_data=[expected_point_data[i*16:i*16+16] for i in range(4)]
+                for k, (a, b) in enumerate(zip(actual, split_point_data)):
                     self.assertTrue(
                         compare_float(a, b),
                         msg=(
                             f"{track_file}: '{fixture['test']}' - rider {i} point {j} "
-                            f"value mismatch ({labels[k]}): got {a}, expected {b}"
+                            f"value mismatch ({labels[k]}): got {a}, expected {struct.unpack(">d", bytes.fromhex(b))[0]}"
                         ),
                     )
 

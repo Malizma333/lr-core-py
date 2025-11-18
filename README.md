@@ -2,7 +2,7 @@
 
 A compatible implementation of Line Rider's physics engine written in python. Despite the name, this is **not** a fork of lr-core and is structured entirely differently for ease of reference. Nothing requires external dependencies.
 
-Tests can be run with `src/test.py`.\
+Tests can be run with `src/test.py`.<sup>1</sup>\
 A primitive track simulator can be run with `src/simulator.py`.
 
 Thanks to:
@@ -10,6 +10,8 @@ Thanks to:
 - [LROverhaul](https://github.com/LunaKampling/LROverhaul) and [linerider-advanced](https://github.com/jealouscloud/linerider-advanced) for putting all the math in a few files
 - [OpenLR](https://github.com/kevansevans/OpenLR) for showing clear differences in legacy grid algorithms
 - [bosh-rs](https://codeberg.org/lipfang/bosh-rs) for motivating me to start working on this
+
+<sup>1</sup>*Point values in `fixture_tests.json` are f64s represented as hex strings for precision purposes, see `src/utils/capture_state.js` for an example*
 
 ## Features
 - beta 6.0, 6.1, 6.2 grid implementations
