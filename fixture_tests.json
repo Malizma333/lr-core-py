@@ -2127,8 +2127,7 @@
             "40551e03a75682b7c061fea0ab28fe14c022e9d7c44b21c8c0047409f5638d5a"
           ],
           "mount_state": "MOUNTED",
-          "sled_state": "INTACT",
-          "rider_state": "INTACT"
+          "sled_state": "INTACT"
         }
       ]
     }
