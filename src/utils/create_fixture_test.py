@@ -109,11 +109,12 @@ def create_fixture_test(fixture: dict):
                 labels = ["pos.x", "pos.y", "vel.x", "vel.y"]
                 split_point_data=[expected_point_data[i*16:i*16+16] for i in range(4)]
                 for k, (a, b) in enumerate(zip(actual, split_point_data)):
+                    float_b = struct.unpack(">d", bytes.fromhex(b))[0]
                     self.assertTrue(
                         compare_float(a, b),
                         msg=(
                             f"{track_file}: '{fixture['test']}' - rider {i} point {j} "
-                            f"value mismatch ({labels[k]}): got {a}, expected {struct.unpack(">d", bytes.fromhex(b))[0]}"
+                            f"value mismatch ({labels[k]}): got {a}, expected {float_b}"
                         ),
                     )
 
