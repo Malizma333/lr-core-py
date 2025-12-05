@@ -352,7 +352,16 @@ class Entity:
 
                 bone.process(strength)
             else:
-                if self.state.is_mounted():
+                if (
+                    self.state.remount_version == RemountVersion.LRA
+                    and (
+                        initial_phase == MountPhase.MOUNTED
+                        or initial_phase == MountPhase.REMOUNTING
+                    )
+                ) or (
+                    self.state.remount_version != RemountVersion.LRA
+                    and self.state.is_mounted()
+                ):
                     # LRA uses the mount phase known at the start of this frame,
                     # while .com uses the current mount phase (which can change)
                     if (

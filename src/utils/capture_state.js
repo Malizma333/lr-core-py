@@ -24,10 +24,11 @@ function captureState(testName, includeScarf = false, includeState = false) {
         const entityState = {
           // Concatenate f64 hex strings (position x, position y, velocity x, velocity y)
           points: entity.points.map((point) =>
-            f64ToHex(point.pos.x) +
-            f64ToHex(point.pos.y) +
-            f64ToHex(point.vel.x) +
-            f64ToHex(point.vel.y)),
+            f64ToHex(point.pos.x)
+            + f64ToHex(point.pos.y)
+            + f64ToHex(point.vel.x)
+            + f64ToHex(point.vel.y)
+          ),
         };
 
         if (includeState) {

@@ -14,6 +14,7 @@ def compare_float(f: float, s: str) -> bool:
     """Compare float to test-case hex string."""
     return s == struct.pack(">d", f).hex()
 
+
 def get_engine(track_file: str) -> Engine:
     eng = _LOADED_ENGINES.get(track_file)
     if eng is None:
@@ -107,7 +108,9 @@ def create_fixture_test(fixture: dict):
                     res_point.velocity.y,
                 )
                 labels = ["pos.x", "pos.y", "vel.x", "vel.y"]
-                split_point_data=[expected_point_data[i*16:i*16+16] for i in range(4)]
+                split_point_data = [
+                    expected_point_data[i * 16 : i * 16 + 16] for i in range(4)
+                ]
                 for k, (a, b) in enumerate(zip(actual, split_point_data)):
                     float_b = struct.unpack(">d", bytes.fromhex(b))[0]
                     self.assertTrue(
