@@ -1,6 +1,7 @@
 # Vector class
 
 from typing import Union, Self
+from utils.debug import to_raw_hex
 import math
 
 
@@ -44,6 +45,9 @@ class Vector:
     # str(v1), etc
     def __repr__(self):
         return f"({self.x:.17g}, {self.y:.17g})"
+
+    def hex(self):
+        return f"({to_raw_hex(self.x)}, {to_raw_hex(self.y)})"
 
     def length_sq(self) -> float:
         return self.x * self.x + self.y * self.y

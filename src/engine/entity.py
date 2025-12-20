@@ -7,6 +7,7 @@ from engine.flags import LR_COM_SCARF, OFFSET_BEFORE_BONES
 from enum import Enum
 from typing import Union, TypedDict
 import math
+import utils.debug
 
 
 class InitialEntityParams(TypedDict):
@@ -332,14 +333,20 @@ class Entity:
         for point in self.contact_points:
             point.initial_step(gravity)
 
+        if utils.debug.at_breakpoint("Contact point gravity"):
+            return
+
         for point in self.flutter_points:
             point.initial_step(gravity)
+
+        if utils.debug.at_breakpoint("Flutter point gravity"):
+            return
 
     def process_bones(self, initial_phase: MountPhase):
         REMOUNT_STRENGTH_FACTOR = 0.1
         LRA_REMOUNT_STRENGTH_FACTOR = 0.5
 
-        for bone in self.structural_bones:
+        for bone_index, bone in enumerate(self.structural_bones):
             if isinstance(bone, NormalBone) or isinstance(bone, RepelBone):
                 if (
                     self.state.remount_version == RemountVersion.LRA
@@ -387,12 +394,18 @@ class Entity:
                             self.dismounted_this_frame = True
                             self.state.dismount()
 
+            if utils.debug.at_breakpoint(f"Bone {bone_index}"):
+                return
+
     def process_collisions(self, grid: Grid):
-        for point in self.contact_points:
+        for point_index, point in enumerate(self.contact_points):
             interacting_lines = grid.get_lines_near_position(point.base.position)
             for line in interacting_lines:
                 new_pos, new_prev_pos = line.interact(point)
                 point.base.update_state(new_pos, point.base.velocity, new_prev_pos)
+
+            if utils.debug.at_breakpoint(f"Point collisions {point_index}"):
+                return
 
     def process_flutter_bones(self):
         for bone in self.flutter_bones:
@@ -427,21 +440,40 @@ class Entity:
         # momentum
         self.process_initial_points(gravity)
 
+        if utils.debug.at_breakpoint(None):
+            return
+
         initial_phase = self.state.mount_phase
         for _ in range(6):
             # bones
             self.process_bones(initial_phase)
+
+            if utils.debug.at_breakpoint(None):
+                return
+
             # line collisions
             self.process_collisions(grid)
+
+            if utils.debug.at_breakpoint(None):
+                return
 
         # flutter bones (like scarf)
         self.process_flutter_bones()
 
+        if utils.debug.at_breakpoint("Flutter bones"):
+            return
+
         # check dismount
         self.process_mount_joints()
 
+        if utils.debug.at_breakpoint("Mount joints"):
+            return
+
         # check skeleton break (like sled break)
         self.process_break_joints()
+
+        if utils.debug.at_breakpoint("Break joints"):
+            return
 
     def process_remount(self, other_entities: list["Entity"]):
         if (

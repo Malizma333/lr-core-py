@@ -4,6 +4,7 @@ from engine.grid import Grid, GridVersion
 from engine.line import NormalLine, AccelerationLine
 from engine.flags import GRAVITY_FIX
 from typing import Optional, Union
+import utils.debug
 
 
 class CachedFrame:
@@ -44,10 +45,14 @@ class Engine:
                 new_entities.append(entity.copy())
 
             for entity in new_entities:
+                if utils.debug.at_breakpoint(None):
+                    break
                 # physics steps
                 entity.process_skeleton(gravity, self.grid)
 
             for entity in new_entities:
+                if utils.debug.at_breakpoint(None):
+                    break
                 # remount steps
                 entity.process_remount(new_entities)
 

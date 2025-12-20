@@ -7,6 +7,7 @@ import json
 from enum import Enum
 from typing import Union
 from utils.convert import convert_track
+import utils.debug
 
 
 class DrawTag(Enum):
@@ -87,6 +88,8 @@ class TrackSimulator:
         self.canvas.bind("<BackSpace>", self._remove_last_line)
         self.canvas.bind("<Left>", self._prev_frame)
         self.canvas.bind("<Right>", self._next_frame)
+        self.canvas.bind("<Control-Left>", self._prev_breakpoint)
+        self.canvas.bind("<Control-Right>", self._next_breakpoint)
         self.canvas.bind("<Down>", self._prev_entity)
         self.canvas.bind("<Up>", self._next_entity)
         self.canvas.bind("<space>", self._toggle_play)
@@ -139,11 +142,25 @@ class TrackSimulator:
         self.canvas_center = Vector(event.width / 2, event.height / 2)
         self._update()
 
+    def _prev_breakpoint(self, event=None):
+        utils.debug.dec_breakpoints_target()
+        if len(self.engine.state_cache) > 1:
+            self.engine.state_cache = self.engine.state_cache[:-1]
+        self._update()
+
+    def _next_breakpoint(self, event=None):
+        utils.debug.inc_breakpoints_target()
+        if len(self.engine.state_cache) > 1:
+            self.engine.state_cache = self.engine.state_cache[:-1]
+        self._update()
+
     def _prev_frame(self, event=None):
+        utils.debug.breakpoint_calls_received = 0
         self.frame = max(0, self.frame - 1)
         self._update()
 
     def _next_frame(self, event=None):
+        utils.debug.breakpoint_calls_received = 0
         self.frame += 1
         self._update()
 
@@ -323,6 +340,12 @@ class TrackSimulator:
         timestamp = f"{minutes}:{seconds}:{frames}"
 
         self._generate_text(
+            f"Breakpoint {utils.debug.breakpoint_target}: {utils.debug.breakpoint_name}",
+            self.canvas_center.x,
+            self.canvas_center.y * 2 - 75,
+        )
+
+        self._generate_text(
             timestamp, self.canvas_center.x, self.canvas_center.y * 2 - 50
         )
         self._generate_text(
@@ -332,7 +355,7 @@ class TrackSimulator:
         )
 
         rider_data_strings = [
-            f"{p.position}" for p in entities[self.focused_entity].points
+            f"{p.position.hex()}" for p in entities[self.focused_entity].points
         ]
         rider_data_strings.insert(
             0, entities[self.focused_entity].state.mount_phase.name
@@ -391,7 +414,7 @@ class TrackSimulator:
 
         if index == len(cache):
             text_obj = self.canvas.create_text(
-                x, y, font=("Helvetica", 12), fill="black", anchor="w", tags=tag.name
+                x, y, font=("monospace", 12), fill="black", anchor="w", tags=tag.name
             )
             cache.append(text_obj)
         else:
@@ -403,4 +426,4 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/wonky.track.json")
+    TrackSimulator("fixtures/initial_state.track.json")
