@@ -291,7 +291,7 @@ class Grid:
                     position + self.cell_size * Vector(x_offset, y_offset),
                 )
 
-                if cell == None:
+                if cell is None:
                     continue
 
                 for line in cell.lines:

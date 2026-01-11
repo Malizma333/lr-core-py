@@ -37,9 +37,9 @@ def convert_riders(riders: list, LRA: bool) -> list[Entity]:
         mount_joint_version = RemountVersion.NONE
 
         remountable = rider.get("remountable", None)
-        if type(remountable) == bool:
+        if type(remountable) is bool:
             mount_joint_version = RemountVersion.COM_V1
-        elif type(remountable) == int:
+        elif type(remountable) is int:
             mount_joint_version = RemountVersion.COM_V2
 
         # Override remount version
@@ -74,10 +74,8 @@ def convert_version(grid_version_string: str) -> GridVersion:
     return grid_version_mapping.get(grid_version_string, GridVersion.V6_2)
 
 
-def convert_track(track_data: dict[str, Any]):
+def convert_track(track_data: dict[str, Any], lra: bool):
     version = convert_version(track_data["version"])
-    entities = convert_riders(
-        track_data["riders"], track_data.get("USE_LRA_MOUNT_PHYSICS", False)
-    )
+    entities = convert_riders(track_data["riders"], lra)
     lines = convert_lines(track_data["lines"])
     return Engine(version, entities, lines)

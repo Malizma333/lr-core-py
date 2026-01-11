@@ -15,12 +15,12 @@ def compare_float(f: float, s: str) -> bool:
     return s == struct.pack(">d", f).hex()
 
 
-def get_engine(track_file: str) -> Engine:
+def get_engine(track_file: str, lra: bool) -> Engine:
     eng = _LOADED_ENGINES.get(track_file)
     if eng is None:
         with open(f"fixtures/{track_file}.track.json", "r") as f:
             track_data = json.load(f)
-        eng = convert_track(track_data)
+        eng = convert_track(track_data, lra)
         _LOADED_ENGINES[track_file] = eng
     return eng
 
@@ -34,11 +34,12 @@ def create_fixture_test(fixture: dict):
         track_file: str = fixture["file"]
         frame: int = fixture["frame"]
         expected_state: Optional[dict] = fixture.get("state")
+        lra: bool = fixture.get("lra", False)
 
-        engine = get_engine(track_file)
+        engine = get_engine(track_file, lra)
         result_state = engine.get_frame(frame)
 
-        if result_state == None:
+        if result_state is None:
             self.assertIsNone(
                 expected_state, msg=f"{track_file}: engine returned state"
             )
@@ -46,7 +47,7 @@ def create_fixture_test(fixture: dict):
 
         self.assertIsNotNone(expected_state, msg=f"{track_file}: engine returned None")
 
-        if expected_state == None:
+        if expected_state is None:
             return
 
         # Check number of entities

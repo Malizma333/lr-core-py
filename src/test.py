@@ -215,7 +215,7 @@ def create_fixture_tests():
         num_riders = len(fixture.get("state", {}).get("entities", []))
         complexity = frame * num_riders
 
-        if MAX_ENGINE_CALCS != None and complexity > MAX_ENGINE_CALCS:
+        if MAX_ENGINE_CALCS is not None and complexity > MAX_ENGINE_CALCS:
             continue
 
         func_name = f"test_{i}_{sanitize(fixture['test'])}"

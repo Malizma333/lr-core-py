@@ -69,6 +69,6 @@ class Engine:
 
     def remove_line(self, id: int):
         line = self.grid.get_line_by_id(id)
-        if line != None:
+        if line is not None:
             self.state_cache = [self.state_cache[0]]
             self.grid.remove_line(line)

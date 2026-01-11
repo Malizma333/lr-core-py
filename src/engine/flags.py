@@ -9,7 +9,3 @@ LR_COM_SCARF = False
 # but other than that they work identically to 6.2 physics
 # (try loading phunner.track.json 21 seconds in)
 GRAVITY_FIX = False
-
-# LRA and OpenLR incorrectly add offsets to contact points before calculating bone lengths, causing
-# issues with certain offset values from flash or linerider.com tracks
-OFFSET_BEFORE_BONES = False

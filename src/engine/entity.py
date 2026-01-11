@@ -3,7 +3,7 @@ from engine.vector import Vector
 from engine.point import ContactPoint, FlutterPoint, BasePoint
 from engine.bone import NormalBone, RepelBone, MountBone, FlutterBone, BaseBone
 from engine.joint import Joint
-from engine.flags import LR_COM_SCARF, OFFSET_BEFORE_BONES
+from engine.flags import LR_COM_SCARF
 from enum import Enum
 from typing import Union, TypedDict
 import math
@@ -155,6 +155,7 @@ class Entity:
         self.break_joints: list[Joint] = []
         self.mount_joints: list[Joint] = []
 
+        LRA = self.state.remount_version == RemountVersion.LRA
         MOUNT_ENDURANCE = 0.057
         REPEL_LENGTH_FACTOR = 0.5
         SCARF_FRICTION = 0.1
@@ -186,7 +187,7 @@ class Entity:
         SCARF_5 = self.add_flutter_point(Vector(-7, -5.5), SCARF_FRICTION)
         SCARF_6 = self.add_flutter_point(Vector(-9, -5.5), SCARF_FRICTION)
 
-        if OFFSET_BEFORE_BONES:
+        if LRA:
             self.apply_initial_state()
 
         # Sled bones
@@ -222,7 +223,7 @@ class Entity:
         self.add_flutter_bone(SCARF_4, SCARF_5)
         self.add_flutter_bone(SCARF_5, SCARF_6)
 
-        if not OFFSET_BEFORE_BONES:
+        if not LRA:
             self.apply_initial_state()
 
         # Add the bindings with their joints
@@ -478,7 +479,7 @@ class Entity:
     def process_remount(self, other_entities: list["Entity"]):
         if (
             self.state.remount_version == RemountVersion.NONE
-            or self.state.init_state["CAN_REMOUNT"] == False
+            or not self.state.init_state["CAN_REMOUNT"]
         ):
             return
 

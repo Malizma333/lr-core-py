@@ -25,7 +25,7 @@ def at_breakpoint(new_breakpoint_name: str | None):
     global breakpoint_target, breakpoint_calls_received, breakpoint_name
     if breakpoint_target == 0:
         return False
-    if new_breakpoint_name != None:
+    if new_breakpoint_name is not None:
         breakpoint_name = new_breakpoint_name
         breakpoint_calls_received += 1
     return breakpoint_calls_received >= breakpoint_target

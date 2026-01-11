@@ -21,7 +21,7 @@ class DrawTag(Enum):
 
 
 class TrackSimulator:
-    START_FRAME = 0
+    START_FRAME = 211
     DRAW_LINES = True
     ZOOM = 6
     MV_LENGTH = 3
@@ -42,12 +42,12 @@ class TrackSimulator:
     HITBOX_COLOR = "lightgray"
     FPS = 40
 
-    def __init__(self, track_path: str):
+    def __init__(self, track_path: str, lra: bool):
         self.track_path = track_path
         self.track = json.load(open(track_path, "r"))
-        self.engine = convert_track(self.track)
+        self.engine = convert_track(self.track, lra)
         frame = self.engine.get_frame(0)
-        if frame == None:
+        if frame is None:
             self.entities = []
         else:
             self.entities = frame.entities
@@ -426,4 +426,6 @@ class TrackSimulator:
 
 
 if __name__ == "__main__":
-    TrackSimulator("fixtures/initial_state.track.json")
+    # This needs to be manually set
+    LRA = False
+    TrackSimulator("fixtures/veil.track.json", LRA)
