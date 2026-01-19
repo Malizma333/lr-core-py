@@ -413,29 +413,23 @@ class Entity:
             bone.process()
 
     def process_mount_joints(self):
-        if not self.state.is_mounted():
-            return
-
-        for joint in self.mount_joints:
-            if joint.should_break() and not self.dismounted_this_frame:
-                self.dismounted_this_frame = True
-                self.state.dismount()
-                if self.state.remount_version == RemountVersion.LRA:
-                    # LRA also breaks sled on mount joint break
-                    self.state.break_sled()
+        if self.state.is_mounted():
+            for joint in self.mount_joints:
+                if joint.should_break() and not self.dismounted_this_frame:
+                    self.dismounted_this_frame = True
+                    self.state.dismount()
+                    if self.state.remount_version == RemountVersion.LRA:
+                        # LRA also breaks sled on mount joint break
+                        self.state.break_sled()
 
     def process_break_joints(self):
         if (
-            self.state.remount_version == RemountVersion.LRA
-            or self.state.remount_version == RemountVersion.COM_V1
-        ):
-            # Don't process joints if dismounted
-            if not self.state.is_mounted():
-                return
-
-        for joint in self.break_joints:
-            if self.state.sled_is_intact() and joint.should_break():
-                self.state.break_sled()
+            self.state.remount_version != RemountVersion.LRA
+            and self.state.remount_version != RemountVersion.COM_V1
+        ) or self.state.is_mounted():
+            for joint in self.break_joints:
+                if self.state.sled_is_intact() and joint.should_break():
+                    self.state.break_sled()
 
     def process_skeleton(self, gravity: Vector, grid: Grid):
         # momentum
